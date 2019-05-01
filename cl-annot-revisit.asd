@@ -2,12 +2,18 @@
   :description "Re-implementation of 'cl-annot', authored by Tomohiro Matsuyama."
   :license "LLGPL"
   :author "YOKOTA Yuki <y2q.actionman@gmail.com>"
+  :depends-on (#:alexandria)
   :serial t
   ;; TODO
   :components ((:module "at-macro"
                 :serial nil
                 :components
                 ((:file "package")
-                 (:file "eval-when" :depends-on ("package"))))
-	       (:module "at-syntax"))
-  )
+                 (:file "util" :depends-on ("package"))
+                 (:file "eval-when" :depends-on ("package"))
+                 (:file "export" :depends-on ("package" "util"))))
+	       (:module "at-syntax"
+                :serial nil
+                :components
+                ((:file "package"))))
+  :in-order-to ((test-op (test-op #:cl-annot-revisit-test))))

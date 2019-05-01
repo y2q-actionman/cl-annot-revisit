@@ -10,3 +10,4 @@ cl-annot-revisit is a re-implementation of [cl-annot](https://github.com/m2ym/cl
 思いつき
 
 - @defannotation で defmacro を囲えば @ reader macro にできる
+- 無限引数 annotation を作れば、ファイル全体に作用できる(ひどい)

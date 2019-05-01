@@ -1,16 +1,15 @@
 (in-package :cl-user)
 
-(defpackage #:cl-annot-revisit/at-macro/package
-  (:nicknames #:cl-annot-revisit/at-macro)
+(defpackage #:cl-annot-revisit/at-macro
   (:documentation "The at-macros of cl-annot-revisit.")
-  (:use :cl)
+  (:use :cl :alexandria)
   (:export
    ;; see cl-annot/lib/
    ;; see std.lisp
    #:@export
    #:@ignore
    #:@ignorable
-   #:@dynamic-extend
+   #:@dynamic-extent
    #:@declaration
    #:@special
    #:@type
