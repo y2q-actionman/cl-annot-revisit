@@ -1,6 +1,25 @@
 (in-package #:cl-annot-revisit-test)
 
-(test test-declaration-ignore
+(test test-decl-declararion
+  (is (equal
+       (macroexpand-1 '(@declaration hoge fuga))
+       '(declaim (declaration hoge fuga))))
+  ;; A test for the standard Common Lisp.
+  ;; This is malformed, because `declaration' is only for proclamation.
+  (signals (or error warning)
+    (compile nil
+             '(lambda ()
+               (declare (declaration hoge))
+               t)))
+  #+ ()
+  (signals (or error warning)
+    (compile nil
+             '(lambda ()
+               ;; The result of `declaim' is implementation-dependent. This code add such a value.
+               #.(@declaration hoge) 
+               t))))
+
+(test test-decl-ignore
   (is (equal
        '(let ((x 100)) #.(@ignore x) 99)
        '(let ((x 100)) (declare (ignore x)) 99)))
