@@ -7,6 +7,7 @@
    ;; see cl-annot/lib/
    ;; see std.lisp
    #:@export
+   ;; they are std.lisp, but declarations are different from others
    #:@ignore
    #:@ignorable
    #:@dynamic-extent
