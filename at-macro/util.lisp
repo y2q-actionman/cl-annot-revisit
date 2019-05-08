@@ -71,3 +71,10 @@ see N-th value as a condition."
 ;;; NOTE: At the top level, Common Lisp specially treats `macrolet',
 ;;; `symbol-macrolet', and *ALL* macro forms. But for supporting them
 ;;; I need a real code-walker.
+
+#+ ()
+(defun collect-special-forms ()
+  (loop for i being the external-symbols of (find-package :cl)
+     when (or (special-operator-p i) (macro-function i))
+     collect i into specials
+     finally (return (sort specials #'string< :key #'symbol-name))))

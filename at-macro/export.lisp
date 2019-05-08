@@ -62,6 +62,7 @@ or `*@export-defun-expansion-symbols*'."
   ;; - `defpackage'
   ;;   Package names are string-designeter, not an exported symbol.
   )
+;;; TODO: change to 'find-name-to-be-defined'?
 
 
 (defmacro @export (&body forms &environment env)
@@ -78,3 +79,5 @@ or `*@export-defun-expansion-symbols*'."
          ((macroexpand-1 form env))             ; try `macroexpand-1'.
          (t                       ; nothing to do. return FORM itself.
           (values form nil)))))))
+
+;;; TODO: support `restart-case'?
