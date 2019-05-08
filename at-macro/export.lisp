@@ -65,7 +65,7 @@ or `*@export-defun-expansion-symbols*'."
 
 
 (defmacro @export (&body forms &environment env)
-  (if (length= forms 1)
+  (if (length= 1 forms)
       (let ((form (first forms)))
         (mv-cond-let2 (expansion expanded-p)
           ((expand-@export-1 (first form) form)) ; try known expansions.
