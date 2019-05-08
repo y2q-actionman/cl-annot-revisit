@@ -65,12 +65,16 @@ or `*@export-defun-expansion-symbols*'."
 
 
 (defmacro @export (&body forms &environment env)
-  (if (length= 1 forms)
-      (let ((form (first forms)))
-        (mv-cond-let2 (expansion expanded-p)
-          ((expand-@export-1 (first form) form)) ; try known expansions.
-          ((expand-recursively-1 '@export form)) ; try recursive expansion.
-          ((macroexpand-1 form env))    ; try `macroexpand-1'.
-          (t                      ; nothing to do. return FORM itself.
-           (values form nil))))
-      `(progn ,@(add-to-all-heads '@export forms))))
+  (cond
+    ((null forms)
+     nil)
+    ((not (length= 1 forms))            ; recursive expansion
+     `(progn ,@(add-to-all-heads '@export forms)))
+    (t
+     (let ((form (first forms)))
+       (mv-cond-let2 (expansion expanded-p)
+         ((expand-@export-1 (first form) form)) ; try known expansions.
+         ((apply-to-special-form-1 '@export form)) ; try recursive expansion.
+         ((macroexpand-1 form env))             ; try `macroexpand-1'.
+         (t                       ; nothing to do. return FORM itself.
+          (values form nil)))))))

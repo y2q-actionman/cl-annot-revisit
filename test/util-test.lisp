@@ -22,16 +22,6 @@
              '(LOCALLY (DECLARE (TYPE FIXNUM X))
                (@EXPORT X) (@EXPORT Y) (@EXPORT (+ X Y))))))
 
-(test expand-recursive-1-symbol-macrolet
-  (is (equal (cl-annot-revisit/at-macro::expand-recursively-1
-              '@export
-              '(symbol-macrolet ((x 100))
-                x y (+ x y)))
-             '(SYMBOL-MACROLET ((X 100))
-               (@EXPORT X)
-               (@EXPORT Y)
-               (@EXPORT (+ X Y))))))
-
 (test expand-recursive-1-symbol-other
   (is (equal (cl-annot-revisit/at-macro::expand-recursively-1
               '@export
