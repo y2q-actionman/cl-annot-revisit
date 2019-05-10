@@ -9,41 +9,35 @@
 ;;; Declaration only
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defparameter *cl-operator-body-location-1-list*
-    '(locally)
-    "List of operators its place of body is accesible with (nth 1 body).")
+  (defparameter *operator-body-location-alist*
+    (append '((locally . 1))
+            (mapcar
+             (lambda (op) (cons op 2))
+             '(with-hash-table-iterator with-package-iterator
+               flet labals let let* macrolet prog prog* symbol-macrolet ; let-like
+               do-all-symbols do-external-symbols do-symbols dolist dotimes ; dolist-like
+               lambda pprint-logical-block
+               with-input-from-string with-open-file with-open-stream with-output-to-string))
+            (mapcar
+             (lambda (op) (cons op 3))
+             '(destructuring-bind
+               define-compiler-macro define-setf-expander defmacro deftype defun ; defun-like
+               do do*                   ; do-like
+               multiple-value-bind
+               with-accessors with-slots))))
+  
+  (defun operator-body-location (name)
+    (if-let ((entry (assoc name *operator-body-location-alist*)))
+      (cdr entry)
+      nil))
 
-  (defparameter *cl-operator-body-location-2-list*
-    '(with-hash-table-iterator with-package-iterator
-      flet labals let let* macrolet prog prog* symbol-macrolet ; let-like
-      do-all-symbols do-external-symbols do-symbols dolist dotimes ; dolist-like
-      lambda pprint-logical-block
-      with-input-from-string with-open-file with-open-stream with-output-to-string)
-    "List of operators its place of body is accesible with (nth 2 body).")
-
-  (defparameter *cl-operator-body-location-3-list*
-    '(destructuring-bind
-      define-compiler-macro define-setf-expander defmacro deftype defun ; defun-like
-      do do*                         ; do-like
-      multiple-value-bind
-      with-accessors with-slots)
-    "List of operators its place of body is accesible with (nth 3 body).")
-
-  (defun body-location-of-operator (name)
-    (cond ((member name *cl-operator-body-location-1-list*) 1)
-          ((member name *cl-operator-body-location-2-list*) 2)
-          ((member name *cl-operator-body-location-3-list*) 3)
-          (t nil)))
-
-  (defparameter *cl-operator-accepts-docstring-in-body-list*
-    '(lambda
-      define-compiler-macro define-setf-expander defmacro deftype defun ; defun-like
-      )
+  (defparameter *operators-accept-docstring-in-body*
+    '(define-compiler-macro define-setf-expander defmacro deftype
+      defun lambda)
     "List of operators accepts docstring in its body.")
 
-  (defun body-accept-docstring-p (name)
-    (member name *cl-operator-accepts-docstring-in-body-list*))
-  
+  (defun operator-accept-docstring-in-body-p (name)
+    (member name *operators-accept-docstring-in-body*))
 
   
   (defun insert-declaration-to-body (form-body new-declaration &key documentation whole)
@@ -71,7 +65,7 @@
 
   (defmethod insert-declaration* ((form-head symbol) form new-declaration)
     "General case."
-    (if-let ((body-location (body-location-of-operator form-head)))
+    (if-let ((body-location (operator-body-location form-head)))
       (insert-declaration-to-nth-body body-location form new-declaration
                                       :whole form
                                       :documentation (body-accept-docstring-p form-head))))
@@ -114,15 +108,12 @@
         ;; syntax: (op name lambda-list (&rest store-variable) &body body)
         (insert-declaration-to-nth-body 4 form new-declaration :whole form :documentation t)))
 
-  ;; FIXME: what to do on local functions?
-  ;; about `flet', `labels', `macrolet'
-  
-  ;; FIXME: what to do `hander-case' clauses?
+  ;; TODO: say warnings about local declarations:
+  ;; about `flet', `labels', `macrolet', `hander-case', `restart-case'.
   
   ;; TODO: support `declaim'?
   ;; TODO: support `proclaim'?
   
-  ;; FIXME: what to do `restart-case' clauses?
 
   (defun insert-declaration (form new-declaration)
     "Insert NEW-DECLARATION into FORM.

@@ -46,10 +46,6 @@ see N-th value as a condition."
       (declare (ignore at-macro-name form-head))
       (values form nil)))
 
-  (defun apply-to-progn-form (at-macro-name form)
-    (assert (eq (first form) 'progn))
-    `(progn ,@(add-to-all-heads at-macro-name (rest form))))
-
   (defmethod apply-to-special-form-1* (at-macro-name (form-head (eql 'progn)) form)
     (values `(progn ,@(add-to-all-heads at-macro-name (rest form)))
             t))
