@@ -9,12 +9,41 @@
 ;;; Declaration only
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defgeneric insert-declaration* (form-head form new-declaration)
-    (:documentation "Called by `insert-declaration' to insert NEW-DECLARATION into FORM.")
-    (:method (form-head form new-declaration)
-      "The bottom case, returns nil."
-      (declare (ignore form-head new-declaration))
-      nil))
+  (defparameter *cl-operator-body-location-1-list*
+    '(locally)
+    "List of operators its place of body is accesible with (nth 1 body).")
+
+  (defparameter *cl-operator-body-location-2-list*
+    '(with-hash-table-iterator with-package-iterator
+      flet labals let let* macrolet prog prog* symbol-macrolet ; let-like
+      do-all-symbols do-external-symbols do-symbols dolist dotimes ; dolist-like
+      lambda pprint-logical-block
+      with-input-from-string with-open-file with-open-stream with-output-to-string)
+    "List of operators its place of body is accesible with (nth 2 body).")
+
+  (defparameter *cl-operator-body-location-3-list*
+    '(destructuring-bind
+      define-compiler-macro define-setf-expander defmacro deftype defun ; defun-like
+      do do*                         ; do-like
+      multiple-value-bind
+      with-accessors with-slots)
+    "List of operators its place of body is accesible with (nth 3 body).")
+
+  (defun body-location-of-operator (name)
+    (cond ((member name *cl-operator-body-location-1-list*) 1)
+          ((member name *cl-operator-body-location-2-list*) 2)
+          ((member name *cl-operator-body-location-3-list*) 3)
+          (t nil)))
+
+  (defparameter *cl-operator-accepts-docstring-in-body-list*
+    '(lambda
+      define-compiler-macro define-setf-expander defmacro deftype defun ; defun-like
+      )
+    "List of operators accepts docstring in its body.")
+
+  (defun body-accept-docstring-p (name)
+    (member name *cl-operator-accepts-docstring-in-body-list*))
+  
 
   
   (defun insert-declaration-to-body (form-body new-declaration &key documentation whole)
@@ -32,64 +61,32 @@
         ,@(insert-declaration-to-body body new-declaration
                                       :documentation documentation :whole whole))))
 
-  ;; `defun'-like ; :place 3 :documentation t
-  (defparameter *defun-like-operators*
-    '( define-compiler-macro define-setf-expander defmacro deftype defun
-      ))
 
-  ;; `do'-like ; :place 3 :documentation nil
-  (defparameter *dolist-like-operators*
-    '( do do*))
+  (defgeneric insert-declaration* (form-head form new-declaration)
+    (:documentation "Called by `insert-declaration' to insert NEW-DECLARATION into FORM.")
+    (:method (form-head form new-declaration)
+      "The bottom case, returns nil."
+      (declare (ignore form-head form new-declaration))
+      nil))
 
-  ;; `dolist'-like ; :place 2 :documentation nil
-  (defparameter *dolist-like-operators*
-    '( do-all-symbols do-external-symbols do-symbols dolist dotimes
-      with-hash-table-iterator with-package-iterator ; ???
-      ))
+  (defmethod insert-declaration* ((form-head symbol) form new-declaration)
+    "General case."
+    (if-let ((body-location (body-location-of-operator form-head)))
+      (insert-declaration-to-nth-body body-location form new-declaration
+                                      :whole form
+                                      :documentation (body-accept-docstring-p form-head))))
 
-  ;; `let'-like ; :place 2 :documentation nil
-  (defparameter *let-like-operators*
-    '( flet labals let let* macrolet prog prog* symbol-macrolet))
-
-  (defparameter *body-place-alist*
-    '(
-      ;; `defun'-like ; :place 3 :documentation t
-      (destructuring-bind :place 3)
-      ;; `do'-like ; :place 3
-      ;; `dolist'-like ; :place 2
-      ;; `let'-like ; :place 2
-      (lambda :place 2 :documentation t)
-      (locally :place 1)
-      (multiple-value-bind :place 3)
-      (pprint-logical-block :place 2)
-      (with-accessors :place 3)
-      (with-input-from-string :place 2)
-      (with-open-file :place 2)
-      (with-open-stream :place 2)
-      (with-output-to-string :place 2)
-      (with-slots :place 3)))
-  
-
-  ;; TODO: support `declaim'?
-  
   (defmethod insert-declaration* ((form-head (eql 'defgeneric)) form new-declaration)
     (destructuring-bind (op function-name gf-lambda-list &rest option)
         form
       `(,op ,function-name ,gf-lambda-list ,new-declaration ,@option)))
-
-  (defun insert-declaration-to-defun-like-form (form new-declaration)
-    ;; syntax: (op func-name lambda-list &body body)
-    (insert-declaration-to-nth-body 3 form new-declaration :documentation t :whole form))
-
-  (defmethod insert-declaration* ((form-head (eql 'define-compiler-macro)) form new-declaration)
-    (insert-declaration-to-defun-like-form form new-declaration))
 
   (defmethod insert-declaration* ((form-head (eql 'define-method-combination))
                                   form new-declaration)
     (if (<= (length form) 3)
         (values form nil) ; The short-form of `define-method-combination' doesn't take declarations.
         (destructuring-bind
-              (op name lambda-list (&rest method-group-specifier) &rest rest) form
+            (op name lambda-list (&rest method-group-specifier) &rest rest) form
           (let (options)
             (when (starts-with :arguments (first rest))
               (push (pop rest) options))
@@ -100,13 +97,6 @@
                   ,@options
                   ,@(insert-declaration-to-body rest new-declaration
                                                 :whole form :documentation t))))))
-
-  (defmethod insert-declaration* ((form-head (eql 'define-setf-expander))
-                                  form new-declaration)
-    (insert-declaration-to-defun-like-form form new-declaration))
-  
-  (defmethod insert-declaration* ((form-head (eql 'defmacro)) form new-declaration)
-    (insert-declaration-to-defun-like-form form new-declaration))
 
   (defmethod insert-declaration* ((form-head (eql 'defmethod)) form new-declaration)
     (destructuring-bind (op name &rest rest) form
@@ -123,129 +113,16 @@
         (values form nil) ; The short-form of `defsetf' does not take declarations.
         ;; syntax: (op name lambda-list (&rest store-variable) &body body)
         (insert-declaration-to-nth-body 4 form new-declaration :whole form :documentation t)))
+
+  ;; FIXME: what to do on local functions?
+  ;; about `flet', `labels', `macrolet'
   
-  (defmethod insert-declaration* ((form-head (eql 'deftype)) form new-declaration)
-    (insert-declaration-to-defun-like-form form new-declaration))
-
-  (defmethod insert-declaration* ((form-head (eql 'defun)) form new-declaration)
-    (insert-declaration-to-defun-like-form form new-declaration))
-
-  (defmethod insert-declaration* ((form-head (eql 'destructuring-bind)) form new-declaration)
-    ;; syntax: (op lambda-list expr &body body)
-    (insert-declaration-to-nth-body 3 form new-declaration :whole form))
-
-  (defun insert-declaration-to-do-form (form new-declaration)
-    ;; syntax: (op (&rest vars) (&rest end-tests) &body body)
-    (insert-declaration-to-nth-body 3 form new-declaration :whole form))
-  
-  (defmethod insert-declaration* ((form-head (eql 'do)) form new-declaration)
-    (insert-declaration-to-do-form form new-declaration))
-
-  (defmethod insert-declaration* ((form-head (eql 'do*)) form new-declaration)
-    (insert-declaration-to-do-form form new-declaration))
-
-  (defun insert-declaration-to-dolist-like-form (form new-declaration)
-    ;; syntax: (op (var &rest extras) &body body)
-    (insert-declaration-to-nth-body 2 form new-declaration :whole form))
-  
-  (defmethod insert-declaration* ((form-head (eql 'do-all-symbols)) form new-declaration)
-    (insert-declaration-to-dolist-like-form form new-declaration))
-  
-  (defmethod insert-declaration* ((form-head (eql 'do-external-symbols)) form new-declaration)
-    (insert-declaration-to-dolist-like-form form new-declaration))
-  
-  (defmethod insert-declaration* ((form-head (eql 'do-symbols)) form new-declaration)
-    (insert-declaration-to-dolist-like-form form new-declaration))
-  
-  (defmethod insert-declaration* ((form-head (eql 'dolist)) form new-declaration)
-    (insert-declaration-to-dolist-like-form form new-declaration))
-  
-  (defmethod insert-declaration* ((form-head (eql 'dotimes)) form new-declaration)
-    (insert-declaration-to-dolist-like-form form new-declaration))
-
-  (defun insert-declaration-to-let-like-form (form new-declaration)
-    ;; syntax: (op (&rest bindings) &body body)
-    (insert-declaration-to-nth-body 2 form new-declaration :whole form))
-
-  (defmethod insert-declaration* ((form-head (eql 'flet)) form new-declaration)
-    ;; FIXME: what to do on local functions?
-    (insert-declaration-to-let-like-form form new-declaration))
-
   ;; FIXME: what to do `hander-case' clauses?
   
-  (defmethod insert-declaration* ((form-head (eql 'labels)) form new-declaration)
-    ;; FIXME: what to do on local functions?
-    (insert-declaration-to-let-like-form form new-declaration))
-
-  (defmethod insert-declaration* ((form-head (eql 'lambda)) form new-declaration)
-    ;; syntax: (op lambda-list &body body)
-    (insert-declaration-to-nth-body 2 form new-declaration :whole form :documentation t))
-
-  (defmethod insert-declaration* ((form-head (eql 'let)) form new-declaration)
-    (insert-declaration-to-let-like-form form new-declaration))
-
-  (defmethod insert-declaration* ((form-head (eql 'let*)) form new-declaration)
-    (insert-declaration-to-let-like-form form new-declaration))
-
-  (defmethod insert-declaration* ((form-head (eql 'locally)) form new-declaration)
-    ;; syntax: (op &body body)
-    (insert-declaration-to-nth-body 1 form new-declaration :whole form))
-
-  (defmethod insert-declaration* ((form-head (eql 'macrolet)) form new-declaration)
-    ;; FIXME: what to do on local functions?
-    (insert-declaration-to-let-like-form form new-declaration))
-
-  (defmethod insert-declaration* ((form-head (eql 'multiple-value-bind)) form new-declaration)
-    ;; syntax: (op (&rest var) values-form &body body)
-    (insert-declaration-to-nth-body 3 form new-declaration :whole form))
-
-  (defmethod insert-declaration* ((form-head (eql 'pprint-logical-block)) form new-declaration)
-    ;; syntax: (op (&rest options) &body body)
-    (insert-declaration-to-nth-body 2 form new-declaration :whole form))
-
+  ;; TODO: support `declaim'?
   ;; TODO: support `proclaim'?
   
-  (defmethod insert-declaration* ((form-head (eql 'prog)) form new-declaration)
-    (insert-declaration-to-let-like-form form new-declaration))
-
-  (defmethod insert-declaration* ((form-head (eql 'prog*)) form new-declaration)
-    (insert-declaration-to-let-like-form form new-declaration))
-
   ;; FIXME: what to do `restart-case' clauses?
-  
-  (defmethod insert-declaration* ((form-head (eql 'symbol-macrolet)) form new-declaration)
-    (insert-declaration-to-let-like-form form new-declaration))
-
-  (defmethod insert-declaration* ((form-head (eql 'with-accessors)) form new-declaration)
-    ;; syntax: (op (&rest accessors) obj &body body)
-    (insert-declaration-to-nth-body 3 form new-declaration :whole form))
-
-  (defmethod insert-declaration* ((form-head (eql 'with-hash-table-iterator)) form new-declaration)
-    (insert-declaration-to-dolist-like-form form new-declaration))
-
-  (defmethod insert-declaration* ((form-head (eql 'with-input-from-string)) form new-declaration)
-    ;; syntax: (op (&rest vars) &body body)
-    (insert-declaration-to-nth-body 2 form new-declaration :whole form))
-
-  (defmethod insert-declaration* ((form-head (eql 'with-open-file)) form new-declaration)
-    ;; syntax: (op (&rest vars) &body body)
-    (insert-declaration-to-nth-body 2 form new-declaration :whole form))
-
-  (defmethod insert-declaration* ((form-head (eql 'with-open-stream)) form new-declaration)
-    ;; syntax: (op (&rest vars) &body body)
-    (insert-declaration-to-nth-body 2 form new-declaration :whole form))
-
-  (defmethod insert-declaration* ((form-head (eql 'with-output-to-string)) form new-declaration)
-    ;; syntax: (op (&rest vars) &body body)
-    (insert-declaration-to-nth-body 2 form new-declaration :whole form))
-
-  (defmethod insert-declaration* ((form-head (eql 'with-package-iterator)) form new-declaration)
-    (insert-declaration-to-dolist-like-form form new-declaration))
-
-  (defmethod insert-declaration* ((form-head (eql 'with-slots)) form new-declaration)
-    ;; syntax: (op (&rest accessors) obj &body body)
-    (insert-declaration-to-nth-body 3 form new-declaration :whole form))
-  
 
   (defun insert-declaration (form new-declaration)
     "Insert NEW-DECLARATION into FORM.
