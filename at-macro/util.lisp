@@ -30,6 +30,11 @@ see N-th value as a condition."
   `(mv-cond-let* 1 (,@vars) ,@clauses))
 
 
+(define-condition at-macro-style-warning (style-warning)
+  ()
+  (:documentation "Signaled if some bad styles are found."))
+
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun add-to-all-heads (elem list)
     (mapcar (lambda (x) (list elem x)) list))

@@ -4,6 +4,7 @@
   (:documentation "The at-macros of cl-annot-revisit.")
   (:use :cl :alexandria)
   (:export
+   #:at-macro-style-warning
    ;; see cl-annot/lib/
    ;; see std.lisp
    #:@export
