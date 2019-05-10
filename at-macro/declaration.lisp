@@ -31,6 +31,43 @@
       `(,@head
         ,@(insert-declaration-to-body body new-declaration
                                       :documentation documentation :whole whole))))
+
+  ;; `defun'-like ; :place 3 :documentation t
+  (defparameter *defun-like-operators*
+    '( define-compiler-macro define-setf-expander defmacro deftype defun
+      ))
+
+  ;; `do'-like ; :place 3 :documentation nil
+  (defparameter *dolist-like-operators*
+    '( do do*))
+
+  ;; `dolist'-like ; :place 2 :documentation nil
+  (defparameter *dolist-like-operators*
+    '( do-all-symbols do-external-symbols do-symbols dolist dotimes
+      with-hash-table-iterator with-package-iterator ; ???
+      ))
+
+  ;; `let'-like ; :place 2 :documentation nil
+  (defparameter *let-like-operators*
+    '( flet labals let let* macrolet prog prog* symbol-macrolet))
+
+  (defparameter *body-place-alist*
+    '(
+      ;; `defun'-like ; :place 3 :documentation t
+      (destructuring-bind :place 3)
+      ;; `do'-like ; :place 3
+      ;; `dolist'-like ; :place 2
+      ;; `let'-like ; :place 2
+      (lambda :place 2 :documentation t)
+      (locally :place 1)
+      (multiple-value-bind :place 3)
+      (pprint-logical-block :place 2)
+      (with-accessors :place 3)
+      (with-input-from-string :place 2)
+      (with-open-file :place 2)
+      (with-open-stream :place 2)
+      (with-output-to-string :place 2)
+      (with-slots :place 3)))
   
 
   ;; TODO: support `declaim'?
@@ -112,19 +149,19 @@
     (insert-declaration-to-nth-body 2 form new-declaration :whole form))
   
   (defmethod insert-declaration* ((form-head (eql 'do-all-symbols)) form new-declaration)
-    (insert-declaration-to-do-like-form form new-declaration))
+    (insert-declaration-to-dolist-like-form form new-declaration))
   
   (defmethod insert-declaration* ((form-head (eql 'do-external-symbols)) form new-declaration)
-    (insert-declaration-to-do-like-form form new-declaration))
+    (insert-declaration-to-dolist-like-form form new-declaration))
   
   (defmethod insert-declaration* ((form-head (eql 'do-symbols)) form new-declaration)
-    (insert-declaration-to-do-like-form form new-declaration))
+    (insert-declaration-to-dolist-like-form form new-declaration))
   
   (defmethod insert-declaration* ((form-head (eql 'dolist)) form new-declaration)
-    (insert-declaration-to-do-like-form form new-declaration))
+    (insert-declaration-to-dolist-like-form form new-declaration))
   
   (defmethod insert-declaration* ((form-head (eql 'dotimes)) form new-declaration)
-    (insert-declaration-to-do-like-form form new-declaration))
+    (insert-declaration-to-dolist-like-form form new-declaration))
 
   (defun insert-declaration-to-let-like-form (form new-declaration)
     ;; syntax: (op (&rest bindings) &body body)
