@@ -27,9 +27,7 @@
                with-accessors with-slots))))
   
   (defun operator-body-location (name)
-    (if-let ((entry (assoc name *operator-body-location-alist*)))
-      (cdr entry)
-      nil))
+    (cdr (assoc name *operator-body-location-alist*)))
 
   (defparameter *operators-accept-docstring-in-body*
     '(define-compiler-macro define-setf-expander defmacro deftype
@@ -68,7 +66,7 @@
     (if-let ((body-location (operator-body-location form-head)))
       (insert-declaration-to-nth-body body-location form new-declaration
                                       :whole form
-                                      :documentation (body-accept-docstring-p form-head))))
+                                      :documentation (operator-accept-docstring-in-body-p form-head))))
 
   (defmethod insert-declaration* ((form-head (eql 'defgeneric)) form new-declaration)
     (destructuring-bind (op function-name gf-lambda-list &rest option)

@@ -7,6 +7,7 @@
   (defmethod find-name-to-be-defined* ((form-head list) form)
     "Handling the lambda forms. It returns nil."
     (declare (ignorable form-head form))
+    (assert (starts-with 'lambda form-head))
     nil)
 
   (defparameter *function-definiton-form-list*
@@ -25,12 +26,10 @@ first argument is a name to be defined.")
   (defmethod find-name-to-be-defined* ((form-head symbol) form)
     "Called if FORM-HEAD is symbol."
     (if (member form-head *standard-definiton-form-list*)
-        (second form)
-        nil))
+        (second form)))
 
   (defmethod find-name-to-be-defined* ((form-head (eql 'cl:defstruct)) form)
     "A special handling for `defstruct'. Its second form may contain some options."
-    ;; TODO: add support for many options?
     (let ((name-or-options (second form)))
       (etypecase name-or-options
         (symbol name-or-options)
@@ -47,6 +46,10 @@ If FORM is not so, returns nil."
       (otherwise nil))))
 
 
+(define-condition @export-style-warning (at-macro-style-warning)
+  ())
+
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defgeneric expand-@export-1* (form-head form)
     (:documentation "Called by `expand-@export-1' to compute a result."))
@@ -58,9 +61,8 @@ returns (values <expansion> t). If not, returns (values FORM nil)."
       (cond ((listp name)
              (unless (and (member form-head *function-definiton-form-list*)
                           (eq (first name) 'cl:setf))
-               ;; TODO: use our style-warning.
-               (warn "Name ~A looks not-conforming, form is ~A"
-                     name form))
+               (warn '@export-style-warning
+                     :form form :message "Name ~A looks like non-conforming" name))
              (values `(progn (@eval-always (export ',(second name))) 
                              ,form)
                      t))
@@ -70,25 +72,23 @@ returns (values <expansion> t). If not, returns (values FORM nil)."
                      t)))
       (values form nil)))
 
-  (define-condition @export-defsetf-style-warning (at-macro-style-warning)
-    ((operator-name :initarg :operator-name :initform "(not supplied"))
-    (:report
-     (lambda (condition stream)
-       (format stream "Exporting names in ~A should be placed around its non-setf definition."
-               (slot-value 'operator-name condition)))))
+  (defun warning-message-on-defsetf-like (operator)
+    (format nil "Exporting names in ~A should be placed around its non-setf definition." operator))
 
   (defmethod expand-@export-1* :before ((form-head (eql 'cl:defsetf)) form)
     "Say a warning about `defsetf'."
-    (declare (ignorable form))
-    (warn '@export-defsetf-style-warning :operator-name form-head))
+    (warn '@export-style-warning
+          :form form :message (warning-message-on-defsetf-like form-head)))
 
   (defmethod expand-@export-1* :before ((form-head (eql 'cl:define-setf-expander)) form)
     "Say a warning about `define-setf-expander'."
-    (declare (ignorable form))
-    (warn '@export-defsetf-style-warning :operator-name form-head))
+    (warn '@export-style-warning
+          :form form :message (warning-message-on-defsetf-like form-head)))
 
   (defmethod expand-@export-1* ((form-head (eql 'cl:defpackage)) form)
     "A special handling for `defpackage'. It does not define a name as a symbol."
+    (warn '@export-style-warning
+          :form form :message "@export to DEFPACKAGE does not works.")
     (values form nil))
 
   (defun expand-@export-1 (form)
@@ -96,7 +96,7 @@ returns (values <expansion> t). If not, returns (values FORM nil)."
 If expansion successed, returns (values <expansion> t).
 If failed, returns (values FORM nil)."
     (typecase form
-      (symbol (values form nil)) ; It may be a symbol macro, it is called by the caller.
+      (symbol (values form nil)) ; It may be a symbol macro, which is expanded by `@export'.
       (cons (expand-@export-1* (first form) form))
       (otherwise (values form nil)))))
 

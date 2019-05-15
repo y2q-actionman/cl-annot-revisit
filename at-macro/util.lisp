@@ -31,8 +31,12 @@ see N-th value as a condition."
 
 
 (define-condition at-macro-style-warning (style-warning)
-  ()
-  (:documentation "Signaled if some bad styles are found."))
+  ((form :initarg :form)
+   (message :initarg :message :initform nil))
+  (:documentation "Signaled if some bad styles are found.")
+  (:report
+   (lambda (condition stream)
+     (princ (slot-value condition 'message) stream))))
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
