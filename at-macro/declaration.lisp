@@ -1,12 +1,7 @@
 (in-package :cl-annot-revisit/at-macro)
 
-;;; Proclamation only
-
-(defmacro @declaration (&rest names)
-  "Just a shorthand of (declaim (declaration ...))"
-  `(declaim (declaration ,@names)))
-
-;;; Declaration only
+(define-condition at-declaration-style-warning (at-macro-style-warning)
+  ())
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter *operator-body-location-alist*
@@ -38,47 +33,49 @@
     (member name *operators-accept-docstring-in-body*))
 
   
-  (defun insert-declaration-to-body (form-body new-declaration &key documentation whole)
+  (defun insert-declaration-to-body (form-body decl-specifier &key documentation whole)
     (multiple-value-bind (body decls doc)
         (parse-body form-body :documentation documentation :whole whole)
-      `(,new-declaration
+      `((declare ,decl-specifier)
         ,@decls
         ,@(if doc `(,doc)) 
         ,@body)))
 
-  (defun insert-declaration-to-nth-body (body-index form new-declaration &key documentation whole)
+  (defun insert-declaration-to-nth-body (body-index form decl-specifier &key documentation whole)
     (let* ((body (nthcdr body-index form))
            (head (ldiff form body)))
       `(,@head
-        ,@(insert-declaration-to-body body new-declaration
+        ,@(insert-declaration-to-body body decl-specifier
                                       :documentation documentation :whole whole))))
 
 
-  (defgeneric insert-declaration* (form-head form new-declaration)
-    (:documentation "Called by `insert-declaration' to insert NEW-DECLARATION into FORM.")
-    (:method (form-head form new-declaration)
+  (defgeneric insert-declaration-1* (form-head form decl-specifier)
+    (:documentation "Called by `insert-declaration-1' to insert DECL-SPECIFIER into FORM.
+If FORM can be expanded, returns its expansion. If not, returns nil.")
+    (:method (form-head form decl-specifier)
       "The bottom case, returns nil."
-      (declare (ignore form-head form new-declaration))
+      (declare (ignore form-head form decl-specifier))
       nil))
 
-  (defmethod insert-declaration* ((form-head symbol) form new-declaration)
+  (defmethod insert-declaration-1* ((form-head symbol) form decl-specifier)
     "General case."
     (if-let ((body-location (operator-body-location form-head)))
-      (insert-declaration-to-nth-body body-location form new-declaration
-                                      :whole form
-                                      :documentation (operator-accept-docstring-in-body-p form-head))))
+      (insert-declaration-to-nth-body body-location form decl-specifier
+                                      :documentation (operator-accept-docstring-in-body-p form-head)
+                                      :whole form)))
 
-  (defmethod insert-declaration* ((form-head (eql 'defgeneric)) form new-declaration)
+  (defmethod insert-declaration-1* ((form-head (eql 'defgeneric)) form decl-specifier)
     (destructuring-bind (op function-name gf-lambda-list &rest option)
         form
-      `(,op ,function-name ,gf-lambda-list ,new-declaration ,@option)))
+      `(,op ,function-name ,gf-lambda-list (declare ,decl-specifier) ,@option)))
 
-  (defmethod insert-declaration* ((form-head (eql 'define-method-combination))
-                                  form new-declaration)
+  (defmethod insert-declaration-1* ((form-head (eql 'define-method-combination)) form decl-specifier)
     (if (<= (length form) 3)
-        (values form nil) ; The short-form of `define-method-combination' doesn't take declarations.
-        (destructuring-bind
-            (op name lambda-list (&rest method-group-specifier) &rest rest) form
+        (warn 'at-declaration-style-warning
+              :message "The short-form of `define-method-combination' doesn't take declarations."
+              :form form)
+        (destructuring-bind (op name lambda-list (&rest method-group-specifier) &rest rest)
+            form
           (let (options)
             (when (starts-with :arguments (first rest))
               (push (pop rest) options))
@@ -87,59 +84,76 @@
             (nreversef options)
             `(,op ,name ,lambda-list (,@method-group-specifier)
                   ,@options
-                  ,@(insert-declaration-to-body rest new-declaration
+                  ,@(insert-declaration-to-body rest decl-specifier
                                                 :whole form :documentation t))))))
 
-  (defmethod insert-declaration* ((form-head (eql 'defmethod)) form new-declaration)
+  (defmethod insert-declaration-1* ((form-head (eql 'defmethod)) form decl-specifier)
     (destructuring-bind (op name &rest rest) form
       (let* ((method-qualifier (if (not (listp (first rest)))
                                    (pop rest)))
              (lambda-list (pop rest)))
         `(,op ,name ,@(if method-qualifier `(,method-qualifier)) ,lambda-list
-              ,@(insert-declaration-to-body rest new-declaration
+              ,@(insert-declaration-to-body rest decl-specifier
                                             :whole form :documentation t)))))
 
-  (defmethod insert-declaration* ((form-head (eql 'defsetf)) form new-declaration)
+  (defmethod insert-declaration-1* ((form-head (eql 'defsetf)) form decl-specifier)
     (if (or (<= (length form) 3)
             (stringp (fourth form)))
-        (values form nil) ; The short-form of `defsetf' does not take declarations.
-        ;; syntax: (op name lambda-list (&rest store-variable) &body body)
-        (insert-declaration-to-nth-body 4 form new-declaration :whole form :documentation t)))
+        (warn 'at-declaration-style-warning
+              :message "The short-form of `defsetf' does not take declarations."
+              :form form)
+        (insert-declaration-to-nth-body 4 form decl-specifier :whole form :documentation t)))
 
   ;; TODO: say warnings about local declarations:
-  ;; about `flet', `labels', `macrolet', `hander-case', `restart-case'.
-  
-  ;; TODO: support `declaim'?
-  ;; TODO: support `proclaim'?
-  
+  ;; about `flet', `labels', `macrolet', `handler-case', `restart-case'.
 
-  (defun insert-declaration (form new-declaration)
-    "Insert NEW-DECLARATION into FORM.
+  ;; They are easy, but are they meaningful?
+  ;;   (@inline (func-a) (declaim)) ; => (declaim (inline func-a))
+  (defmethod insert-declaration-1* ((form-head (eql 'declaim)) form decl-specifier)
+    `(,form-head ,decl-specifier ,@(rest form)))
+
+  (defmethod insert-declaration-1* ((form-head (eql 'proclaim)) form decl-specifier)
+    `(,form-head ,decl-specifier ,@(rest form)))
+
+
+  (defun insert-declaration-1 (form decl-specifier)
+    "Insert DECL-SPECIFIER into FORM.
 If expansion successed, returns (values <expansion> t).
 If failed, returns (values <original-form> nil)."
-    (assert (starts-with 'declare new-declaration))
-    (check-type form list)      ; fixme: What to do if a symbol-macro?
-    (if-let ((expansion (insert-declaration* (first form) form new-declaration)))
-      (values expansion t)
-      (values form nil))))
+    (typecase form
+      (cons
+       (if-let ((expansion (insert-declaration-1* (first form) form decl-specifier)))
+         (values expansion t)
+         (values form nil)))
+      (otherwise (values form nil)))))
+
+
+;;; Proclamation only
+
+(defmacro @declaration (&rest names)
+  "Just a shorthand of (declaim (declaration ...))"
+  `(declaim (declaration ,@names)))
+
+;;; Declaration only
 
 (defmacro @ignore (variables &body forms &environment env)
   "If BODY is a form accepts declarations, adds `ignore' declaration into it.
-If BODY is nil, it is expanded to (declare (ignore ...)), this is intended to embed as a declaration using '#.'"
-  (let ((new-decl `(declare (ignore ,@(ensure-list variables)))))
+If BODY is nil, it is expanded to (declare (ignore ...)), this is intended to embed it as a declaration using '#.'"
+  (let ((recursive-head `(@ignore ,variables))
+        (new-decl `(ignore ,@(ensure-list variables))))
     (cond
       ((not forms)
-       `',new-decl)
+       `'(declare ,new-decl))
       ((not (length= 1 forms))          ; recursive expansion
-       `(progn ,@(add-to-all-heads '@ignore forms)))
+       `(progn ,@(apply-to-all-forms recursive-head forms)))
       (t
        (let ((form (first forms)))
          (mv-cond-let2 (expansion expanded-p)
-           ((insert-declaration form new-decl)) ; try known expansions.
-           ;; FIXME: I must pass `(@ignore ,variables)
-           ;; ((apply-to-special-form-1 '@export form)) ; try recursive expansion.
+           ((insert-declaration-1 form new-decl)) ; try known expansions.
+           ((apply-to-special-form-1 recursive-head form)) ; try recursive expansion.
            ((macroexpand-1 form env))   ; try `macroexpand-1'.
-           (t                     ; nothing to do. return FORM itself.
+           (t
             (values form nil))))))))
+;; TODO: FIXME: wrap multiple forms into `locally'?
 
 ;; FIXME: what is '@type' and `the'?
