@@ -86,7 +86,7 @@ returns the expansion of FORM. If not, returns nil."
   (defmethod expand-@export-1* ((form-head (eql 'cl:defpackage)) form)
     "A special handling for `defpackage'. It does not define a name as a symbol."
     (warn '@export-style-warning
-          :form form :message "@export to DEFPACKAGE does not works.")
+          :form form :message "@export does not works on DEFPACKAGE.")
     nil)
 
   (defun expand-@export-1 (form)
