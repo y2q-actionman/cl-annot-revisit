@@ -74,12 +74,10 @@ returns the expansion of FORM. If not, returns nil."
     (format nil "Exporting names in ~A should be placed around its non-setf definition." operator))
 
   (defmethod expand-@export-1* :before ((form-head (eql 'cl:defsetf)) form)
-    "Say a warning about `defsetf'."
     (warn '@export-style-warning
           :form form :message (warning-message-on-defsetf-like form-head)))
 
   (defmethod expand-@export-1* :before ((form-head (eql 'cl:define-setf-expander)) form)
-    "Say a warning about `define-setf-expander'."
     (warn '@export-style-warning
           :form form :message (warning-message-on-defsetf-like form-head)))
 

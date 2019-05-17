@@ -32,6 +32,13 @@
   (defun operator-accept-docstring-in-body-p (name)
     (member name *operators-accept-docstring-in-body*))
 
+  (defparameter *operators-take-local-declaration*
+    '(flet labels macrolet handler-case restart-case)
+    "List of operators may take local declarations.")
+
+  (defun operator-take-local-declaration-p (name)
+    (member name *operators-take-local-declaration*))
+
   
   (defun insert-declaration-to-body (form-body decl-specifier &key documentation whole)
     (multiple-value-bind (body decls doc)
@@ -56,6 +63,14 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
       "The bottom case, returns nil."
       (declare (ignore form-head form decl-specifier))
       nil))
+
+  (defmethod insert-declaration-1* :before ((form-head symbol) form decl-specifier)
+    (declare (ignore decl-specifier))         
+    (when (operator-take-local-declaration-p form-head)
+      (warn 'at-declaration-style-warning
+            :message (format nil "Adding declarations into ~A form does not works for local declarations"
+                             form-head) 
+            :form form)))
 
   (defmethod insert-declaration-1* ((form-head symbol) form decl-specifier)
     "General case."
@@ -103,9 +118,6 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
               :message "The short-form of `defsetf' does not take declarations."
               :form form)
         (insert-declaration-to-nth-body 4 form decl-specifier :whole form :documentation t)))
-
-  ;; TODO: say warnings about local declarations:
-  ;; about `flet', `labels', `macrolet', `handler-case', `restart-case'.
 
   ;; They are easy, but are they meaningful?
   ;;   (@inline (func-a) (declaim)) ; => (declaim (inline func-a))
