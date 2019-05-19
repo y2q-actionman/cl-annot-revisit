@@ -111,7 +111,8 @@ If failed, returns (values FORM nil)."
        (mv-cond-let2 (expansion expanded-p)
          ((expand-@export-1 form)) ; try known expansions.
          ((apply-to-special-form-1 '(@export) form)) ; try recursive expansion.
-         ((macroexpand-1 form env))             ; try `macroexpand-1'.
+         ((macroexpand-1 form env)      ; try `macroexpand-1'.
+          `(values (@export ,@expansion) t))
          (t                       ; nothing to do. return FORM itself.
           (values form nil)))))))
 

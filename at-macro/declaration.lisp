@@ -140,32 +140,58 @@ If failed, returns (values <original-form> nil)."
       (otherwise (values form nil)))))
 
 
-;;; Proclamation only
+;;; Proclamation only -- `declaration'.
 
 (defmacro @declaration (&rest names)
   "Just a shorthand of (declaim (declaration ...))"
   `(declaim (declaration ,@names)))
 
-;;; Declaration only
+;;; Declaration only -- `ignore', `ignorable', `dynamic-extent'
 
-(defmacro @ignore (variables &body forms &environment env)
-  "If BODY is a form accepts declarations, adds `ignore' declaration into it.
-If BODY is nil, it is expanded to (declare (ignore ...)), this is intended to embed it as a declaration using '#.'"
-  (let ((recursive-head `(@ignore ,variables))
-        (new-decl `(ignore ,@(ensure-list variables))))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun expand-declaration (new-decl form-head forms environment)
+    "If BODY is a form accepts declarations, adds a declaration NEW-DECL into it.
+If BODY is nil, it is expanded to (declare NEW-DECL), this is intended to embed it as a declaration using '#.'"
     (cond
       ((not forms)
        `'(declare ,new-decl))
-      ((not (length= 1 forms))          ; recursive expansion
-       `(progn ,@(apply-to-all-forms recursive-head forms)))
+      ((not (length= 1 forms))            ; recursive expansion
+       `(progn ,@(apply-to-all-forms form-head forms)))
       (t
        (let ((form (first forms)))
          (mv-cond-let2 (expansion expanded-p)
            ((insert-declaration-1 form new-decl)) ; try known expansions.
-           ((apply-to-special-form-1 recursive-head form)) ; try recursive expansion.
-           ((macroexpand-1 form env))   ; try `macroexpand-1'.
+           ((apply-to-special-form-1 form-head form)) ; try recursive expansion.
+           ((macroexpand-1 form environment) ; try `macroexpand-1'.
+            `(values (,@form-head ,@expansion) t))
            (t
             (values form nil))))))))
+
+(defmacro @ignore (variables &body forms &environment env)
+  "If BODY is a form accepts declarations, adds `ignore' declaration into it.
+If BODY is nil, it is expanded to (declare (ignore ...)), this is intended to embed it as a declaration using '#.'"
+  (expand-declaration `(ignore ,@(ensure-list variables))
+                      `(@ignore ,variables)
+                      forms env))
+
+(defmacro @ignorable (variables &body forms &environment env)
+  "If BODY is a form accepts declarations, adds `ignorable' declaration into it.
+If BODY is nil, it is expanded to (declare (ignorable ...)), this is intended to embed it as a declaration using '#.'"
+  (expand-declaration `(ignorable ,@(ensure-list variables))
+                      `(@ignorable ,variables)
+                      forms env))
+
+(defmacro @dynamic-extent (variables &body forms &environment env)
+  "If BODY is a form accepts declarations, adds `dynamic-extent' declaration into it.
+If BODY is nil, it is expanded to (declare (dynamic-extent ...)), this is intended to embed it as a declaration using '#.'"
+  (expand-declaration `(dynamic-extent ,@(ensure-list variables))
+                      `(@dynamic-extent ,variables)
+                      forms env))
+
+;;; Declaration and proclamation -- `type', `inline', `notinline', `ftype', `optimize', `special'
+
 ;; TODO: FIXME: wrap multiple forms into `locally'?
 
 ;; FIXME: what is '@type' and `the'?
+
+

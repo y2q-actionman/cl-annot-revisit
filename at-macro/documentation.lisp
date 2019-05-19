@@ -33,7 +33,7 @@ If insertion successed, returns (values <expansion> t).
 If failed, returns (values <original-form> nil)."
     (typecase form
       (cons
-       (if-let ((expansion (insert-declaration-1* (first form) form decl-specifier)))
+       (if-let ((expansion (insert-documentation-1* (first form) form docstring)))
          (values expansion t)
          (values form nil)))
       (otherwise (values form nil)))))
