@@ -2,7 +2,7 @@
 
 (test test-decl-declararion
   (is (equal
-       (macroexpand-1 '(@declaration hoge fuga))
+       (macroexpand-1 '(@declaration (hoge fuga)))
        '(declaim (declaration hoge fuga))))
   ;; A test for the standard Common Lisp.
   ;; This is malformed, because `declaration' is only for proclamation.

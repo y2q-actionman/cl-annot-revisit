@@ -56,32 +56,37 @@
                                       :documentation documentation :whole whole))))
 
 
-  (defgeneric insert-declaration-1* (form-head form decl-specifier)
+  (defgeneric insert-declaration-1* (operator declaration form decl-specifier)
     (:documentation "Called by `insert-declaration-1' to insert DECL-SPECIFIER into FORM.
 If FORM can be expanded, returns its expansion. If not, returns nil.")
-    (:method (form-head form decl-specifier)
+    (:method (operator declaration form decl-specifier)
       "The bottom case, returns nil."
-      (declare (ignore form-head form decl-specifier))
+      (declare (ignore operator declaration form decl-specifier))
       nil))
 
-  (defmethod insert-declaration-1* ((form-head symbol) form decl-specifier)
+  (defmethod insert-declaration-1* ((operator symbol) declaration form decl-specifier)
     "General case."
-    (when (operator-take-local-declaration-p form-head)
+    (when (operator-take-local-declaration-p operator)
       (warn 'at-declaration-style-warning
             :message (format nil "Adding declarations into ~A form does not works for local declarations"
-                             form-head) 
+                             operator) 
             :form form))
-    (if-let ((body-location (operator-body-location form-head)))
+    (if-let ((body-location (operator-body-location operator)))
       (insert-declaration-to-nth-body body-location form decl-specifier
-                                      :documentation (operator-accept-docstring-in-body-p form-head)
+                                      :documentation (operator-accept-docstring-in-body-p operator)
                                       :whole form)))
 
-  (defmethod insert-declaration-1* ((form-head (eql 'defgeneric)) form decl-specifier)
+  (defmethod insert-declaration-1* ((operator (eql 'defgeneric)) (declaration (eql 'optimize))
+                                    form decl-specifier)
+    "`defgeneric' accepts only `optimize' declarations."
     (destructuring-bind (op function-name gf-lambda-list &rest option)
         form
       `(,op ,function-name ,gf-lambda-list (declare ,decl-specifier) ,@option)))
 
-  (defmethod insert-declaration-1* ((form-head (eql 'define-method-combination)) form decl-specifier)
+  (defmethod insert-declaration-1* ((operator (eql 'defgeneric)) declaration form decl-specifier)
+    nil)
+
+  (defmethod insert-declaration-1* ((operator (eql 'define-method-combination)) declaration form decl-specifier)
     (if (<= (length form) 3)
         (warn 'at-declaration-style-warning
               :message "The short-form of `define-method-combination' doesn't take declarations."
@@ -99,7 +104,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
                   ,@(insert-declaration-to-body rest decl-specifier
                                                 :whole form :documentation t))))))
 
-  (defmethod insert-declaration-1* ((form-head (eql 'defmethod)) form decl-specifier)
+  (defmethod insert-declaration-1* ((operator (eql 'defmethod)) declaration form decl-specifier)
     (destructuring-bind (op name &rest rest) form
       (let* ((method-qualifier (if (not (listp (first rest)))
                                    (pop rest)))
@@ -108,7 +113,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
               ,@(insert-declaration-to-body rest decl-specifier
                                             :whole form :documentation t)))))
 
-  (defmethod insert-declaration-1* ((form-head (eql 'defsetf)) form decl-specifier)
+  (defmethod insert-declaration-1* ((operator (eql 'defsetf)) declaration form decl-specifier)
     (if (or (<= (length form) 3)
             (stringp (fourth form)))
         (warn 'at-declaration-style-warning
@@ -116,13 +121,14 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
               :form form)
         (insert-declaration-to-nth-body 4 form decl-specifier :whole form :documentation t)))
 
-  ;; They are easy, but are they meaningful?
-  ;;   (@inline (func-a) (declaim)) ; => (declaim (inline func-a))
-  (defmethod insert-declaration-1* ((form-head (eql 'declaim)) form decl-specifier)
-    `(,form-head ,decl-specifier ,@(rest form)))
+  (defmethod insert-declaration-1* ((operator (eql 'defconstant)) (declaration (eql 'special))
+                                    form decl-specifier)
+    "Special handlings for `defconstant'. I think `special' simply not needed."
+    form)
+  ;; Should I add similar rule for `defvar' and `defparameter'?
 
-  (defmethod insert-declaration-1* ((form-head (eql 'proclaim)) form decl-specifier)
-    `(,form-head ,decl-specifier ,@(rest form)))
+  ;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
+  ;;   (@inline (func-a) (declaim)) ; => (declaim (inline func-a))
 
 
   (defun insert-declaration-1 (form decl-specifier)
@@ -131,7 +137,8 @@ If expansion successed, returns (values <expansion> t).
 If failed, returns (values <original-form> nil)."
     (typecase form
       (cons
-       (if-let ((expansion (insert-declaration-1* (first form) form decl-specifier)))
+       (if-let ((expansion (insert-declaration-1* (first form) (first decl-specifier)
+                                                  form decl-specifier)))
          (values expansion t)
          (values form nil)))
       (otherwise (values form nil)))))
