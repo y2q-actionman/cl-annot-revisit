@@ -112,8 +112,8 @@ If failed, returns (values FORM nil)."
          ((expand-@export-1 form)) ; try known expansions.
          ((apply-to-special-form-1 '(@export) form)) ; try recursive expansion.
          ((macroexpand-1 form env)      ; try `macroexpand-1'.
-          `(values (@export ,@expansion) t))
+          `(@export ,@expansion))
          (t                       ; nothing to do. return FORM itself.
-          (values form nil)))))))
+          form))))))
 
 ;;; TODO: support `restart-case'?
