@@ -137,88 +137,103 @@ If failed, returns (values <original-form> nil)."
       (otherwise (values form nil)))))
 
 
-;;; Proclamation only -- `declaration'.
+(defmacro @add-declaration (decl-specifier &body body &environment env)
+  "Used by at-macros of declarations for processing recursive expansion.
+If BODY is a form accepts declarations, adds a DECL-SPECIFIER into it.
+If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
+  (let ((at-macro-form `(@add-declaration-internal ,decl-specifier)))
+    (cond
+      ((not body)
+       nil)
+      ((not (length= 1 body))           ; recursive expansion
+       `(progn ,@(apply-to-all-forms at-macro-form body)))
+      (t
+       (let ((form (first body)))
+         (mv-cond-let2 (expansion expanded-p)
+           ((insert-declaration-1 form decl-specifier)) ; try known expansions.
+           ((apply-to-special-form-1 at-macro-form form)) ; try recursive expansion.
+           ((macroexpand-1 form env) ; try `macroexpand-1'.
+            `(,@at-macro-form ,expansion))
+           (t
+            `(locally (declare ,decl-specifier)
+               ,form))))))))
 
-(defmacro @declaration (&rest names)
-  "Just a shorthand of (declaim (declaration ...))"
-  `(declaim (declaration ,@names)))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun expand-at-declaration (new-decl add-declaim-p body)
+    "If BODY is a form accepts declarations, adds a declaration NEW-DECL into it.
+If BODY is nil, it is expanded to '(declare NEW-DECL), this is intended to embed it as a declaration using '#.'"
+    (cond
+      (body
+       `(@add-declaration-internal ,new-decl ,@body))
+      (add-declaim-p
+       `(progn (declaim ,new-decl)
+               '(declare ,new-decl)))   ; For '#.' combination.
+      (t
+       `'(declare ,new-decl)))))        ; For '#.' combination.
 
 ;;; Declaration only -- `ignore', `ignorable', `dynamic-extent'
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *insert-declaration-not-successed*)
-  
-  (defun expand-declaration-internal (new-decl at-macro-form forms environment)
-    "If BODY is a form accepts declarations, adds a declaration NEW-DECL into it."
-    (cond
-      ((not forms)
-       nil)
-      ((not (length= 1 forms))          ; recursive expansion
-       `(progn ,@(apply-to-all-forms at-macro-form forms)))
-      (t
-       (let ((form (first forms)))
-         (mv-cond-let2 (expansion expanded-p)
-           ((insert-declaration-1 form new-decl)) ; try known expansions.
-           ((apply-to-special-form-1 at-macro-form form)) ; try recursive expansion.
-           ((macroexpand-1 form environment) ; try `macroexpand-1'.
-            `(,@at-macro-form ,expansion))
-           (t
-            (incf *insert-declaration-not-successed*)
-            form))))))
-  
-  (defun expand-declaration (new-decl add-declaim-p forms environment)
-    "If BODY is a form accepts declarations, adds a declaration NEW-DECL into it.
-If BODY is nil, it is expanded to '(declare NEW-DECL), this is intended to embed it as a declaration using '#.'"
-    (let ((at-macro-form `(@add-declaration-internal ,new-decl)))
-      (if (not forms)
-          ;; For '#.' combination.
-          (if add-declaim-p
-              `(progn (declaim ,new-decl)
-                      '(declare ,new-decl))
-              `'(declare ,new-decl))
-          (let* ((*insert-declaration-not-successed* 0)
-                 (next-form `(,@at-macro-form ,@forms))
-                 (expanded (macroexpand next-form environment))) ; TODO: use macroexpand-all
-            ;; If one form doesn't accept declaration, `declaim' or `locally' is needed.
-            (if (plusp *insert-declaration-not-successed*)
-                `(locally (declare ,new-decl)
-                   ,@(when add-declaim-p
-                       `((declaim ,new-decl)))
-                   ,expanded)
-                expanded))))))
-
-(defmacro @add-declaration-internal (decl-specifier &body forms &environment env)
-  "Used by at-macros for processing recursive expansion."
-  (expand-declaration-internal decl-specifier
-                               `(@add-declaration-internal ,decl-specifier)
-                               forms env))
-
-(defmacro @ignore (variables &body forms &environment env)
-  "If BODY is a form accepts declarations, adds `ignore' declaration into it.
+(defmacro @ignore (variables &body body)
+  "Adds `ignore' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (ignore ...)), this is intended to embed it as a declaration using '#.'"
-  (let ((decl `(ignore ,@(ensure-list variables))))
-    (expand-declaration decl nil forms env)))
+  (expand-at-declaration `(ignore ,@(ensure-list variables)) nil body))
 
-(defmacro @ignorable (variables &body forms &environment env)
-  "If BODY is a form accepts declarations, adds `ignorable' declaration into it.
+(defmacro @ignorable (variables &body body)
+  "Adds `ignorable' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (ignorable ...)), this is intended to embed it as a declaration using '#.'"
-  (let ((decl `(ignorable ,@(ensure-list variables))))
-    (expand-declaration decl nil forms env)))
+  (expand-at-declaration `(ignorable ,@(ensure-list variables)) nil body))
 
-(defmacro @dynamic-extent (variables &body forms &environment env)
-  "If BODY is a form accepts declarations, adds `dynamic-extent' declaration into it.
+(defmacro @dynamic-extent (variables &body body)
+  "Adds `dynamic-extent' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (dynamic-extent ...)), this is intended to embed it as a declaration using '#.'"
-  (let ((decl `(dynamic-extent ,@(ensure-list variables))))
-    (expand-declaration decl nil forms env)))
+  (expand-at-declaration `(dynamic-extent ,@(ensure-list variables)) nil body))
 
-;;; Declaration and proclamation -- `type', `inline', `notinline', `ftype', `optimize', `special'
+;;; Declaration and proclamation -- `type', `ftype', `inline', `notinline', `optimize', `special'
 
-(defmacro @special (variables &body forms &environment env)
-  "If BODY is a form accepts declarations, adds `special' declaration into it.
-If BODY is nil, it is expanded to '(declare (special ...)), this is intended to embed it as a declaration using '#.'"
-  (let ((decl `(special ,@(ensure-list variables))))
-    (expand-declaration decl t forms env)))
+(defmacro @special (variables &body body)
+  "Adds `special' declaration into BODY.
+If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), this is intended to embed it as a declaration using '#.'"
+  (expand-at-declaration `(special ,@(ensure-list variables)) t body))
 
-;; TODO: FIXME: wrap multiple forms into `locally'?
+(defmacro @optimize (qualities &body body)
+  "Adds `optimize' declaration into BODY.
+If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this is intended to embed it as a declaration using '#.'"
+  (expand-at-declaration `(qualities ,@(ensure-list qualities)) t body))
 
-;; FIXME: what is '@type' and `the'?
+
+
+;;; TODO: `type', `ftype', `inline', `notinline'
+
+
+;;; Proclamation only -- `declaration'.
+
+(defmacro @declaration ((&rest names))
+  "Just a shorthand of (declaim (declaration ...))"
+  `(declaim (declaration ,@names)))
+
+
+
+
+;;; FIXME: what is '@type' and `the'?
+#|
+
+at decl の locally 展開は要らない？
+　関数呼び出しなら当然いらない
+　special form は個別に拾っている…はず。if, multiple-value-call,progv にやってもいい気もするが、余計なお世話か
+…と思ったが、internalなformのことを忘れていた。やはり必要そう。下と同じ。
+
+両方使えるものは、トップレベルでみて自明じゃなければdeclaimとも思うが、@のネストをいい感じにしたいと考えると真面目に扱うべき。
+トップレベルで見えたform全てにapplyされれば良いこととする。 apply 数を数える？
+展開して複数箇所に効くようになった場合、も考慮。
+
+単純？
+　展開に成功したら t に設定する変数を用意しとく。
+　各formをmacroexpand-allし、一つでも上の変数がtにならなければ、一番最初にdeclaimする。
+　locallyでも囲う。
+　toplevel progn だけは数の不整合が気になる。展開したげるか。
+
+@type は、 the との関係が不明瞭
+
+declaimについて。inline用の規約と同様、引数なしなら declaim展開でいい気がしてきた。
+他はlocallyをいつも。
+|#
