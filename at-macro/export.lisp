@@ -112,7 +112,7 @@ If failed, returns (values FORM nil)."
          ((expand-@export-1 form)) ; try known expansions.
          ((apply-to-special-form-1 '(@export) form)) ; try recursive expansion.
          ((macroexpand-1 form env)      ; try `macroexpand-1'.
-          `(@export ,@expansion))
+          `(@export ,expansion))
          (t                       ; nothing to do. return FORM itself.
           form))))))
 
