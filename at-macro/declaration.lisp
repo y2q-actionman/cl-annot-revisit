@@ -163,16 +163,15 @@ If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
 ;;; Declaration only -- `ignore', `ignorable', `dynamic-extent'
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun ensure-declaration-name-list (names)
-    "Do like `ensure-list' except seeing '(function name)' syntax."
-    (if (or (symbolp names)
-            (and (consp names)
-                 (starts-with 'function names))) ; function name syntax
-        (list names)
-        names))
-  
   (defun expand-local-declaration (decl-name names body)
-    (let ((new-decl `(,decl-name ,@(ensure-declaration-name-list names))))
+    (let* ((names-list
+            ;; Do like `ensure-list' except seeing '(function name)' syntax.
+            (if (or (symbolp names)
+                    (and (consp names)
+                         (starts-with 'function names)))
+                (list names)
+                names))
+           (new-decl `(,decl-name ,@names-list)))
       (if body
           `(@add-declaration-internal ,new-decl ,@body)
           `'(declare ,new-decl)))))
@@ -201,12 +200,26 @@ If BODY is nil, it is expanded to `declaim' and '(declare NEW-DECL), this is int
     (if body
         `(@add-declaration-internal ,new-decl ,@body)
         `(progn (declaim ,new-decl)
-               '(declare ,new-decl)))))
+                '(declare ,new-decl)))))
+
+(define-constant +standard-optimize-qualities+
+    '(compilation-speed debug safety space speed)
+  :test 'equal)
 
 (defmacro @optimize (qualities &body body)
   "Adds `optimize' declaration into BODY.
 If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this is intended to embed it as a declaration using '#.'"
-  (expand-declaration-and-proclamation `(optimize ,@(ensure-list qualities)) body))
+  (let ((qualities-list
+         (if (or (symbolp qualities)
+                 (and (consp qualities)
+                      ;; There may be implementation-dependent switch. I try to match loosely.
+                      (symbolp (first qualities))
+                      ;; Treating like '(optimize . (speed (safety 3)))'.
+                      (not (and (member (first qualities) +standard-optimize-qualities+)
+                                (not (integerp (second qualities)))))))
+             (list qualities)
+             qualities)))
+    (expand-declaration-and-proclamation `(optimize ,@qualities-list) body)))
 
 (defmacro @special (variables &body body) ; FIXME
   "Adds `special' declaration into BODY.
