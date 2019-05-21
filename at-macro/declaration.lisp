@@ -202,10 +202,6 @@ If BODY is nil, it is expanded to `declaim' and '(declare NEW-DECL), this is int
         `(progn (declaim ,new-decl)
                 '(declare ,new-decl)))))
 
-(define-constant +standard-optimize-qualities+
-    '(compilation-speed debug safety space speed)
-  :test 'equal)
-
 (defmacro @optimize (qualities &body body)
   "Adds `optimize' declaration into BODY.
 If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this is intended to embed it as a declaration using '#.'"
@@ -214,9 +210,7 @@ If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this 
                  (and (consp qualities)
                       ;; There may be implementation-dependent switch. I try to match loosely.
                       (symbolp (first qualities))
-                      ;; Treating like '(optimize . (speed (safety 3)))'.
-                      (not (and (member (first qualities) +standard-optimize-qualities+)
-                                (not (integerp (second qualities)))))))
+                      (every #'atom qualities)))
              (list qualities)
              qualities)))
     (expand-declaration-and-proclamation `(optimize ,@qualities-list) body)))
