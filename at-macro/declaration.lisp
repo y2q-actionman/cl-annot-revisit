@@ -163,33 +163,41 @@ If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
 ;;; Declaration only -- `ignore', `ignorable', `dynamic-extent'
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun expand-local-declaration (decl-name variables body)
-    (let ((new-decl `(,decl-name ,@(ensure-list variables))))
+  (defun ensure-declaration-name-list (names)
+    "Do like `ensure-list' except seeing '(function name)' syntax."
+    (if (or (symbolp names)
+            (and (consp names)
+                 (starts-with 'function names))) ; function name syntax
+        (list names)
+        names))
+  
+  (defun expand-local-declaration (decl-name names body)
+    (let ((new-decl `(,decl-name ,@(ensure-declaration-name-list names))))
       (if body
           `(@add-declaration-internal ,new-decl ,@body)
           `'(declare ,new-decl)))))
 
-(defmacro @ignore (variables &body body)
+(defmacro @ignore (names &body body)
   "Adds `ignore' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (ignore ...)), this is intended to embed it as a declaration using '#.'"
-  (expand-local-declaration 'ignore variables body))
+  (expand-local-declaration 'ignore names body))
 
-(defmacro @ignorable (variables &body body)
+(defmacro @ignorable (names &body body)
   "Adds `ignorable' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (ignorable ...)), this is intended to embed it as a declaration using '#.'"
-  (expand-local-declaration 'ignorable variables body))
+  (expand-local-declaration 'ignorable names body))
 
-(defmacro @dynamic-extent (variables &body body)
+(defmacro @dynamic-extent (names &body body)
   "Adds `dynamic-extent' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (dynamic-extent ...)), this is intended to embed it as a declaration using '#.'"
-  (expand-local-declaration 'dynamic-extent variables body))
+  (expand-local-declaration 'dynamic-extent names body))
 
 ;;; Declaration and proclamation -- `type', `ftype', `inline', `notinline', `optimize', `special'
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun expand-declaration-and-proclamation (new-decl body)
     "If BODY is a form accepts declarations, adds a declaration NEW-DECL into it.
-If BODY is nil, it is expanded to '(declare NEW-DECL), this is intended to embed it as a declaration using '#.'"
+If BODY is nil, it is expanded to `declaim' and '(declare NEW-DECL), this is intended to embed it as a declaration using '#.'"
     (if body
         `(@add-declaration-internal ,new-decl ,@body)
         `(progn (declaim ,new-decl)
