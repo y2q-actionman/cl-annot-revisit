@@ -8,18 +8,18 @@
     (append '((locally . 1))
             (mapcar
              (lambda (op) (cons op 2))
-             '(with-hash-table-iterator with-package-iterator
-               flet labals let let* macrolet prog prog* symbol-macrolet ; let-like
-               do-all-symbols do-external-symbols do-symbols dolist dotimes ; dolist-like
-               lambda pprint-logical-block
-               with-input-from-string with-open-file with-open-stream with-output-to-string))
+             '(do-all-symbols do-external-symbols do-symbols dolist
+               dotimes flet labals lambda let let* macrolet
+               pprint-logical-block prog prog* symbol-macrolet
+               with-hash-table-iterator with-input-from-string
+               with-open-file with-open-stream with-output-to-string
+               with-package-iterator))
             (mapcar
              (lambda (op) (cons op 3))
-             '(destructuring-bind
-               define-compiler-macro define-setf-expander defmacro deftype defun ; defun-like
-               do do*                   ; do-like
-               multiple-value-bind
-               with-accessors with-slots))))
+             '(define-compiler-macro define-setf-expander defmacro
+               deftype defun destructuring-bind do do*
+               multiple-value-bind with-accessors with-slots)))
+    "Alist of operators which can be treated by our at-macros for declaration.")
   
   (defun operator-body-location (name)
     (cdr (assoc name *operator-body-location-alist*)))
@@ -66,6 +66,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
 
   (defmethod insert-declaration-1* ((operator symbol) declaration form decl-specifier)
     "General case."
+    (declare (ignore declaration))
     (when (operator-take-local-declaration-p operator)
       (warn 'at-declaration-style-warning
             :message (format nil "Adding declarations into ~A form does not works for local declarations"
@@ -83,10 +84,8 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
         form
       `(,op ,function-name ,gf-lambda-list (declare ,decl-specifier) ,@option)))
 
-  (defmethod insert-declaration-1* ((operator (eql 'defgeneric)) declaration form decl-specifier)
-    nil)
-
   (defmethod insert-declaration-1* ((operator (eql 'define-method-combination)) declaration form decl-specifier)
+    (declare (ignore declaration))
     (if (<= (length form) 3)
         (warn 'at-declaration-style-warning
               :message "The short-form of `define-method-combination' doesn't take declarations."
@@ -105,6 +104,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
                                                 :whole form :documentation t))))))
 
   (defmethod insert-declaration-1* ((operator (eql 'defmethod)) declaration form decl-specifier)
+    (declare (ignore declaration))
     (destructuring-bind (op name &rest rest) form
       (let* ((method-qualifier (if (not (listp (first rest)))
                                    (pop rest)))
@@ -114,6 +114,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
                                             :whole form :documentation t)))))
 
   (defmethod insert-declaration-1* ((operator (eql 'defsetf)) declaration form decl-specifier)
+    (declare (ignore declaration))
     (if (or (<= (length form) 3)
             (stringp (fourth form)))
         (warn 'at-declaration-style-warning
@@ -135,7 +136,7 @@ If failed, returns (values <original-form> nil)."
                                                   form decl-specifier)))
          (values expansion t)
          (values form nil)))
-      (otherwise (values form nil)))))
+      (otherwise (values form nil))))) 
 
 
 (defmacro @add-declaration (decl-specifier &body body &environment env)
@@ -159,49 +160,52 @@ If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
             `(locally (declare ,decl-specifier)
                ,form))))))))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun expand-at-declaration (new-decl add-declaim-p body)
-    "If BODY is a form accepts declarations, adds a declaration NEW-DECL into it.
-If BODY is nil, it is expanded to '(declare NEW-DECL), this is intended to embed it as a declaration using '#.'"
-    (cond
-      (body
-       `(@add-declaration-internal ,new-decl ,@body))
-      (add-declaim-p                    ; TODO: FIXME: always add??
-       `(progn (declaim ,new-decl)
-               '(declare ,new-decl)))   ; For '#.' combination.
-      (t
-       `'(declare ,new-decl)))))        ; For '#.' combination.
-
 ;;; Declaration only -- `ignore', `ignorable', `dynamic-extent'
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun expand-local-declaration (decl-name variables body)
+    (let ((new-decl `(,decl-name ,@(ensure-list variables))))
+      (if body
+          `(@add-declaration-internal ,new-decl ,@body)
+          `'(declare ,new-decl)))))
 
 (defmacro @ignore (variables &body body)
   "Adds `ignore' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (ignore ...)), this is intended to embed it as a declaration using '#.'"
-  (expand-at-declaration `(ignore ,@(ensure-list variables)) nil body))
+  (expand-local-declaration 'ignore variables body))
 
 (defmacro @ignorable (variables &body body)
   "Adds `ignorable' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (ignorable ...)), this is intended to embed it as a declaration using '#.'"
-  (expand-at-declaration `(ignorable ,@(ensure-list variables)) nil body))
+  (expand-local-declaration 'ignorable variables body))
 
 (defmacro @dynamic-extent (variables &body body)
   "Adds `dynamic-extent' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (dynamic-extent ...)), this is intended to embed it as a declaration using '#.'"
-  (expand-at-declaration `(dynamic-extent ,@(ensure-list variables)) nil body))
+  (expand-local-declaration 'dynamic-extent variables body))
 
 ;;; Declaration and proclamation -- `type', `ftype', `inline', `notinline', `optimize', `special'
 
-(defmacro @special (variables &body body)
-  "Adds `special' declaration into BODY.
-If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), this is intended to embed it as a declaration using '#.'"
-  (expand-at-declaration `(special ,@(ensure-list variables)) t body))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun expand-declaration-and-proclamation (new-decl body)
+    "If BODY is a form accepts declarations, adds a declaration NEW-DECL into it.
+If BODY is nil, it is expanded to '(declare NEW-DECL), this is intended to embed it as a declaration using '#.'"
+    (if body
+        `(@add-declaration-internal ,new-decl ,@body)
+        `(progn (declaim ,new-decl)
+               '(declare ,new-decl)))))
 
 (defmacro @optimize (qualities &body body)
   "Adds `optimize' declaration into BODY.
 If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this is intended to embed it as a declaration using '#.'"
-  (expand-at-declaration `(optimize ,@(ensure-list qualities)) t body))
+  (expand-declaration-and-proclamation `(optimize ,@(ensure-list qualities)) body))
 
-(defmacro @type (typespec variables &body body)
+(defmacro @special (variables &body body) ; FIXME
+  "Adds `special' declaration into BODY.
+If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), this is intended to embed it as a declaration using '#.'"
+  (expand-declaration-and-proclamation `(special ,@(ensure-list variables)) body))
+
+(defmacro @type (typespec variables &body body) ; FIXME
   (let ((variables
          (if (or (symbolp variables)
                  (find (first variables) *variable-definiton-form-list*))
@@ -222,8 +226,8 @@ If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this 
     (if declaims
         ;; FIXME: pass declaims to body?
         `(progn ,@declaims
-                ,(expand-at-declaration `(type ,typespec ,@var-names) t body))
-        (expand-at-declaration `(type ,typespec ,@var-names) t body))))
+                ,(expand-declaration-and-proclamation `(type ,typespec ,@var-names) body))
+        (expand-declaration-and-proclamation `(type ,typespec ,@var-names) body))))
 
 
 ;;; TODO: `type', `ftype', `inline', `notinline'
