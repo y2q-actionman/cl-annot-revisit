@@ -121,12 +121,6 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
               :form form)
         (insert-declaration-to-nth-body 4 form decl-specifier :whole form :documentation t)))
 
-  (defmethod insert-declaration-1* ((operator (eql 'defconstant)) (declaration (eql 'special))
-                                    form decl-specifier)
-    "Special handlings for `defconstant'. I think `special' simply not needed."
-    form)
-  ;; Should I add similar rule for `defvar' and `defparameter'?
-
   ;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
   ;;   (@inline (func-a) (declaim)) ; => (declaim (inline func-a))
 
@@ -172,7 +166,7 @@ If BODY is nil, it is expanded to '(declare NEW-DECL), this is intended to embed
     (cond
       (body
        `(@add-declaration-internal ,new-decl ,@body))
-      (add-declaim-p
+      (add-declaim-p                    ; TODO: FIXME: always add??
        `(progn (declaim ,new-decl)
                '(declare ,new-decl)))   ; For '#.' combination.
       (t
@@ -205,8 +199,31 @@ If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), this i
 (defmacro @optimize (qualities &body body)
   "Adds `optimize' declaration into BODY.
 If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this is intended to embed it as a declaration using '#.'"
-  (expand-at-declaration `(qualities ,@(ensure-list qualities)) t body))
+  (expand-at-declaration `(optimize ,@(ensure-list qualities)) t body))
 
+(defmacro @type (typespec variables &body body)
+  (let ((variables
+         (if (or (symbolp variables)
+                 (find (first variables) *variable-definiton-form-list*))
+             (list variables)
+             variables))
+        var-names declaims)
+    (loop for v in variables
+       if (and (listp v)
+               (find (first v) *variable-definiton-form-list*)) 
+       do (let ((name (find-name-to-be-defined v)))
+            (push name var-names)
+            (push `(declaim (type ,typespec ,name)) declaims)
+            (push v declaims))
+       else
+       do (push v var-names)
+       finally (nreversef var-names)
+         (nreversef declaims))
+    (if declaims
+        ;; FIXME: pass declaims to body?
+        `(progn ,@declaims
+                ,(expand-at-declaration `(type ,typespec ,@var-names) t body))
+        (expand-at-declaration `(type ,typespec ,@var-names) t body))))
 
 
 ;;; TODO: `type', `ftype', `inline', `notinline'
@@ -217,8 +234,6 @@ If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this 
 (defmacro @declaration ((&rest names))
   "Just a shorthand of (declaim (declaration ...))"
   `(declaim (declaration ,@names)))
-
-
 
 
 ;;; FIXME: what is '@type' and `the'?

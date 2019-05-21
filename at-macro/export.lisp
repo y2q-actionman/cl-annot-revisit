@@ -10,15 +10,21 @@
     (assert (starts-with 'lambda form-head))
     nil)
 
+  (defparameter *variable-definiton-form-list*
+    '( defconstant defparameter defvar)
+    "List of symbols naming a definition form and its
+first argument is a variable name to be defined.")
+  
   (defparameter *function-definiton-form-list*
     '( defgeneric define-compiler-macro defmethod defun)
     "List of symbols naming a definition form and its
 first argument is a function name to be defined.")
   
   (defparameter *standard-definiton-form-list*
-    `( defclass defconstant define-condition define-method-combination
+    `( defclass define-condition define-method-combination
        define-modify-macro define-setf-expander define-symbol-macro
-       defmacro defpackage defparameter defsetf defstruct deftype defvar
+       defmacro defpackage defsetf defstruct deftype
+       ,@*variable-definiton-form-list*
        ,@*function-definiton-form-list*)
     "List of symbols naming a definition form and its
 first argument is a name to be defined.")
