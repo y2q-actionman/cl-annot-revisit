@@ -64,7 +64,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
       (declare (ignore operator declaration form decl-specifier))
       nil))
 
-  (defmethod insert-declaration-1* ((operator symbol) declaration form decl-specifier)
+  (defmethod insert-declaration-1* (operator declaration form decl-specifier)
     "General case."
     (declare (ignore declaration))
     (when (operator-take-local-declaration-p operator)
@@ -209,7 +209,7 @@ If failed, returns (values <original-form> nil)."
   "Used by at-macros of declarations for processing recursive expansion.
 If BODY is a form accepts declarations, adds a DECL-SPECIFIER into it.
 If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
-  (let ((at-macro-form `(@add-declaration-internal ,decl-specifier)))
+  (let ((at-macro-form `(@add-declaration ,decl-specifier)))
     (cond
       ((not body)
        nil)
@@ -245,7 +245,7 @@ If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
     (let* ((names-list (ensure-list-with names #'local-declaration-name-p))
            (new-decl `(,decl-name ,@names-list)))
       (if body
-          `(@add-declaration-internal ,new-decl ,@body)
+          `(@add-declaration ,new-decl ,@body)
           `'(declare ,new-decl)))))
 
 (defmacro @ignore (names &body body)
@@ -278,7 +278,7 @@ If BODY is nil, it is expanded to '(declare (dynamic-extent ...)), this is inten
     "If BODY is a form accepts declarations, adds a declaration NEW-DECL into it.
 If BODY is nil, it is expanded to `declaim' and '(declare NEW-DECL), this is intended to embed it as a declaration using '#.'"
     (if body
-        `(@add-declaration-internal ,new-decl ,@body)
+        `(@add-declaration ,new-decl ,@body)
         `(progn (declaim ,new-decl)
                 '(declare ,new-decl)))))
 

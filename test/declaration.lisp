@@ -26,3 +26,8 @@
   (is (equal
        '(let ((x 1)) #.(@ignore (x x x)) 0)
        '(let ((x 1)) (declare (ignore x x x)) 0))))
+
+(test test-decl-inline
+  (is (equal
+       (macroexpand '(@inline #1=(defun hoge ())))
+       '(progn (declaim (inline hoge)) #1#))))
