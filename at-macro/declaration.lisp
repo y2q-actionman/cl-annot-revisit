@@ -140,14 +140,17 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
   ;; but it may contain operators respect `special' in future...
   (defmethod insert-declaration-1* ((operator (eql 'defvar)) (declaration (eql 'special))
                                     form decl-specifier)
+    (declare (ignore decl-specifier))
     form)
 
   (defmethod insert-declaration-1* ((operator (eql 'defparameter)) (declaration (eql 'special))
                                     form decl-specifier)
+    (declare (ignore decl-specifier))
     form)
 
   (defmethod insert-declaration-1* ((operator (eql 'defconstant)) (declaration (eql 'special))
                                     form decl-specifier)
+    (declare (ignore decl-specifier))
     form)
 
   ;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
@@ -191,14 +194,20 @@ If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
 ;;; Declaration only -- `ignore', `ignorable', `dynamic-extent'
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun ensure-list-with (names &optional (test #'atom))
+    "Do like `ensure-list' except testing atom with TEST."
+    (cond ((null names) nil)
+          ((funcall test names) (list names))
+          (t names)))
+
+  (defun local-declaration-name-p (x)
+    (typecase x
+      (symbol t)
+      (cons (starts-with 'function x))
+      (otherwise nil)))
+  
   (defun expand-local-declaration (decl-name names body)
-    (let* ((names-list
-            ;; Do like `ensure-list' except seeing '(function name)' syntax.
-            (if (or (symbolp names)
-                    (and (consp names)
-                         (starts-with 'function names)))
-                (list names)
-                names))
+    (let* ((names-list (ensure-list-with names #'local-declaration-name-p))
            (new-decl `(,decl-name ,@names-list)))
       (if body
           `(@add-declaration-internal ,new-decl ,@body)
@@ -222,6 +231,14 @@ If BODY is nil, it is expanded to '(declare (dynamic-extent ...)), this is inten
 ;;; Declaration and proclamation -- `type', `ftype', `inline', `notinline', `optimize', `special'
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun optimize-quality-p (x)
+    (typecase x
+      (symbol t)
+      ;; There may be implementation-dependent switch. I try to match loosely.
+      (cons (and (symbolp (first x))
+                 (every #'atom (rest x)))) ; seeing '(speed 3)' etc.
+      (otherwise nil)))
+  
   (defun expand-declaration-and-proclamation (new-decl body)
     "If BODY is a form accepts declarations, adds a declaration NEW-DECL into it.
 If BODY is nil, it is expanded to `declaim' and '(declare NEW-DECL), this is intended to embed it as a declaration using '#.'"
@@ -233,44 +250,32 @@ If BODY is nil, it is expanded to `declaim' and '(declare NEW-DECL), this is int
 (defmacro @optimize (qualities &body body)
   "Adds `optimize' declaration into BODY.
 If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this is intended to embed it as a declaration using '#.'"
-  (let ((qualities-list
-         (if (or (symbolp qualities)
-                 (and (consp qualities)
-                      ;; There may be implementation-dependent switch. I try to match loosely.
-                      (symbolp (first qualities))
-                      (every #'atom (rest qualities)))) ; seeing '(speed 3)' etc.
-             (list qualities)
-             qualities)))
+  (let ((qualities-list (ensure-list-with qualities #'optimize-quality-p)))
     (expand-declaration-and-proclamation `(optimize ,@qualities-list) body)))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun variable-definition-form-p (form)
+    (and (consp form)
+         (member (first form) *variable-definiton-form-list*))))
 
 (defmacro @special (&optional variables &body body)
   "Adds `special' declaration into BODY.
 If optional VARIABLES are specified, it is used as a list of variables in `special' declaration.
 If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), this is intended to embed it as a declaration using '#.'"
   (let ((variables-list
-         (cond ((symbolp variables)
-                (list variables))
-               ((and (consp variables)
-                     (every #'symbolp variables)
-                     (not (member (first variables) *variable-definiton-form-list*)))
-                variables)
-               (t
-                (push variables body)
-                nil))))
+         (if (variable-definition-form-p variables)
+             (progn (push variables body)
+                    nil)
+             (ensure-list-with variables #'symbolp))))
     (expand-declaration-and-proclamation `(special ,@variables-list) body)))
 
 (defmacro @type (typespec &optional variables &body body)
-  ;; FIXME: merge with `@special' -- into `expand-declaration-and-proclamation'.
+  ;; FIXME: merge with `@special' -- into `expand-declaration-and-proclamation'?.
   (let ((variables-list
-         (cond ((symbolp variables)
-                (list variables))
-               ((and (consp variables)
-                     (every #'symbolp variables)
-                     (not (member (first variables) *variable-definiton-form-list*)))
-                variables)
-               (t
-                (push variables body)
-                nil))))
+         (if (variable-definition-form-p variables)
+             (progn (push variables body)
+                    nil)
+             (ensure-list-with variables #'symbolp))))
     (expand-declaration-and-proclamation `(type ,typespec ,@variables-list) body)))
 
 
