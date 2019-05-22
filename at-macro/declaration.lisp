@@ -68,10 +68,9 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
     "General case."
     (declare (ignore declaration))
     (when (operator-take-local-declaration-p operator)
-      (warn 'at-declaration-style-warning
+      (warn 'at-declaration-style-warning :form form
             :message (format nil "Adding declarations into ~A form does not works for local declarations"
-                             operator) 
-            :form form))
+                             operator)))
     (if-let ((body-location (operator-body-location operator)))
       (insert-declaration-to-nth-body body-location form decl-specifier
                                       :documentation (operator-accept-docstring-in-body-p operator)
@@ -87,9 +86,8 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
   (defmethod insert-declaration-1* ((operator (eql 'define-method-combination)) declaration form decl-specifier)
     (declare (ignore declaration))
     (if (<= (length form) 3)
-        (warn 'at-declaration-style-warning
-              :message "The short-form of `define-method-combination' doesn't take declarations."
-              :form form)
+        (warn 'at-declaration-style-warning :form form
+              :message "The short-form of `define-method-combination' doesn't take declarations.")
         (destructuring-bind (op name lambda-list (&rest method-group-specifier) &rest rest)
             form
           (let (options)
@@ -121,6 +119,36 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
               :message "The short-form of `defsetf' does not take declarations."
               :form form)
         (insert-declaration-to-nth-body 4 form decl-specifier :whole form :documentation t)))
+
+  (defmethod insert-declaration-1* (operator (declaration (eql 'type))
+                                    form decl-specifier)
+    (if (member operator *variable-definiton-form-list*)
+        (destructuring-bind (_op typespec &rest vars) decl-specifier
+          (declare (ignorable _op))
+          (assert (eql _op declaration))
+          (let ((var-name (find-name-to-be-defined form)))
+            (unless (or (null vars)           ; (@type (defvar ...)) style.
+                        (member var-name vars))
+              (warn 'at-declaration-style-warning :form form
+                    :message (format nil "Adding ~A for ~A, but not enumerated in ~A"
+                                     declaration var-name vars)))
+            `(progn (declaim (,declaration ,typespec ,var-name))
+                    ,form)))
+        (call-next-method)))
+
+  ;; These three forms can be implemented one function with `*variable-definiton-form-list*',
+  ;; but it may contain operators respect `special' in future...
+  (defmethod insert-declaration-1* ((operator (eql 'defvar)) (declaration (eql 'special))
+                                    form decl-specifier)
+    form)
+
+  (defmethod insert-declaration-1* ((operator (eql 'defparameter)) (declaration (eql 'special))
+                                    form decl-specifier)
+    form)
+
+  (defmethod insert-declaration-1* ((operator (eql 'defconstant)) (declaration (eql 'special))
+                                    form decl-specifier)
+    form)
 
   ;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
   ;;   (@inline (func-a) (declaim)) ; => (declaim (inline func-a))
@@ -210,42 +238,43 @@ If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this 
                  (and (consp qualities)
                       ;; There may be implementation-dependent switch. I try to match loosely.
                       (symbolp (first qualities))
-                      (every #'atom qualities)))
+                      (every #'atom (rest qualities)))) ; seeing '(speed 3)' etc.
              (list qualities)
              qualities)))
     (expand-declaration-and-proclamation `(optimize ,@qualities-list) body)))
 
-(defmacro @special (variables &body body) ; FIXME
+(defmacro @special (&optional variables &body body)
   "Adds `special' declaration into BODY.
+If optional VARIABLES are specified, it is used as a list of variables in `special' declaration.
 If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), this is intended to embed it as a declaration using '#.'"
-  (expand-declaration-and-proclamation `(special ,@(ensure-list variables)) body))
+  (let ((variables-list
+         (cond ((symbolp variables)
+                (list variables))
+               ((and (consp variables)
+                     (every #'symbolp variables)
+                     (not (member (first variables) *variable-definiton-form-list*)))
+                variables)
+               (t
+                (push variables body)
+                nil))))
+    (expand-declaration-and-proclamation `(special ,@variables-list) body)))
 
-(defmacro @type (typespec variables &body body) ; FIXME
-  (let ((variables
-         (if (or (symbolp variables)
-                 (find (first variables) *variable-definiton-form-list*))
-             (list variables)
-             variables))
-        var-names declaims)
-    (loop for v in variables
-       if (and (listp v)
-               (find (first v) *variable-definiton-form-list*)) 
-       do (let ((name (find-name-to-be-defined v)))
-            (push name var-names)
-            (push `(declaim (type ,typespec ,name)) declaims)
-            (push v declaims))
-       else
-       do (push v var-names)
-       finally (nreversef var-names)
-         (nreversef declaims))
-    (if declaims
-        ;; FIXME: pass declaims to body?
-        `(progn ,@declaims
-                ,(expand-declaration-and-proclamation `(type ,typespec ,@var-names) body))
-        (expand-declaration-and-proclamation `(type ,typespec ,@var-names) body))))
+(defmacro @type (typespec &optional variables &body body)
+  ;; FIXME: merge with `@special' -- into `expand-declaration-and-proclamation'.
+  (let ((variables-list
+         (cond ((symbolp variables)
+                (list variables))
+               ((and (consp variables)
+                     (every #'symbolp variables)
+                     (not (member (first variables) *variable-definiton-form-list*)))
+                variables)
+               (t
+                (push variables body)
+                nil))))
+    (expand-declaration-and-proclamation `(type ,typespec ,@variables-list) body)))
 
 
-;;; TODO: `type', `ftype', `inline', `notinline'
+;;; TODO: `ftype', `inline', `notinline'
 
 
 ;;; Proclamation only -- `declaration'.
