@@ -57,17 +57,27 @@ If FORM is not so, returns nil."
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun function-definition-form-p (form)
+    (and (consp form)
+         (member (first form) *function-definiton-form-list*)))
+  
+  (defun function-name-p (x)
+    (or (symbolp x)
+        (and (consp x)
+             (eq (first x) 'cl:setf))))
+  
   (defgeneric expand-@export-1* (form-head form)
     (:documentation "Called by `expand-@export-1' to compute a result.
 If FORM can be expanded, returns its expansion. If not, returns nil."))
 
   (defmethod expand-@export-1* (form-head form)
-    "The bottom case. If FORM-HEAD found by `find-name-to-be-defined',
+    "The bottom case. If FORM found by `find-name-to-be-defined',
 returns the expansion of FORM. If not, returns nil."
+    (declare (ignore form-head))
     (if-let ((name (find-name-to-be-defined form)))
       (cond ((listp name)
-             (unless (and (member form-head *function-definiton-form-list*)
-                          (eq (first name) 'cl:setf))
+             (unless (and (function-definition-form-p form)
+                          (function-name-p name))
                (warn '@export-style-warning
                      :form form :message "Name ~A looks like non-conforming" name))
              `(progn (@eval-always (export ',(second name))) 

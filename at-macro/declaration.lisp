@@ -122,7 +122,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
 
   (defmethod insert-declaration-1* (operator (declaration (eql 'type))
                                     form decl-specifier)
-    (if (member operator *variable-definiton-form-list*)
+    (if (member operator *variable-definiton-form-list*) ; TODO: `variable-definition-form-p'
         (destructuring-bind (_op typespec &rest vars) decl-specifier
           (declare (ignorable _op))
           (assert (eql _op declaration))
@@ -152,6 +152,41 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
                                     form decl-specifier)
     (declare (ignore decl-specifier))
     form)
+
+  ;; TODO: merge with `type' one.
+  (defun insert-declaration-around-function-definition (form decl-head decl-names)
+    (let ((name (find-name-to-be-defined form)))
+      (unless (or (null decl-names)           ; (@inline (defun ...)) style.
+                  (member name decl-names))
+        (warn 'at-declaration-style-warning :form form
+              :message (format nil "Adding ~A for ~A, but not enumerated in ~A"
+                               decl-head name decl-names)))
+      `(progn (declaim (,@decl-head ,name))
+              ,form)))
+
+  (defmethod insert-declaration-1* (operator (declaration (eql 'ftype))
+                                    form decl-specifier)
+    (declare (ignore operator))
+    (if (function-definition-form-p form)
+        (insert-declaration-around-function-definition
+         form (list declaration (second decl-specifier)) (nthcdr 2 decl-specifier))
+        (call-next-method)))
+
+  (defmethod insert-declaration-1* (operator (declaration (eql 'inline))
+                                    form decl-specifier)
+    (declare (ignore operator))
+    (if (function-definition-form-p form)
+        (insert-declaration-around-function-definition
+         form (list declaration) (nthcdr 1 decl-specifier))
+        (call-next-method)))
+
+  (defmethod insert-declaration-1* (operator (declaration (eql 'notinline))
+                                    form decl-specifier)
+    (declare (ignore operator))
+    (if (function-definition-form-p form)
+        (insert-declaration-around-function-definition
+         form (list declaration) (nthcdr 1 decl-specifier))
+        (call-next-method)))
 
   ;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
   ;;   (@inline (func-a) (declaim)) ; => (declaim (inline func-a))
@@ -278,9 +313,29 @@ If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), this i
              (ensure-list-with variables #'symbolp))))
     (expand-declaration-and-proclamation `(type ,typespec ,@variables-list) body)))
 
+(defmacro @ftype (typespec &optional function-names &body body)
+  (let ((function-name-list
+         (if (function-definition-form-p function-names)
+             (progn (push function-names body)
+                    nil)
+             (ensure-list-with function-names #'function-name-p))))
+    (expand-declaration-and-proclamation `(ftype ,typespec ,@function-name-list) body)))
 
-;;; TODO: `ftype', `inline', `notinline'
+(defmacro @inline (&optional function-names &body body)
+  (let ((function-name-list
+         (if (function-definition-form-p function-names)
+             (progn (push function-names body)
+                    nil)
+             (ensure-list-with function-names #'function-name-p))))
+    (expand-declaration-and-proclamation `(inline ,@function-name-list) body)))
 
+(defmacro @notinline (&optional function-names &body body)
+  (let ((function-name-list
+         (if (function-definition-form-p function-names)
+             (progn (push function-names body)
+                    nil)
+             (ensure-list-with function-names #'function-name-p))))
+    (expand-declaration-and-proclamation `(notinline ,@function-name-list) body)))
 
 ;;; Proclamation only -- `declaration'.
 
