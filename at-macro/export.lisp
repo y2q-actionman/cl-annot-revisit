@@ -15,10 +15,16 @@
     "List of symbols naming a definition form and its
 first argument is a variable name to be defined.")
   
+  (defun variable-definition-operator-p (symbol)
+    (member symbol *variable-definiton-form-list*))
+  
   (defparameter *function-definiton-form-list*
     '( defgeneric define-compiler-macro defmethod defun)
     "List of symbols naming a definition form and its
 first argument is a function name to be defined.")
+  
+  (defun function-definition-operator-p (symbol)
+    (member symbol *function-definiton-form-list*))
   
   (defparameter *standard-definiton-form-list*
     `( defclass define-condition define-method-combination
@@ -57,10 +63,6 @@ If FORM is not so, returns nil."
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun function-definition-form-p (form)
-    (and (consp form)
-         (member (first form) *function-definiton-form-list*)))
-  
   (defun function-name-p (x)
     (or (symbolp x)
         (and (consp x)
@@ -73,10 +75,9 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
   (defmethod expand-@export-1* (form-head form)
     "The bottom case. If FORM found by `find-name-to-be-defined',
 returns the expansion of FORM. If not, returns nil."
-    (declare (ignore form-head))
     (if-let ((name (find-name-to-be-defined form)))
       (cond ((listp name)
-             (unless (and (function-definition-form-p form)
+             (unless (and (function-definition-operator-p form-head)
                           (function-name-p name))
                (warn '@export-style-warning
                      :form form :message "Name ~A looks like non-conforming" name))

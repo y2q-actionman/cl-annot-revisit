@@ -12,7 +12,7 @@
                  (:file "util" :depends-on ("package"))
                  (:file "eval-when" :depends-on ("package"))
                  (:file "export" :depends-on ("package" "util" "eval-when"))
-                 (:file "declaration" :depends-on ("package" "util"))
+                 (:file "declaration" :depends-on ("package" "util" "export"))
                  (:file "documentation" :depends-on ("package" "util"))))
 	       (:module "at-syntax"
                 :serial nil

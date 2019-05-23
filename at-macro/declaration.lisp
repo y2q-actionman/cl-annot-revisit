@@ -129,30 +129,27 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
                 ,form))))
 
   (defmethod insert-declaration-1* (operator (declaration (eql 'type)) form decl-specifier)
-    (if (member operator *variable-definiton-form-list*) ; TODO: `variable-definition-form-p'
+    (if (variable-definition-operator-p operator)
         (add-declaim-to-definition-form form decl-specifier 2)
         (call-next-method)))
 
   (defmethod insert-declaration-1* (operator (declaration (eql 'ftype)) form decl-specifier)
-    (declare (ignore operator))
-    (if (function-definition-form-p form)
+    (if (function-definition-operator-p operator)
         (add-declaim-to-definition-form form decl-specifier 2)
         (call-next-method)))
 
   (defmethod insert-declaration-1* (operator (declaration (eql 'inline)) form decl-specifier)
-    (declare (ignore operator))
-    (if (function-definition-form-p form)
+    (if (function-definition-operator-p operator)
         (add-declaim-to-definition-form form decl-specifier 1)
         (call-next-method)))
 
   (defmethod insert-declaration-1* (operator (declaration (eql 'notinline)) form decl-specifier)
-    (declare (ignore operator))
-    (if (function-definition-form-p form)
+    (if (function-definition-operator-p operator)
         (add-declaim-to-definition-form form decl-specifier 1)
         (call-next-method)))
 
-  ;; These three forms may be implemented one function with `*variable-definiton-form-list*',
-  ;; but it may contain operators respect `special' in future...
+  ;; These three forms may be implemented one function with `variable-definition-operator-p'
+  ;; but it may contain operators respect `special' in future.
   (defmethod insert-declaration-1* ((operator (eql 'defvar)) (declaration (eql 'special))
                                     form decl-specifier)
     (declare (ignore decl-specifier))
@@ -263,9 +260,13 @@ If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this 
     (expand-declaration-and-proclamation `(optimize ,@qualities-list) body)))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun function-definition-form-p (form)
+    (and (consp form)
+         (function-definition-operator-p (first form))))
+  
   (defun variable-definition-form-p (form)
     (and (consp form)
-         (member (first form) *variable-definiton-form-list*))))
+         (variable-definition-operator-p (first form)))))
 
 (defmacro @special (&optional variables &body body)
   "Adds `special' declaration into BODY.
