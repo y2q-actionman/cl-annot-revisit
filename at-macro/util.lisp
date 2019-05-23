@@ -8,6 +8,19 @@ This is only for developing at-macro codes. Used at nowhere."
      collect i into ret
      finally (return (sort ret #'string< :key #'symbol-name))))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun ensure-list-with (names &optional (test #'atom))
+    "Do like `ensure-list' except testing atom with TEST."
+    (cond ((null names) nil)
+          ((funcall test names) (list names))
+          (t names)))
+
+  (defun split-list-at (n list)
+    ;; FIXME: This code scans list twice.
+    (let ((tail (nthcdr n list)))
+      (values (ldiff list tail)
+              tail))))
+
 (defmacro mv-cond-let-n (n (&rest vars) &body clauses)
   "Multiple value variant of the famous 'COND-LET'. It takes multiple
 values and see N-th value as a condition."

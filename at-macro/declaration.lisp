@@ -49,8 +49,8 @@
         ,@body)))
 
   (defun insert-declaration-to-nth-body (body-index form decl-specifier &key documentation whole)
-    (let* ((body (nthcdr body-index form))
-           (head (ldiff form body)))
+    (multiple-value-bind (head body)
+        (split-list-at body-index form)
       `(,@head
         ,@(insert-declaration-to-body body decl-specifier
                                       :documentation documentation :whole whole))))
@@ -58,11 +58,7 @@
 
   (defgeneric insert-declaration-1* (operator declaration form decl-specifier)
     (:documentation "Called by `insert-declaration-1' to insert DECL-SPECIFIER into FORM.
-If FORM can be expanded, returns its expansion. If not, returns nil.")
-    (:method (operator declaration form decl-specifier)
-      "The bottom case, returns nil."
-      (declare (ignore operator declaration form decl-specifier))
-      nil))
+If FORM can be expanded, returns its expansion. If not, returns nil."))
 
   (defmethod insert-declaration-1* (operator declaration form decl-specifier)
     "General case."
@@ -120,23 +116,42 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
               :form form)
         (insert-declaration-to-nth-body 4 form decl-specifier :whole form :documentation t)))
 
-  (defmethod insert-declaration-1* (operator (declaration (eql 'type))
-                                    form decl-specifier)
+  (defun add-declaim-to-definition-form (form decl-specifier decl-args-index)
+    (let ((name (find-name-to-be-defined form)))
+      (multiple-value-bind (decl-head decl-names)
+          (split-list-at decl-args-index decl-specifier)
+        (unless (or (null decl-names)           ; (@inline (defun ...)) style.
+                    (member name decl-names))
+          (warn 'at-declaration-style-warning :form form
+                :message (format nil "Adding ~A for ~A, but not enumerated in ~A"
+                                 decl-head name decl-names)))
+        `(progn (declaim (,@decl-head ,name))
+                ,form))))
+
+  (defmethod insert-declaration-1* (operator (declaration (eql 'type)) form decl-specifier)
     (if (member operator *variable-definiton-form-list*) ; TODO: `variable-definition-form-p'
-        (destructuring-bind (_op typespec &rest vars) decl-specifier
-          (declare (ignorable _op))
-          (assert (eql _op declaration))
-          (let ((var-name (find-name-to-be-defined form)))
-            (unless (or (null vars)           ; (@type (defvar ...)) style.
-                        (member var-name vars))
-              (warn 'at-declaration-style-warning :form form
-                    :message (format nil "Adding ~A for ~A, but not enumerated in ~A"
-                                     declaration var-name vars)))
-            `(progn (declaim (,declaration ,typespec ,var-name))
-                    ,form)))
+        (add-declaim-to-definition-form form decl-specifier 2)
         (call-next-method)))
 
-  ;; These three forms can be implemented one function with `*variable-definiton-form-list*',
+  (defmethod insert-declaration-1* (operator (declaration (eql 'ftype)) form decl-specifier)
+    (declare (ignore operator))
+    (if (function-definition-form-p form)
+        (add-declaim-to-definition-form form decl-specifier 2)
+        (call-next-method)))
+
+  (defmethod insert-declaration-1* (operator (declaration (eql 'inline)) form decl-specifier)
+    (declare (ignore operator))
+    (if (function-definition-form-p form)
+        (add-declaim-to-definition-form form decl-specifier 1)
+        (call-next-method)))
+
+  (defmethod insert-declaration-1* (operator (declaration (eql 'notinline)) form decl-specifier)
+    (declare (ignore operator))
+    (if (function-definition-form-p form)
+        (add-declaim-to-definition-form form decl-specifier 1)
+        (call-next-method)))
+
+  ;; These three forms may be implemented one function with `*variable-definiton-form-list*',
   ;; but it may contain operators respect `special' in future...
   (defmethod insert-declaration-1* ((operator (eql 'defvar)) (declaration (eql 'special))
                                     form decl-specifier)
@@ -152,41 +167,6 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
                                     form decl-specifier)
     (declare (ignore decl-specifier))
     form)
-
-  ;; TODO: merge with `type' one.
-  (defun insert-declaration-around-function-definition (form decl-head decl-names)
-    (let ((name (find-name-to-be-defined form)))
-      (unless (or (null decl-names)           ; (@inline (defun ...)) style.
-                  (member name decl-names))
-        (warn 'at-declaration-style-warning :form form
-              :message (format nil "Adding ~A for ~A, but not enumerated in ~A"
-                               decl-head name decl-names)))
-      `(progn (declaim (,@decl-head ,name))
-              ,form)))
-
-  (defmethod insert-declaration-1* (operator (declaration (eql 'ftype))
-                                    form decl-specifier)
-    (declare (ignore operator))
-    (if (function-definition-form-p form)
-        (insert-declaration-around-function-definition
-         form (list declaration (second decl-specifier)) (nthcdr 2 decl-specifier))
-        (call-next-method)))
-
-  (defmethod insert-declaration-1* (operator (declaration (eql 'inline))
-                                    form decl-specifier)
-    (declare (ignore operator))
-    (if (function-definition-form-p form)
-        (insert-declaration-around-function-definition
-         form (list declaration) (nthcdr 1 decl-specifier))
-        (call-next-method)))
-
-  (defmethod insert-declaration-1* (operator (declaration (eql 'notinline))
-                                    form decl-specifier)
-    (declare (ignore operator))
-    (if (function-definition-form-p form)
-        (insert-declaration-around-function-definition
-         form (list declaration) (nthcdr 1 decl-specifier))
-        (call-next-method)))
 
   ;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
   ;;   (@inline (func-a) (declaim)) ; => (declaim (inline func-a))
@@ -229,12 +209,6 @@ If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
 ;;; Declaration only -- `ignore', `ignorable', `dynamic-extent'
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun ensure-list-with (names &optional (test #'atom))
-    "Do like `ensure-list' except testing atom with TEST."
-    (cond ((null names) nil)
-          ((funcall test names) (list names))
-          (t names)))
-
   (defun local-declaration-name-p (x)
     (typecase x
       (symbol t)
