@@ -116,54 +116,43 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
               :form form)
         (insert-declaration-to-nth-body 4 form decl-specifier :whole form :documentation t)))
 
-  (defun add-declaim-to-definition-form (form decl-specifier decl-args-index)
+  (defun try-add-declaim-to-definiton-form (form decl-specifier decl-args-index)
     (let ((name (find-name-to-be-defined form)))
-      (multiple-value-bind (decl-head decl-names)
-          (split-list-at decl-args-index decl-specifier)
-        (unless (or (null decl-names)           ; (@inline (defun ...)) style.
-                    (member name decl-names))
-          (warn 'at-declaration-style-warning :form form
-                :message (format nil "Adding ~A for ~A, but not enumerated in ~A"
-                                 decl-head name decl-names)))
-        `(progn (declaim (,@decl-head ,name))
-                ,form))))
+      (multiple-value-bind (decl-head decl-args) (split-list-at decl-args-index decl-specifier)
+        (if (member name decl-args)     
+            ;; If decl-specifier contains for this variable, apply it using `declaim',
+            ;; and apply other declarations recursively.
+            (let ((rest-decl-args (remove name decl-args)))
+              `(progn (declaim (,@decl-head ,name))
+                      ,(if rest-decl-args
+                           (insert-declaration-1 form `(,@decl-head ,@rest-decl-args))
+                           form)))
+            nil))))
+
+  (defmethod insert-declaration-1* (operator (declaration (eql 'special)) form decl-specifier)
+    (or (and (variable-definition-operator-p operator) ; FORM is like `defvar'.
+             (try-add-declaim-to-definiton-form form decl-specifier 1))
+        (call-next-method)))
 
   (defmethod insert-declaration-1* (operator (declaration (eql 'type)) form decl-specifier)
-    (if (variable-definition-operator-p operator)
-        (add-declaim-to-definition-form form decl-specifier 2)
+    (or (and (variable-definition-operator-p operator) ; FORM is like `defvar'.
+             (try-add-declaim-to-definiton-form form decl-specifier 2))
         (call-next-method)))
 
   (defmethod insert-declaration-1* (operator (declaration (eql 'ftype)) form decl-specifier)
-    (if (function-definition-operator-p operator)
-        (add-declaim-to-definition-form form decl-specifier 2)
+    (or (and (function-definition-operator-p operator) ; FORM is like `defun'.
+             (try-add-declaim-to-definiton-form form decl-specifier 2))
         (call-next-method)))
 
   (defmethod insert-declaration-1* (operator (declaration (eql 'inline)) form decl-specifier)
-    (if (function-definition-operator-p operator)
-        (add-declaim-to-definition-form form decl-specifier 1)
+    (or (and (function-definition-operator-p operator)
+             (try-add-declaim-to-definiton-form form decl-specifier 1))
         (call-next-method)))
 
   (defmethod insert-declaration-1* (operator (declaration (eql 'notinline)) form decl-specifier)
-    (if (function-definition-operator-p operator)
-        (add-declaim-to-definition-form form decl-specifier 1)
+    (or (and (function-definition-operator-p operator)
+             (try-add-declaim-to-definiton-form form decl-specifier 1))
         (call-next-method)))
-
-  ;; These three forms may be implemented one function with `variable-definition-operator-p'
-  ;; but it may contain operators respect `special' in future.
-  (defmethod insert-declaration-1* ((operator (eql 'defvar)) (declaration (eql 'special))
-                                    form decl-specifier)
-    (declare (ignore decl-specifier))
-    form)
-
-  (defmethod insert-declaration-1* ((operator (eql 'defparameter)) (declaration (eql 'special))
-                                    form decl-specifier)
-    (declare (ignore decl-specifier))
-    form)
-
-  (defmethod insert-declaration-1* ((operator (eql 'defconstant)) (declaration (eql 'special))
-                                    form decl-specifier)
-    (declare (ignore decl-specifier))
-    form)
 
   ;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
   ;;   (@inline (func-a) (declaim)) ; => (declaim (inline func-a))
@@ -260,57 +249,54 @@ If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this 
     (expand-declaration-and-proclamation `(optimize ,@qualities-list) body)))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun function-definition-form-p (form)
-    (and (consp form)
-         (function-definition-operator-p (first form))))
-  
-  (defun variable-definition-form-p (form)
-    (and (consp form)
-         (variable-definition-operator-p (first form)))))
+  ;; TODO: I should see all forms whether it is definition form or not.
+  (defun expand-at-declaration-may-definition-at-first
+      (decl-head names-or-form body operator-p-function name-p-function)
+    (cond
+      ((null names-or-form)         ; Like '(@special () ...)'
+       `(progn ,@body))             ; It is simply treated as `progn'.
+      ((and (consp names-or-form)
+            (funcall operator-p-function (first names-or-form)))
+       ;; Like '(@inline (defun func () ...))'
+       ;; It is treated as '(@inline (func) (defun func () ...)'.
+       (let ((var (find-name-to-be-defined names-or-form))
+             (body (list* names-or-form body)))
+         (expand-declaration-and-proclamation `(,@decl-head ,var) body)))
+      (t                             ; Like '(@notinline (x y z) ...)'
+       (let ((names (ensure-list-with names-or-form name-p-function)))
+         (expand-declaration-and-proclamation `(,@decl-head ,@names) body)))))
 
-(defmacro @special (&optional variables &body body)
+  (defun expand-at-declaration-for-variable (decl-head vars-or-form body)
+    (expand-at-declaration-for-defs decl-head vars-or-form body
+                                    #'variable-definition-operator-p
+                                    #'symbolp))
+
+  (defun expand-at-declaration-for-function (decl-head fnames-or-form body)
+    (expand-at-declaration-for-defs decl-head fnames-or-form body
+                                    #'function-definition-operator-p
+                                    #'function-name-p)))
+
+(defmacro @special (&optional vars-or-form &body body)
+  ;; TODO: add 'VARS-OR-FORM' treating
   "Adds `special' declaration into BODY.
-If optional VARIABLES are specified, it is used as a list of variables in `special' declaration.
 If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), this is intended to embed it as a declaration using '#.'"
-  (let ((variables-list
-         (if (variable-definition-form-p variables)
-             (progn (push variables body)
-                    nil)
-             (ensure-list-with variables #'symbolp))))
-    (expand-declaration-and-proclamation `(special ,@variables-list) body)))
+  (expand-at-declaration-for-variable '(special) vars-or-form body))
 
-(defmacro @type (typespec &optional variables &body body)
-  ;; FIXME: merge with `@special' -- into `expand-declaration-and-proclamation'?.
-  (let ((variables-list
-         (if (variable-definition-form-p variables)
-             (progn (push variables body)
-                    nil)
-             (ensure-list-with variables #'symbolp))))
-    (expand-declaration-and-proclamation `(type ,typespec ,@variables-list) body)))
+(defmacro @type (typespec &optional vars-or-form &body body)
+  ;; TODO: add docstrings
+  (expand-at-declaration-for-variable `(type ,typespec) vars-or-form body))
 
-(defmacro @ftype (typespec &optional function-names &body body)
-  (let ((function-name-list
-         (if (function-definition-form-p function-names)
-             (progn (push function-names body)
-                    nil)
-             (ensure-list-with function-names #'function-name-p))))
-    (expand-declaration-and-proclamation `(ftype ,typespec ,@function-name-list) body)))
+(defmacro @ftype (typespec &optional function-names-or-form &body body)
+  ;; TODO: add docstrings
+  (expand-at-declaration-for-function `(ftype ,typespec) function-names-or-form body))
 
-(defmacro @inline (&optional function-names &body body)
-  (let ((function-name-list
-         (if (function-definition-form-p function-names)
-             (progn (push function-names body)
-                    nil)
-             (ensure-list-with function-names #'function-name-p))))
-    (expand-declaration-and-proclamation `(inline ,@function-name-list) body)))
+(defmacro @inline (&optional function-names-or-form &body body)
+  ;; TODO: add docstrings
+  (expand-at-declaration-for-function '(inline) function-names-or-form body))
 
-(defmacro @notinline (&optional function-names &body body)
-  (let ((function-name-list
-         (if (function-definition-form-p function-names)
-             (progn (push function-names body)
-                    nil)
-             (ensure-list-with function-names #'function-name-p))))
-    (expand-declaration-and-proclamation `(notinline ,@function-name-list) body)))
+(defmacro @notinline (&optional function-names-or-form &body body)
+  ;; TODO: add docstrings
+  (expand-at-declaration-for-function '(notinline) function-names-or-form body))
 
 ;;; Proclamation only -- `declaration'.
 
@@ -320,25 +306,3 @@ If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), this i
 
 
 ;;; FIXME: what is '@type' and `the'?
-#|
-
-at decl の locally 展開は要らない？
-　関数呼び出しなら当然いらない
-　special form は個別に拾っている…はず。if, multiple-value-call,progv にやってもいい気もするが、余計なお世話か
-…と思ったが、internalなformのことを忘れていた。やはり必要そう。下と同じ。
-
-両方使えるものは、トップレベルでみて自明じゃなければdeclaimとも思うが、@のネストをいい感じにしたいと考えると真面目に扱うべき。
-トップレベルで見えたform全てにapplyされれば良いこととする。 apply 数を数える？
-展開して複数箇所に効くようになった場合、も考慮。
-
-単純？
-　展開に成功したら t に設定する変数を用意しとく。
-　各formをmacroexpand-allし、一つでも上の変数がtにならなければ、一番最初にdeclaimする。
-　locallyでも囲う。
-　toplevel progn だけは数の不整合が気になる。展開したげるか。
-
-@type は、 the との関係が不明瞭
-
-declaimについて。inline用の規約と同様、引数なしなら declaim展開でいい気がしてきた。
-他はlocallyをいつも。
-|#
