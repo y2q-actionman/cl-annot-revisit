@@ -7,6 +7,7 @@
   :components ((:file "package")
                (:file "util" :depends-on ("package"))
                (:file "util-test" :depends-on ("util"))
+               (:file "eval-when" :depends-on ("package"))
                (:file "declaration" :depends-on ("util"))
                (:file "export" :depends-on ("util")))
   :perform (prepare-op :before (o c)
