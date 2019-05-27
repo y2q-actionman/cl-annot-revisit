@@ -267,14 +267,16 @@ If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this 
          (expand-declaration-and-proclamation `(,@decl-head ,@names) body)))))
 
   (defun expand-at-declaration-for-variable (decl-head vars-or-form body)
-    (expand-at-declaration-for-defs decl-head vars-or-form body
-                                    #'variable-definition-operator-p
-                                    #'symbolp))
+    (expand-at-declaration-may-definition-at-first
+     decl-head vars-or-form body
+     #'variable-definition-operator-p
+     #'symbolp))
 
   (defun expand-at-declaration-for-function (decl-head fnames-or-form body)
-    (expand-at-declaration-for-defs decl-head fnames-or-form body
-                                    #'function-definition-operator-p
-                                    #'function-name-p)))
+    (expand-at-declaration-may-definition-at-first
+     decl-head fnames-or-form body
+     #'function-definition-operator-p
+     #'function-name-p)))
 
 (defmacro @special (&optional vars-or-form &body body)
   ;; TODO: add 'VARS-OR-FORM' treating

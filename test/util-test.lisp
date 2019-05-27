@@ -1,30 +1,76 @@
 (in-package #:cl-annot-revisit-test)
 
-(test expand-recursive-1-progn
-  (is (equal (cl-annot-revisit/at-macro::apply-to-special-form-1
-              '(@export)
-              '(progn x y (+ x y)))
-             '(PROGN (@EXPORT X) (@EXPORT Y) (@EXPORT (+ X Y))))))
+(test test-ensure-list-with
+  (with-interpackage-falias (ensure-list-with) cl-annot-revisit/at-macro
+    (is (equal (ensure-list-with nil)
+               nil))
+    (is (equal (ensure-list-with 1)
+               '(1)))
+    (is (equal (ensure-list-with '(1 2))
+               '(1 2)))
+    (flet ((test-fn (x)
+             (starts-with 'foo x)))
+      (is (equal (ensure-list-with nil #'test-fn)
+                 '()))
+      (is (equal (ensure-list-with 1 #'test-fn)
+                 '(1)))
+      (is (equal (ensure-list-with '(hoge fuga) #'test-fn)
+                 '(hoge fuga)))
+      (is (equal (ensure-list-with '(foo 1 2 3) #'test-fn)
+                 '((foo 1 2 3))))
+      (is (equal (ensure-list-with '(bar (foo 1 2 3)) #'test-fn)
+                 '(bar (foo 1 2 3)))))))
 
-(test expand-recursive-1-eval-when
-  (is (equal (cl-annot-revisit/at-macro::apply-to-special-form-1
-              '(@export)
-              '(eval-when (:execute)
-                x y (+ x y)))
-             '(EVAL-WHEN (:EXECUTE)
-               (@EXPORT X) (@EXPORT Y) (@EXPORT (+ X Y))))))
+(test test-split-list-at
+  (with-interpackage-falias (split-list-at) cl-annot-revisit/at-macro
+    (is (multiple-value-bind (head tail) (split-list-at 0 '(0 1 2))
+          (equal head nil)
+          (equal tail '(0 1 2))))
+    (is (multiple-value-bind (head tail) (split-list-at 1 '(0 1 2))
+          (equal head '(0))
+          (equal tail '(1 2))))
+    (is (multiple-value-bind (head tail) (split-list-at 2 '(0 1 2))
+          (equal head '(0 1))
+          (equal tail '(2))))
+    (is (multiple-value-bind (head tail) (split-list-at 3 '(0 1 2))
+          (equal head '(0 1 3))
+          (equal tail '())))
+    (is (multiple-value-bind (head tail) (split-list-at 4 '(0 1 2))
+          (equal head '(0 1 3))
+          (equal tail '())))
+    (is (multiple-value-bind (head tail) (split-list-at 0 '())
+          (equal head nil)
+          (equal tail nil)))
+    (is (multiple-value-bind (head tail) (split-list-at 1 '())
+          (equal head nil)
+          (equal tail nil)))))
 
-(test expand-recursive-1-locally
-  (is (equal (cl-annot-revisit/at-macro::apply-to-special-form-1
-              '(@export)
-              '(locally (declare (type fixnum x))
-                x y (+ x y)))
-             '(LOCALLY (DECLARE (TYPE FIXNUM X))
-               (@EXPORT X) (@EXPORT Y) (@EXPORT (+ X Y))))))
+(with-interpackage-falias (apply-to-special-form-1) cl-annot-revisit/at-macro
+  (test expand-recursive-1-progn
+    (is (equal (apply-to-special-form-1
+                '(@export)
+                '(progn x y (+ x y)))
+               '(PROGN (@EXPORT X) (@EXPORT Y) (@EXPORT (+ X Y))))))
 
-(test expand-recursive-1-symbol-other
-  (is (equal (cl-annot-revisit/at-macro::apply-to-special-form-1
-              '(@export)
-              '#1=(let ((x 100))
-                    x y (+ x y)))
-             '#1#)))
+  (test expand-recursive-1-eval-when
+    (is (equal (apply-to-special-form-1
+                '(@export)
+                '(eval-when (:execute)
+                  x y (+ x y)))
+               '(EVAL-WHEN (:EXECUTE)
+                 (@EXPORT X) (@EXPORT Y) (@EXPORT (+ X Y))))))
+
+  (test expand-recursive-1-locally
+    (is (equal (apply-to-special-form-1
+                '(@export)
+                '(locally (declare (type fixnum x))
+                  x y (+ x y)))
+               '(LOCALLY (DECLARE (TYPE FIXNUM X))
+                 (@EXPORT X) (@EXPORT Y) (@EXPORT (+ X Y))))))
+
+  (test expand-recursive-1-symbol-other
+    (is (equal (apply-to-special-form-1
+                '(@export)
+                '#1=(let ((x 100))
+                      x y (+ x y)))
+               '#1#))))
