@@ -48,12 +48,12 @@
         ,@(if doc `(,doc)) 
         ,@body)))
 
-  (defun insert-declaration-to-nth-body (body-index form decl-specifier &key documentation whole)
+  (defun insert-declaration-to-nth-body (body-index form decl-specifier &key documentation)
     (multiple-value-bind (head body)
         (split-list-at body-index form)
       `(,@head
         ,@(insert-declaration-to-body body decl-specifier
-                                      :documentation documentation :whole whole))))
+                                      :documentation documentation :whole form))))
 
 
   (defgeneric insert-declaration-1* (operator declaration form decl-specifier)
@@ -69,14 +69,19 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
                              operator)))
     (if-let ((body-location (operator-body-location operator)))
       (insert-declaration-to-nth-body body-location form decl-specifier
-                                      :documentation (operator-accept-docstring-in-body-p operator)
-                                      :whole form)))
+                                      :documentation (operator-accept-docstring-in-body-p operator))))
 
-  (defmethod insert-declaration-1* ((operator (eql 'defgeneric)) (declaration (eql 'optimize))
+  (defmethod insert-declaration-1* ((operator (eql 'defgeneric)) declaration
                                     form decl-specifier)
-    "`defgeneric' accepts only `optimize' declarations."
+    (unless (starts-with declaration 'optimize)
+      (warn 'at-declaration-style-warning :form
+            :message (format nil "`defgeneric' accepts only `optimize' declarations.")))
     (destructuring-bind (op function-name gf-lambda-list &rest option)
         form
+      (when (assoc :method option)
+        (warn 'at-declaration-style-warning :form form
+              :message (format nil "Adding declarations into ~A form does not works for methods."
+                               operator)))
       `(,op ,function-name ,gf-lambda-list (declare ,decl-specifier) ,@option)))
 
   (defmethod insert-declaration-1* ((operator (eql 'define-method-combination)) declaration form decl-specifier)
@@ -114,7 +119,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
         (warn 'at-declaration-style-warning
               :message "The short-form of `defsetf' does not take declarations."
               :form form)
-        (insert-declaration-to-nth-body 4 form decl-specifier :whole form :documentation t)))
+        (insert-declaration-to-nth-body 4 form decl-specifier :documentation t)))
 
   (defun try-add-declaim-to-definiton-form (form decl-specifier decl-args-index)
     (let ((name (find-name-to-be-defined form)))
