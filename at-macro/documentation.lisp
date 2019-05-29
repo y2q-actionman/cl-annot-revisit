@@ -56,7 +56,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
 
   (defun warning-around-defclass (form)
     (warn '@documentation-style-warning :form form
-          :message (format nil "Adding declarations into ~A form does not works for slots."
+          :message (format nil "Adding documentation into ~A form does not works for slots."
                            (first form))))
   
   (defmethod insert-documentation-1* :before ((operator (eql 'defclass)) form docstring)

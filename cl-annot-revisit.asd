@@ -6,14 +6,15 @@
   :serial t
   ;; TODO
   :components ((:module "at-macro"
-                :serial nil
+                :serial t               ; FIXME
                 :components
                 ((:file "package")
                  (:file "util" :depends-on ("package"))
                  (:file "eval-when" :depends-on ("package"))
                  (:file "export" :depends-on ("package" "util" "eval-when"))
                  (:file "declaration" :depends-on ("package" "util" "export"))
-                 (:file "documentation" :depends-on ("package" "util"))))
+                 (:file "documentation" :depends-on ("package" "util"))
+                 (:file "class" :depends-on ("package" "eval-when"))))
 	       (:module "at-syntax"
                 :serial nil
                 :components

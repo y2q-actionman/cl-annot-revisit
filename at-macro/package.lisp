@@ -29,6 +29,7 @@
    #:@documentation
    ;; class.lisp
    #:@metaclass
+   #:@export-slots
    #:@export-accessors
    #:@export-constructors
    #:@export-class

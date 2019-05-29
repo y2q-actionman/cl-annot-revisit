@@ -104,20 +104,28 @@ returns the expansion of FORM. If not, returns nil."
           :form form :message "@export does not works on DEFPACKAGE.")
     nil)
 
+  (defmacro with-macroexpand-1-convension (form &body body)
+    "If BODY returned T (expansion successed), returns (values <expansion> t).
+If not, returns (values FORM nil)."
+    (once-only (form)
+      `(typecase ,form
+         (cons (if-let ((expansion (progn ,@body)))
+                 (values expansion t)
+                 (values ,form nil)))
+         ;; If FORM is a symbol, it may be a symbol macro, and it is
+         ;; expanded by `@export'.
+         (otherwise (values ,form nil)))))
+  
   (defun expand-@export-1 (form)
     "Called by `@export' to expand known ones.
 If expansion successed, returns (values <expansion> t).
 If failed, returns (values FORM nil)."
-    (typecase form
-      (cons (if-let ((expansion (expand-@export-1* (first form) form)))
-              (values expansion t)
-              (values form nil)))
-      ;; If FORM is a symbol, it may be a symbol macro, and it is
-      ;; expanded by `@export'.
-      (otherwise (values form nil)))))
+    (with-macroexpand-1-convension form
+      (expand-@export-1* (first form) form))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun apply-at-macro (at-macro-form expander-function forms env)
+    ;; TODO: rewrite..
     (cond
       ((null forms)
        nil)
