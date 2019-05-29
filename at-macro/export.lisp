@@ -116,21 +116,25 @@ If failed, returns (values FORM nil)."
       ;; expanded by `@export'.
       (otherwise (values form nil)))))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun apply-at-macro (at-macro-form expander-function forms env)
+    (cond
+      ((null forms)
+       nil)
+      ((not (length= 1 forms))            ; recursive expansion
+       `(progn ,@(apply-to-all-forms at-macro-form forms)))
+      (t
+       (let ((form (first forms)))
+         (mv-cond-let2 (expansion expanded-p)
+           ((funcall expander-function form)) ; try known expansions.
+           ((apply-to-special-form-1 at-macro-form form)) ; try recursive expansion.
+           ((macroexpand-1 form env)      ; try `macroexpand-1'.
+            `(,@at-macro-form ,expansion))
+           (t                       ; nothing to do. return FORM itself.
+            form)))))
+    ))
 
 (defmacro @export (&body forms &environment env)
-  (cond
-    ((null forms)
-     nil)
-    ((not (length= 1 forms))            ; recursive expansion
-     `(progn ,@(apply-to-all-forms '(@export) forms)))
-    (t
-     (let ((form (first forms)))
-       (mv-cond-let2 (expansion expanded-p)
-         ((expand-@export-1 form)) ; try known expansions.
-         ((apply-to-special-form-1 '(@export) form)) ; try recursive expansion.
-         ((macroexpand-1 form env)      ; try `macroexpand-1'.
-          `(@export ,expansion))
-         (t                       ; nothing to do. return FORM itself.
-          form))))))
+  (apply-at-macro '(@export) #'expand-@export-1 forms env))
 
 ;;; TODO: support `restart-case'?
