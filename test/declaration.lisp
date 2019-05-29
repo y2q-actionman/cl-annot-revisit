@@ -6,11 +6,12 @@
        '(declaim (declaration hoge fuga))))
   ;; A test for the standard Common Lisp.
   ;; This is malformed, because `declaration' is only for proclamation.
-  (signals (or error warning)
-    (compile nil
-             '(lambda ()
-               (declare (declaration hoge))
-               t)))
+  (is (nth-value
+       2                                ; sees FAILURE-P of `compile'.
+       (let ((*error-output* (make-broadcast-stream)))
+         (compile nil
+                  '(lambda ()
+                    (declare (declaration hoge)))))))
   #+ ()
   (signals (or error warning)
     (compile nil

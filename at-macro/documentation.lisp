@@ -35,7 +35,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
 
   (defmethod insert-documentation-1* (operator form docstring)
     "General case."
-    (if-let ((doc-type (assoc operator *operator-doc-type-alist*)))
+    (if-let ((doc-type (operator-doc-type operator)))
       ;; Using the result of FORM is simple, but may prevent compilation as a top-level form.
       (let ((obj (gensym)))
         `(let ((,obj ,form))

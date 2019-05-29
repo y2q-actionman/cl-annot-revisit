@@ -26,6 +26,7 @@
    #:@eval-always
    ;; doc.lisp
    #:@doc
+   #:@documentation
    ;; class.lisp
    #:@metaclass
    #:@export-accessors

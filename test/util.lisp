@@ -8,3 +8,9 @@
      finally
        (return `(flet ,clauses ,@body))))
 
+(defun equal-ignoring-gensym (x y)
+  (flet ((test-fn (x y)
+           (or (equal x y)
+               (and (symbolp x) (null (symbol-package x))
+                    (symbolp y) (null (symbol-package y))))))
+    (tree-equal x y) #'test-fn))
