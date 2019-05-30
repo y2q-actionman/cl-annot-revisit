@@ -158,7 +158,8 @@
   (defmethod expand-@export-accessors-1* ((form-op (eql 'defstruct)) form)
     (let ((readers (pick-names-of-defstruct-form form '(:reader))))
       (if readers
-          `(progn (@eval-always (export ',readers))
+          `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                    (export ',readers))
                   ,form)
           form))))
 
@@ -172,13 +173,16 @@
     (:method ((form-op (eql 'defstruct)) form)
       (let ((constructors (pick-names-of-defstruct-form form '(:constructor))))
         (if constructors
-            `(progn (@eval-always (export ',constructors))
+            `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                      (export ',constructors))
                     ,form)
             form))))
 
   (defun expand-@export-constructors-1 (form)
-    (with-macroexpand-1-convension form
-      (expand-@export-constructors-1* (first form) form))))
+    (try-macroexpand
+     (if (consp form)
+         (expand-@export-constructors-1* (first form) form))
+     form)))
 
 (defmacro @export-constructors (&body forms &environment env)
   (apply-at-macro '(@export-constructors) #'expand-@export-constructors-1
@@ -194,15 +198,20 @@
     (:method ((form-op (eql 'defstruct)) form)
       (let ((all (pick-names-of-defstruct-form form t)))
         (if all
-            `(progn (@eval-always (export ',all))
+            `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                      (export ',all))
                     ,form)
             form))))
 
   (defun expand-@export-structure-1 (form)
-    (with-macroexpand-1-convension form
-      (expand-@export-structure-1* (first form) form))))
+    (try-macroexpand
+     (if (consp form)
+         (expand-@export-structure-1* (first form) form))
+     form)))
 
 (defmacro @export-structure (&body forms &environment env)
   ;; Original cl-annot does `@export-slots', but it does nothing.
   ;; Just an alias of nested  `@export-accessors',`@export-constructors', and `@export'.
   (apply-at-macro '(@export-structure) #'expand-@export-structure-1 forms env))
+
+;;; TODO: make a function for (if ... `(progn (eval-when ...)) form)

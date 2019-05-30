@@ -44,6 +44,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
 
   (defmethod insert-documentation-1* ((operator (eql 'defstruct)) form docstring)
     "Special handling for `defstruct'"
+    ;; TODO: use functions in 'defstruct.lisp'?
     (let* ((name-or-options (second form))
            (type-supplied-p
             (etypecase name-or-options
@@ -54,35 +55,37 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
          ,@(if type-supplied-p
                `((setf (documentation name 'type) ,docstring))))))
 
-  (defun warning-around-defclass (form)
-    (warn '@documentation-style-warning :form form
-          :message (format nil "Adding documentation into ~A form does not works for slots."
-                           (first form))))
+  (defun warn-around-defclass (operator form)
+    (when *at-macro-verbose*
+      (warn '@documentation-style-warning :form form
+            :message (format nil "Adding documentation into ~A form does not works for slots."
+                             operator))))
   
   (defmethod insert-documentation-1* :before ((operator (eql 'defclass)) form docstring)
     (declare (ignore docstring))
-    (warning-around-defclass form))
+    (warn-around-defclass operator form))
 
   (defmethod insert-documentation-1* :before ((operator (eql 'define-condition)) form docstring)
     (declare (ignore docstring))
-    (warning-around-defclass form))
+    (warn-around-defclass operator form))
 
-  (defun warning-around-local-form (form)
-    (warn '@documentation-style-warning :form form
-          :message (format nil "Adding declarations into ~A form doesn't work for local docstrings."
-                           (first form))))
+  (defun warn-around-local-form (operator form)
+    (when *at-macro-verbose*
+      (warn '@documentation-style-warning :form form
+            :message (format nil "Adding declarations into ~A form doesn't work for local docstrings."
+                             operator))))
   
   (defmethod insert-documentation-1* :before ((operator (eql 'flet)) form docstring)
     (declare (ignore docstring))
-    (warning-around-local-form form))
+    (warn-around-local-form operator form))
 
   (defmethod insert-documentation-1* :before ((operator (eql 'labels)) form docstring)
     (declare (ignore docstring))
-    (warning-around-local-form form))
+    (warn-around-local-form operator form))
 
   (defmethod insert-documentation-1* :before ((operator (eql 'macrolet)) form docstring)
     (declare (ignore docstring))
-    (warning-around-local-form form))
+    (warn-around-local-form operator form))
 
   
   (defmethod insert-documentation-1* ((operator (eql 'lambda)) form docstring)
@@ -91,8 +94,8 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
       (multiple-value-bind (body decls old-doc)
           (parse-body body0 :documentation t :whole form)
         (when (and old-doc docstring)
-          (warn '@documentation-style-warning :form form
-                :message (format nil "Lambda form already has a docstring")))
+          (error 'at-macro-error :form form
+                 :message "Lambda form already has a docstring."))
         `(,op ,lambda-list ,decls
               ,@(cond (docstring (list docstring))
                       (old-doc (list old-doc))
@@ -110,12 +113,10 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
     "Insert DOCSTRING into FORM.
 If insertion successed, returns (values <expansion> t).
 If failed, returns (values <original-form> nil)."
-    (typecase form
-      (cons
-       (if-let ((expansion (insert-documentation-1* (first form) form docstring)))
-         (values expansion t)
-         (values form nil)))
-      (otherwise (values form nil)))))
+    (try-macroexpand
+     (if (consp form)
+         (insert-documentation-1* (first form) form docstring))
+     form)))
 
 (defmacro @documentation (docstring form &environment env)
   (mv-cond-let2 (expansion expanded-p)

@@ -6,14 +6,14 @@
         '(@export
           #1=(defconstant hoge 100)))
        '(progn
-         (@eval-always (export 'hoge))
+         (eval-when #.+at-macro-eval-always+ (export 'hoge))
          #1#)))
   (is (equal
        (macroexpand
         '(@export
           #2=(defun (setf func) (val) val)))
        '(progn
-         (@eval-always (export 'func))
+         (eval-when #.+at-macro-eval-always+ (export 'func))
          #2#)))
   (is (equal
        (macroexpand
@@ -21,7 +21,7 @@
           #3=(defstruct struct1
                slot1)))
        '(progn
-         (@eval-always (export 'struct1))
+         (eval-when #.+at-macro-eval-always+ (export 'struct1))
          #3#)))
   (is (equal
        (macroexpand
@@ -29,7 +29,7 @@
           #4=(defstruct (struct2 :copier cpstruct2)
                slot1 slot2)))
        '(progn
-         (@eval-always (export 'struct2))
+         (eval-when #.+at-macro-eval-always+ (export 'struct2))
          #4#)))
   t)
 

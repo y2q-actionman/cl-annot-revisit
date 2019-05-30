@@ -6,17 +6,17 @@
   :serial t
   ;; TODO
   :components ((:module "at-macro"
-                :serial t               ; FIXME
                 :components
                 ((:file "package")
                  (:file "condition" :depends-on ("package"))
-                 (:file "util" :depends-on ("package" "condition"))
+                 (:file "util" :depends-on ("package"))
                  (:file "eval-when" :depends-on ("package"))
-                 (:file "export" :depends-on ("package" "util" "eval-when"))
-                 (:file "declaration" :depends-on ("package" "util" "export"))
-                 (:file "documentation" :depends-on ("package" "util"))
-                 (:file "defclass" :depends-on ("package" "eval-when"))
-                 (:file "defstruct" :depends-on ("package" "defclass"))))
+                 (:file "form-traversal" :depends-on ("package"))
+                 (:file "export" :depends-on ("util" "form-traversal"))
+                 (:file "declaration" :depends-on ("util" "form-traversal"))
+                 (:file "documentation" :depends-on ("util" "form-traversal"))
+                 (:file "defclass" :depends-on ("util" "form-traversal"))
+                 (:file "defstruct" :depends-on ("util" "form-traversal"))))
 	       (:module "at-syntax"
                 :serial nil
                 :components

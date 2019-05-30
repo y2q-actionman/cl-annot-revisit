@@ -12,7 +12,7 @@
   (is (equal (macroexpand-1 '(@export-slots
                               #1=(define-condition hoge () #2=(slot1 slot2))))
              '(progn
-               (@eval-always (export '#2#))
+               (eval-when #.+at-macro-eval-always+ (export '#2#))
                #1#))))
 
 (test test-@export-accessors
@@ -22,7 +22,7 @@
                                     (slot1)
                                     (slot2 :reader x :reader y :accessor z :writer (setf p))))))
              '(progn
-               (@eval-always (export '(x y z p)))
+               (eval-when #.+at-macro-eval-always+ (export '(x y z p)))
                #3#))))
 
 (test test-@export-class
@@ -35,5 +35,5 @@
 (test test-@export-accessors-defstruct
   (is (equal (macroexpand-1 '(@export-accessors
                               #1=(defstruct foo slot1 slot2)))
-             '(progn (@eval-always (export '(foo-slot1 foo-slot2)))
+             '(progn (eval-when #.+at-macro-eval-always+ (export '(foo-slot1 foo-slot2)))
                #1#))))

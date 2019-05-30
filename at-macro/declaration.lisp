@@ -167,13 +167,11 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
     "Insert DECL-SPECIFIER into FORM.
 If expansion successed, returns (values <expansion> t).
 If failed, returns (values <original-form> nil)."
-    (typecase form
-      (cons
-       (if-let ((expansion (insert-declaration-1* (first form) (first decl-specifier)
-                                                  form decl-specifier)))
-         (values expansion t)
-         (values form nil)))
-      (otherwise (values form nil))))) 
+    (try-macroexpand
+     (if (consp form)
+         (insert-declaration-1* (first form) (first decl-specifier)
+                                form decl-specifier))
+     form)))
 
 
 (defmacro @add-declaration (decl-specifier &body body &environment env)

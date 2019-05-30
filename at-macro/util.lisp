@@ -1,5 +1,6 @@
 (in-package :cl-annot-revisit/at-macro)
 
+#+ ()
 (defun collect-special-forms (&optional (package :common-lisp))
   "Collects all special forms in PACKAGE, `:common-lisp' is default.
 This is only for developing at-macro codes. Used at nowhere."
@@ -16,6 +17,7 @@ This is only for developing at-macro codes. Used at nowhere."
         (ensure-list names)))
 
   (defun split-list-at (n list)
+    "Return first N elements and rests of LIST."
     (loop initially
          (when (zerop n)
            (return (values nil list))) 
@@ -56,43 +58,3 @@ values and see N-th value as a condition."
 (defmacro mv-cond-let2 ((&rest vars) &body clauses)
   "Uses `mv-cond-let-n' seeing the second value."
   `(mv-cond-let-n 1 (,@vars) ,@clauses))
-
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun apply-to-all-forms (operator-head forms)
-    (mapcar (lambda (form) (append operator-head (list form))) forms))
-
-  (defgeneric apply-to-special-form-1* (at-macro-form form-head form)
-    (:documentation
-     "An internal function called by `apply-to-special-form-1'")
-    (:method (at-macro-form form-head form)
-      "Bottom case, returns nil."
-      (declare (ignore at-macro-form form-head form))
-      nil))
-
-  (defmethod apply-to-special-form-1* (at-macro-form (form-head (eql 'progn)) form)
-    `(progn ,@(apply-to-all-forms at-macro-form (rest form))))
-
-  (defmethod apply-to-special-form-1* (at-macro-form (form-head (eql 'eval-when)) form)
-    (destructuring-bind ((&rest situations) &body e-w-body) (rest form) 
-      `(eval-when (,@situations)
-         ,@(apply-to-all-forms at-macro-form e-w-body))))
-
-  (defmethod apply-to-special-form-1* (at-macro-form (form-head (eql 'locally)) form)
-    (multiple-value-bind (remaining-forms declarations)
-        (parse-body (rest form))
-      `(locally ,@declarations
-         ,@(apply-to-all-forms at-macro-form remaining-forms))))
-
-  (defun apply-to-special-form-1 (at-macro-form form)
-    "If form is a special form (one of `progn', `eval-when', or
-`locally'), Expand FORM into AT-MACRO-FORM recursively."
-    (typecase form
-      (cons (if-let ((expansion (apply-to-special-form-1* at-macro-form (first form) form)))
-              (values expansion t)
-              (values form nil)))
-      (otherwise (values form nil)))))
-
-;;; NOTE: At the top level, Common Lisp specially treats `macrolet',
-;;; `symbol-macrolet', and *ALL* macro forms. But for supporting them
-;;; I need a real code-walker.

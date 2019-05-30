@@ -1,5 +1,10 @@
 (in-package #:cl-annot-revisit-test)
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (define-constant +at-macro-eval-always+
+      '(:compile-toplevel :load-toplevel :execute)
+    :test 'equal))
+
 (defmacro with-interpackage-falias ((&rest names) package-designator &body body)
   (loop with package = (find-package package-designator)
      for name in names

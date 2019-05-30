@@ -26,8 +26,10 @@
               ,@class-options))))
 
   (defun expand-@metaclass-1 (form metaclass)
-    (with-macroexpand-1-convension form
-      (expand-@metaclass-1* (first form) form metaclass))))
+    (try-macroexpand
+     (if (consp form)
+         (expand-@metaclass-1* (first form) form metaclass))
+     form)))
 
 (defmacro @metaclass (class-name &body forms &environment env)
   (apply-at-macro `(@metaclass ,class-name)
@@ -49,15 +51,18 @@
          into names
          finally (return
                    (if names
-                       `(progn (@eval-always (export ',names))
+                       `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                                 (export ',names))
                                ,form)
                        form))))
     (:method ((form-op (eql 'define-condition)) form)
       (expand-@export-slots-1* 'defclass form)))
 
   (defun expand-@export-slots-1 (form)
-    (with-macroexpand-1-convension form
-      (expand-@export-slots-1* (first form) form))))
+    (try-macroexpand
+     (if (consp form)
+         (expand-@export-slots-1* (first form) form))
+     form)))
 
 (defmacro @export-slots (&body forms &environment env)
   (apply-at-macro '(@export-slots) #'expand-@export-slots-1 forms env))
@@ -95,15 +100,18 @@
          into accessors
          finally (return
                    (if accessors
-                       `(progn (@eval-always (export ',accessors))
+                       `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                                 (export ',accessors))
                                ,form)
                        form))))
     (:method ((form-op (eql 'define-condition)) form)
       (expand-@export-accessors-1* 'defclass form)))
 
   (defun expand-@export-accessors-1 (form)
-    (with-macroexpand-1-convension form
-      (expand-@export-accessors-1* (first form) form))))
+    (try-macroexpand
+     (if (consp form)
+         (expand-@export-accessors-1* (first form) form))
+     form)))
 
 (defmacro @export-accessors (&body forms &environment env)
   (apply-at-macro '(@export-accessors) #'expand-@export-accessors-1 forms env))
