@@ -3,37 +3,10 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun split-defclass-form (form)
     (destructuring-bind (op class-name (&rest superclass-names)
-                             (&rest slot-specifiers)
-                             &rest class-options)
+                            (&rest slot-specifiers)
+                            &rest class-options)
         form
-      (values op class-name superclass-names slot-specifiers class-options)))
-
-  #+ignore                              ; TODO
-  (defun parse-defstruct-option (name-or-options)
-    (if
-     (symbolp name-or-options)
-     (values name-or-options                   ; name
-             `((:conc-name . ,(symbolicate name-or-options #\-))
-               
-               
-               ))
-     (loop with name = (first name-or-options)
-        for option in (rest name-or-options)
-        ;; :conc-name
-        if (or (eq option :conc-name)
-               (equal option '(:conc-name)))
-        collect `(:conc-name . nil)
-        else if (starts-with :conc-name option)
-        collect `(:conc-name . ,(second option))
-        ;; :constructor
-        else if (or (eq option :constructor)
-                    (equal option '(:constructor)))
-        collect `(:conc-name . nil)
-        else if (starts-with :conc-name option)
-        collect `(:conc-name . ,(second option)))))
-
-  ;; TODO: parse-defstruct-form
-  )
+      (values op class-name superclass-names slot-specifiers class-options))))
 
 ;;; `@metaclass'
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -128,11 +101,6 @@
     (:method ((form-op (eql 'define-condition)) form)
       (expand-@export-accessors-1* 'defclass form)))
 
-  ;; TODO
-  #+ignore
-  (defmethod expand-@export-accessors-1* ((form-op (eql 'defstruct)) form)
-    )
-
   (defun expand-@export-accessors-1 (form)
     (with-macroexpand-1-convension form
       (expand-@export-accessors-1* (first form) form))))
@@ -140,13 +108,6 @@
 (defmacro @export-accessors (&body forms &environment env)
   (apply-at-macro '(@export-accessors) #'expand-@export-accessors-1 forms env))
 
-;;; TODO : @export-constructors -- works only for `defstruct'
-
-
 (defmacro @export-class (&body forms)
   "Just an alias of nested `@export-slots', `@export-accessors', and `@export'."
   `(@export-slots (@export-accessors (@export ,@forms))))
-
-;; TODO: #:@export-structure
-
-

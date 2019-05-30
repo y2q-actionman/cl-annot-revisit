@@ -14,7 +14,8 @@
                  (:file "export" :depends-on ("package" "util" "eval-when"))
                  (:file "declaration" :depends-on ("package" "util" "export"))
                  (:file "documentation" :depends-on ("package" "util"))
-                 (:file "class" :depends-on ("package" "eval-when"))))
+                 (:file "defclass" :depends-on ("package" "eval-when"))
+                 (:file "defstruct" :depends-on ("package" "defclass"))))
 	       (:module "at-syntax"
                 :serial nil
                 :components
