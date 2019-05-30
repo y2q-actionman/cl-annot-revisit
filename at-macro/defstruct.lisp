@@ -5,7 +5,7 @@
     (let* ((name-and-options (ensure-list name-and-options))
            (name (first name-and-options))
            (options-list (rest name-and-options))
-           (options-table (make-hash-table)))
+           (options-table (make-hash-table :test 'eq)))
       (flet ((set-it (key val)
                (setf (gethash key options-table) val))
              (push-it (key val)
@@ -43,13 +43,16 @@
               ((parse-conc-name-like-option :copier))
               ;; :include
               ((starts-with :include option)
-               (when (gethash :include options-table)
-                 (error "Two :include options appeared."))
+               (assert (gethash :include options-table) ()
+                       'at-macro-error :form name-and-options
+                       :message "Two :include options appeared.")
                (set-it :include (rest option)))
               ;; :initial-offset
               ((starts-with :initial-offset option)
                (let ((offset (second option)))
-                 (check-type offset '(integer 0))
+                 (assert (typep offset '(integer 0)) ()
+                         'at-macro-error :form name-and-options
+                         :message ":initial-offset must be a non-zero integer")
                  (set-it :initial-offset offset)))
               ;; :named
               ((eq option :named)
@@ -73,18 +76,22 @@
         (ensure-gethash :constructor options-table (list (default-constructor)))
         (ensure-gethash :copier options-table (default-copier))
         (when (gethash :initial-offset options-table)
-          (assert (not (gethash :type options-table))
-                () ":initial-offset appered but no :type supplied"))
-        ;; abount `:predicate'
+          (assert (not (gethash :type options-table)) ()
+                  'at-macro-error :form name-and-options
+                  :message ":initial-offset appered but no :type supplied"))
+        ;; about `:predicate'
         (let ((named? (or (gethash :named options-table)
                           (not (gethash :type options-table)))))
           (cond ((gethash :predicate options-table)
-                 (assert named? () ":predicate specified for struct is not named."))
+                 (assert named? ()
+                         'at-macro-error :form name-and-options
+                         :message ":predicate specified for struct is not named."))
                 ((not named?))          ; nop
                 (t (set-it :predicate (default-predicate)))))
         (assert (not (and (gethash :print-function options-table)
                           (gethash :print-object options-table)))
-                () ":print-function and :print-object are exclusive."))
+                () 'at-macro-error :form name-and-options
+                :message ":print-function and :print-object are exclusive."))
       ;; Done
       (values name options-table)))
 
@@ -96,29 +103,64 @@
                 :message (format nil "operator ~A is not defstruct" operator)))))
     (multiple-value-bind (name options)
         (parse-defstruct-option (pop form))
-      (let ((documentation (if (stringp (first form))
-                               (pop form)
-                               nil)))
-        (values name options
-                form                    ; slot-descriptions
-                documentation))))
-  
-  ;; TODO
-  #+ignore
+      (let* ((documentation (if (stringp (first form))
+                                (pop form)
+                                nil))
+             (slot-descriptions (mapcar #'ensure-list form)))
+        (values name options slot-descriptions documentation))))
+
+  (define-constant +all-kinds+
+      '(:structure-name :constructor :copier :predicate :slot-name :reader)
+    :test 'equal)
+
+  (defun pick-names-of-defstruct-form (form kinds &optional (*package* *package*))
+    (when (eq kinds t)
+      (setf kinds +all-kinds+))
+    (multiple-value-bind (struct-name options slot-descriptions)
+        (parse-defstruct-form form)
+      (when (gethash :include options)
+        ;; If `:include' specified, `defstruct' makes accessors about the included
+        ;; struct. I think looking them by `@export-accessors' is very hard...
+        (warn 'at-macro-style-warning :form form
+              :message "at-macro does not export accessors for :include'd slots."))
+      (let (ret)
+        (when (member :structure-name kinds) 
+          (when (and (gethash :type options)
+                     (not (gethash :named options))
+                     *at-macro-verbose*)
+            (warn 'at-macro-style-warning :form form
+                  :message "Unnamed defstruct does not define its name as a type-specifier"))
+          (push struct-name ret))
+        (when (member :constructor kinds) 
+          (loop for (name) in (gethash :constructor options)
+             when name
+             do (push name ret)))
+        (when (member :copier kinds) 
+          (push (gethash :copier options) ret))
+        (when (member :predicate kinds) 
+          (when-let ((p-name (gethash :predicate options)))
+            (push p-name ret)))
+        (when (intersection '(:slot-name :reader) kinds)
+          (loop with conc-name = (gethash :conc-name options)
+             for (s-name) in slot-descriptions
+             when (member :slot-name kinds)
+             do (push s-name ret)
+             when (member :reader kinds)
+             do (push (if conc-name
+                          (symbolicate conc-name s-name)
+                          s-name)
+                      ret)))
+        (nreverse ret)))))
+
+
+;;; `@export-accessors'
+(eval-when (:compile-toplevel :load-toplevel :execute)
   (defmethod expand-@export-accessors-1* ((form-op (eql 'defstruct)) form)
-    )
-
-  ;; TODO: If `:include' specified, `defstruct' makes accessors about the included
-  ;; struct. I think looking them by `@export-accessors' is very hard...
-  ;; (It will be a style-warning.)
-
-  ;; TODO: about :named
-  ;; -- This effects whether the predicate defined or not if `:type' supplied.
-  ;; -- but not make a type specifier.
-
-  
-
-  )
+    (let ((readers (pick-names-of-defstruct-form form '(:reader))))
+      (if readers
+          `(progn (@eval-always (export ',readers))
+                  ,form)
+          form))))
 
 
 ;;; `@export-constructors'
@@ -128,10 +170,7 @@
       (declare (ignore form-op form))
       nil)
     (:method ((form-op (eql 'defstruct)) form)
-      (let* ((defstruct-options (nth-value 1 (parse-defstruct-form form)))
-             (constructors
-              (loop for (name) in (gethash :constructor defstruct-options)
-                 when name collect it)))
+      (let ((constructors (pick-names-of-defstruct-form form '(:constructor))))
         (if constructors
             `(progn (@eval-always (export ',constructors))
                     ,form)
@@ -146,7 +185,24 @@
                   forms env))
 
 
-(defmacro @export-structure (&body forms)
-  "Just an alias of nested  `@export-accessors',`@export-constructors', and `@export'."
+;;; `@export-structure'
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defgeneric expand-@export-structure-1* (form-op form)
+    (:method (form-op form)
+      (declare (ignore form-op form))
+      nil)
+    (:method ((form-op (eql 'defstruct)) form)
+      (let ((all (pick-names-of-defstruct-form form t)))
+        (if all
+            `(progn (@eval-always (export ',all))
+                    ,form)
+            form))))
+
+  (defun expand-@export-structure-1 (form)
+    (with-macroexpand-1-convension form
+      (expand-@export-structure-1* (first form) form))))
+
+(defmacro @export-structure (&body forms &environment env)
   ;; Original cl-annot does `@export-slots', but it does nothing.
-  `(@export-accessors (@export-constructors (@export ,@forms))))
+  ;; Just an alias of nested  `@export-accessors',`@export-constructors', and `@export'.
+  (apply-at-macro '(@export-structure) #'expand-@export-structure-1 forms env))
