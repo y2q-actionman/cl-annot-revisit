@@ -5,6 +5,7 @@
   (:use :cl :alexandria)
   (:export
    #:at-macro-style-warning
+   #:*at-macro-verbose*
    ;; see cl-annot/lib/
    ;; see std.lisp
    #:@export

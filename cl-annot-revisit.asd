@@ -9,7 +9,8 @@
                 :serial t               ; FIXME
                 :components
                 ((:file "package")
-                 (:file "util" :depends-on ("package"))
+                 (:file "condition" :depends-on ("package"))
+                 (:file "util" :depends-on ("package" "condition"))
                  (:file "eval-when" :depends-on ("package"))
                  (:file "export" :depends-on ("package" "util" "eval-when"))
                  (:file "declaration" :depends-on ("package" "util" "export"))

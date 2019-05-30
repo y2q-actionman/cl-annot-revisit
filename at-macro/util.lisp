@@ -57,22 +57,6 @@ values and see N-th value as a condition."
   "Uses `mv-cond-let-n' seeing the second value."
   `(mv-cond-let-n 1 (,@vars) ,@clauses))
 
-(define-condition at-macro-condition (condition)
-  ((form :initarg :form)
-   (message :initarg :message :initform nil))
-  (:report
-   (lambda (condition stream)
-     (princ (slot-value condition 'message) stream)))
-  (:documentation "The root of at-macro  conditions."))
-
-(define-condition at-macro-style-warning (style-warning at-macro-condition)
-  ()
-  (:documentation "Signaled if some bad styles are found."))
-
-(define-condition at-macro-error (style-warning)
-  ()
-  (:documentation "Raised if an error occured."))
-
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun apply-to-all-forms (operator-head forms)

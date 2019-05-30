@@ -1,8 +1,8 @@
 (in-package :cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun parse-defstruct-option (name-or-options &optional (*package* *package*))
-    (let* ((name-and-options (ensure-list name-or-options))
+  (defun parse-defstruct-option (name-and-options &optional (*package* *package*))
+    (let* ((name-and-options (ensure-list name-and-options))
            (name (first name-and-options))
            (options-list (rest name-and-options))
            (options-table (make-hash-table)))
@@ -72,9 +72,9 @@
         (ensure-gethash :conc-name options-table (default-conc-name))
         (ensure-gethash :constructor options-table (list (default-constructor)))
         (ensure-gethash :copier options-table (default-copier))
-        (assert (and (gethash :initial-offset options-table)
-                     (not (gethash :type options-table)))
-                () ":initial-offset appered but no :type supplied")
+        (when (gethash :initial-offset options-table)
+          (assert (not (gethash :type options-table))
+                () ":initial-offset appered but no :type supplied"))
         ;; abount `:predicate'
         (let ((named? (or (gethash :named options-table)
                           (not (gethash :type options-table)))))
@@ -88,6 +88,21 @@
       ;; Done
       (values name options-table)))
 
+  (defun parse-defstruct-form (form &optional (*package* *package*))
+    (let ((operator (pop form)))
+      (unless (eq operator 'defstruct)
+        (when *at-macro-verbose*
+          (warn 'at-macro-style-warning :form form
+                :message (format nil "operator ~A is not defstruct" operator)))))
+    (multiple-value-bind (name options)
+        (parse-defstruct-option (pop form))
+      (let ((documentation (if (stringp (first form))
+                               (pop form)
+                               nil)))
+        (values name options
+                form                    ; slot-descriptions
+                documentation))))
+  
   ;; TODO
   #+ignore
   (defmethod expand-@export-accessors-1* ((form-op (eql 'defstruct)) form)
@@ -101,9 +116,37 @@
   ;; -- This effects whether the predicate defined or not if `:type' supplied.
   ;; -- but not make a type specifier.
 
+  
+
   )
 
-;;; TODO : @export-constructors -- works only for `defstruct'
+
+;;; `@export-constructors'
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defgeneric expand-@export-constructors-1* (form-op form)
+    (:method (form-op form)
+      (declare (ignore form-op form))
+      nil)
+    (:method ((form-op (eql 'defstruct)) form)
+      (let* ((defstruct-options (nth-value 1 (parse-defstruct-form form)))
+             (constructors
+              (loop for (name) in (gethash :constructor defstruct-options)
+                 when name collect it)))
+        (if constructors
+            `(progn (@eval-always (export ',constructors))
+                    ,form)
+            form))))
+
+  (defun expand-@export-constructors-1 (form)
+    (with-macroexpand-1-convension form
+      (expand-@export-constructors-1* (first form) form))))
+
+(defmacro @export-constructors (&body forms &environment env)
+  (apply-at-macro '(@export-constructors) #'expand-@export-constructors-1
+                  forms env))
 
 
-;; TODO: #:@export-structure
+(defmacro @export-structure (&body forms)
+  "Just an alias of nested  `@export-accessors',`@export-constructors', and `@export'."
+  ;; Original cl-annot does `@export-slots', but it does nothing.
+  `(@export-accessors (@export-constructors (@export ,@forms))))
