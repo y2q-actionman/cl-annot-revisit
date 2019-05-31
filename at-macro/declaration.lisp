@@ -63,7 +63,8 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
   (defmethod insert-declaration-1* (operator declaration form decl-specifier)
     "General case."
     (declare (ignore declaration))
-    (when (operator-take-local-declaration-p operator)
+    (when (and (operator-take-local-declaration-p operator)
+               *at-macro-verbose*)
       (warn 'at-declaration-style-warning :form form
             :message (format nil "Adding declarations into ~A form does not works for local declarations"
                              operator)))
@@ -74,11 +75,12 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
   (defmethod insert-declaration-1* ((operator (eql 'defgeneric)) declaration
                                     form decl-specifier)
     (unless (starts-with declaration 'optimize)
-      (warn 'at-declaration-style-warning :form
+      (error 'at-macro-error :form
             :message (format nil "`defgeneric' accepts only `optimize' declarations.")))
     (destructuring-bind (op function-name gf-lambda-list &rest option)
         form
-      (when (assoc :method option)
+      (when (and (assoc :method option)
+                 *at-macro-verbose*)
         (warn 'at-declaration-style-warning :form form
               :message (format nil "Adding declarations into ~A form does not works for methods."
                                operator)))
@@ -87,8 +89,9 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
   (defmethod insert-declaration-1* ((operator (eql 'define-method-combination)) declaration form decl-specifier)
     (declare (ignore declaration))
     (if (<= (length form) 3)
-        (warn 'at-declaration-style-warning :form form
-              :message "The short-form of `define-method-combination' doesn't take declarations.")
+        (when *at-macro-verbose*
+          (warn 'at-declaration-style-warning :form form
+                :message "The short-form of `define-method-combination' doesn't take declarations."))
         (destructuring-bind (op name lambda-list (&rest method-group-specifier) &rest rest)
             form
           (let (options)
@@ -116,9 +119,10 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
     (declare (ignore declaration))
     (if (or (<= (length form) 3)
             (stringp (fourth form)))
-        (warn 'at-declaration-style-warning
-              :message "The short-form of `defsetf' does not take declarations."
-              :form form)
+        (when *at-macro-verbose*
+          (warn 'at-declaration-style-warning
+                :message "The short-form of `defsetf' does not take declarations."
+                :form form))
         (insert-declaration-to-nth-body 4 form decl-specifier :documentation t)))
 
   (defun try-add-declaim-to-definiton-form (form decl-specifier decl-args-index)
@@ -198,33 +202,40 @@ If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
 ;;; Declaration only -- `ignore', `ignorable', `dynamic-extent'
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun local-declaration-name-p (x)
+  (defun ignore-name-p (x)
     (typecase x
       (symbol t)
       (cons (starts-with 'function x))
       (otherwise nil)))
-  
-  (defun expand-local-declaration (decl-name names body)
-    (let* ((names-list (ensure-list-with names #'local-declaration-name-p))
-           (new-decl `(,decl-name ,@names-list)))
-      (if body
-          `(@add-declaration ,new-decl ,@body)
-          `'(declare ,new-decl)))))
+
+  (defun expand-at-declaration (decl-specifier body add-declaim-p)
+    "If BODY is a form accepts declarations, adds a declaration NEW-DECL into it.
+If BODY is nil, it is expanded to `declaim' and '(declare NEW-DECL), this is intended to embed it as a declaration using '#.'"
+    (cond (body
+           `(@add-declaration ,decl-specifier ,@body))
+          (add-declaim-p
+           `(progn (declaim ,decl-specifier)
+                   '(declare ,decl-specifier)))
+          (t
+           `'(declare ,decl-specifier)))))
 
 (defmacro @ignore (names &body body)
   "Adds `ignore' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (ignore ...)), this is intended to embed it as a declaration using '#.'"
-  (expand-local-declaration 'ignore names body))
+  (expand-at-declaration `(ignore ,@(ensure-list-with names #'ignore-name-p))
+                         body nil))
 
 (defmacro @ignorable (names &body body)
   "Adds `ignorable' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (ignorable ...)), this is intended to embed it as a declaration using '#.'"
-  (expand-local-declaration 'ignorable names body))
+  (expand-at-declaration `(ignorable ,@(ensure-list-with names #'ignore-name-p))
+                         body nil))
 
 (defmacro @dynamic-extent (names &body body)
   "Adds `dynamic-extent' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (dynamic-extent ...)), this is intended to embed it as a declaration using '#.'"
-  (expand-local-declaration 'dynamic-extent names body))
+  (expand-at-declaration `(dynamic-extent ,@(ensure-list-with names #'ignore-name-p))
+                         body nil))
 
 ;;; Declaration and proclamation -- `type', `ftype', `inline', `notinline', `optimize', `special'
 
@@ -235,21 +246,13 @@ If BODY is nil, it is expanded to '(declare (dynamic-extent ...)), this is inten
       ;; There may be implementation-dependent switch. I try to match loosely.
       (cons (and (symbolp (first x))
                  (every #'atom (rest x)))) ; seeing '(speed 3)' etc.
-      (otherwise nil)))
-  
-  (defun expand-declaration-and-proclamation (new-decl body)
-    "If BODY is a form accepts declarations, adds a declaration NEW-DECL into it.
-If BODY is nil, it is expanded to `declaim' and '(declare NEW-DECL), this is intended to embed it as a declaration using '#.'"
-    (if body
-        `(@add-declaration ,new-decl ,@body)
-        `(progn (declaim ,new-decl)
-                '(declare ,new-decl)))))
+      (otherwise nil))))
 
 (defmacro @optimize (qualities &body body)
   "Adds `optimize' declaration into BODY.
 If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this is intended to embed it as a declaration using '#.'"
-  (let ((qualities-list (ensure-list-with qualities #'optimize-quality-p)))
-    (expand-declaration-and-proclamation `(optimize ,@qualities-list) body)))
+  (expand-at-declaration `(optimize ,@(ensure-list-with qualities #'optimize-quality-p))
+                         body t))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   ;; TODO: I should see all forms whether it is definition form or not.
@@ -264,10 +267,10 @@ If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this 
        ;; It is treated as '(@inline (func) (defun func () ...)'.
        (let ((var (find-name-to-be-defined names-or-form))
              (body (list* names-or-form body)))
-         (expand-declaration-and-proclamation `(,@decl-head ,var) body)))
+         (expand-at-declaration `(,@decl-head ,var) body t)))
       (t                             ; Like '(@notinline (x y z) ...)'
        (let ((names (ensure-list-with names-or-form name-p-function)))
-         (expand-declaration-and-proclamation `(,@decl-head ,@names) body)))))
+         (expand-at-declaration `(,@decl-head ,@names) body t)))))
 
   (defun expand-at-declaration-for-variable (decl-head vars-or-form body)
     (expand-at-declaration-may-definition-at-first
