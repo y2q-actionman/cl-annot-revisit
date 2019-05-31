@@ -90,25 +90,26 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
   
   (defmethod insert-documentation-1* ((operator (eql 'lambda)) form docstring)
     "Special handling for `lambda', adds docstring to an anonymous function."
-    (destructuring-bind (op lambda-list body0) form
+    (destructuring-bind (op lambda-list &rest body0) form
       (multiple-value-bind (body decls old-doc)
           (parse-body body0 :documentation t :whole form)
         (when (and old-doc docstring)
           (error 'at-macro-error :form form
                  :message "Lambda form already has a docstring."))
-        `(,op ,lambda-list ,decls
-              ,@(cond (docstring (list docstring))
-                      (old-doc (list old-doc))
-                      (t nil))
-              ,@body))))
+        (let* ((new-doc (or docstring old-doc))
+               (new-body (or body
+                             (if new-doc `(nil) nil)))) ; Handling no body ; (lambda ())
+          `(,op ,lambda-list ,@decls
+                ,@(ensure-list new-doc)
+                ,@new-body)))))
   
   (defmethod insert-documentation-1* ((operator (eql 'function)) form docstring)
-    "Special handling for (function (lambda ..)), adds docstring to an anonymous function."
+    "Special handling for #'(lambda ..), adds docstring to an anonymous function."
     (if (starts-with 'lambda (second form))
         `(function ,(insert-documentation-1* 'lambda (second form) docstring))
         (call-next-method)))
-  
 
+  
   (defun insert-documentation-1 (form docstring)
     "Insert DOCSTRING into FORM.
 If insertion successed, returns (values <expansion> t).

@@ -54,7 +54,7 @@ first argument is a name to be defined."))
 
   (defmethod find-name-to-be-defined* ((form-head symbol) form)
     "Called if FORM-HEAD is symbol."
-    (if (member form-head *standard-definiton-form-list*)
+    (if (member form-head *definiton-form-list*)
         (second form)))
 
   (defmethod find-name-to-be-defined* ((form-head (eql 'cl:defstruct)) form)

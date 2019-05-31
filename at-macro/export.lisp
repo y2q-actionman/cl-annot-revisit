@@ -4,6 +4,14 @@
   ())
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun wrap-with-export (names form)
+    (check-type names list)
+    (if names
+        `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                  (export ',names))
+                ,form)
+        form))
+  
   (defgeneric expand-@export-1* (form-head form)
     (:documentation "Called by `expand-@export-1' to compute a result.
 If FORM can be expanded, returns its expansion. If not, returns nil."))
@@ -17,13 +25,9 @@ returns the expansion of FORM. If not, returns nil."
                           (function-name-p name))
                (warn '@export-style-warning
                      :form form :message "Name ~A looks like non-conforming" name))
-             `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
-                       (export '(,(second name)))) 
-                     ,form))
+             (wrap-with-export (list (second name)) form))
             (t
-             `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
-                       (export '(,name)))
-                     ,form)))))
+             (wrap-with-export (list name) form)))))
 
   (defun warn-around-defsetf-like (operator form)
     (when *at-macro-verbose*

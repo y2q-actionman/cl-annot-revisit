@@ -6,7 +6,9 @@
                             (&rest slot-specifiers)
                             &rest class-options)
         form
-      (values op class-name superclass-names slot-specifiers class-options))))
+      (values op class-name superclass-names
+              (mapcar #'ensure-list slot-specifiers)
+              class-options))))
 
 ;;; `@metaclass'
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -18,7 +20,7 @@
       (multiple-value-bind (op class-name superclass-names slot-specifiers class-options)
           (split-defclass-form form)
         (when-let (old-metaclass (assoc :metaclass class-options))
-          (warn 'at-macro-style-warning :form form
+          (error 'at-macro-error :form form
                 :message (format nil "Metaclass ~A already exists." (cdr old-metaclass))))
         `(,op ,class-name (,@superclass-names)
               (,@slot-specifiers)
@@ -44,17 +46,10 @@
       nil)
     (:method ((form-op (eql 'defclass)) form)
       (loop with slot-specifiers = (nth-value 3 (split-defclass-form form))
-         for slot-spec in slot-specifiers
-         collect (etypecase slot-spec
-                   (symbol slot-spec)
-                   (cons (first slot-spec)))
-         into names
+         for (slot-name) in slot-specifiers
+         collect slot-name into names
          finally (return
-                   (if names
-                       `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
-                                 (export ',names))
-                               ,form)
-                       form))))
+                   (wrap-with-export names form))))
     (:method ((form-op (eql 'define-condition)) form)
       (expand-@export-slots-1* 'defclass form)))
 
@@ -78,9 +73,8 @@
       nil)
     (:method ((form-op (eql 'defclass)) form)
       (loop with slot-specifiers = (nth-value 3 (split-defclass-form form))
-         for slot-spec in slot-specifiers
-         if (consp slot-spec)
-         nconc (loop for (option-name value) on (rest slot-spec) by #'cddr
+         for (nil . slot-options) in slot-specifiers
+         nconc (loop for (option-name value) on slot-options by #'cddr
                   ;; TODO: FIXME:
                   ;; If this class was extended by metaclass, it may
                   ;; has more keywords making an accessor. The correct
@@ -99,11 +93,7 @@
                             (second value))))
          into accessors
          finally (return
-                   (if accessors
-                       `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
-                                 (export ',accessors))
-                               ,form)
-                       form))))
+                   (wrap-with-export accessors form))))
     (:method ((form-op (eql 'define-condition)) form)
       (expand-@export-accessors-1* 'defclass form)))
 

@@ -11,7 +11,7 @@
                (:file "declaration" :depends-on ("util"))
                (:file "export" :depends-on ("util"))
                (:file "documentation" :depends-on ("util"))
-               (:file "class" :depends-on ("util")))
+               #+ignore(:file "class" :depends-on ("util")))
   :perform (prepare-op :before (o c)
              (set (find-symbol* '#:*tests* '#:1am) '()))
   :perform (test-op (o s)

@@ -157,11 +157,7 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defmethod expand-@export-accessors-1* ((form-op (eql 'defstruct)) form)
     (let ((readers (pick-names-of-defstruct-form form '(:reader))))
-      (if readers
-          `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
-                    (export ',readers))
-                  ,form)
-          form))))
+      (wrap-with-export readers form))))
 
 
 ;;; `@export-constructors'
@@ -172,11 +168,7 @@
       nil)
     (:method ((form-op (eql 'defstruct)) form)
       (let ((constructors (pick-names-of-defstruct-form form '(:constructor))))
-        (if constructors
-            `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
-                      (export ',constructors))
-                    ,form)
-            form))))
+        (wrap-with-export constructors form))))
 
   (defun expand-@export-constructors-1 (form)
     (try-macroexpand
@@ -197,11 +189,7 @@
       nil)
     (:method ((form-op (eql 'defstruct)) form)
       (let ((all (pick-names-of-defstruct-form form t)))
-        (if all
-            `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
-                      (export ',all))
-                    ,form)
-            form))))
+        (wrap-with-export all form))))
 
   (defun expand-@export-structure-1 (form)
     (try-macroexpand

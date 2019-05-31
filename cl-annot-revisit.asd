@@ -15,8 +15,11 @@
                  (:file "export" :depends-on ("util" "form-traversal"))
                  (:file "declaration" :depends-on ("util" "form-traversal"))
                  (:file "documentation" :depends-on ("util" "form-traversal"))
-                 (:file "defclass" :depends-on ("util" "form-traversal"))
-                 (:file "defstruct" :depends-on ("util" "form-traversal"))))
+                 (:file "defclass" :depends-on ("util" "form-traversal"
+                                                       "export")) ; FIXME
+                 (:file "defstruct" :depends-on ("util" "form-traversal"
+                                                        "export" "defclass" ; FIXME
+                                                        ))))
 	       (:module "at-syntax"
                 :serial nil
                 :components
