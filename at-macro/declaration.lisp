@@ -162,9 +162,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
     (or (and (function-definition-operator-p operator)
              (try-add-declaim-to-definiton-form form decl-specifier 1))
         (call-next-method)))
-
-  ;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
-  ;;   (@inline (func-a) (declaim)) ; => (declaim (inline func-a))
+  
 
 
   (defun insert-declaration-1 (form decl-specifier)
@@ -254,6 +252,9 @@ If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this 
   (expand-at-declaration `(optimize ,@(ensure-list-with qualities #'optimize-quality-p))
                          body t))
 
+
+;;; TODO: split 'add-declaim' from 'add-declaration'
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   ;; TODO: I should see all forms whether it is definition form or not.
   (defun expand-at-declaration-may-definition-at-first
@@ -298,6 +299,42 @@ If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), this i
   ;; TODO: add docstrings
   (expand-at-declaration-for-function `(ftype ,typespec) function-names-or-form body))
 
+#|
+This macro is ambiguous when it is used like:
+
+  (@inline (defun foo nil) ; defining a function takes zero arguments and returns nil.
+     (defun bar () t))
+
+Is this expanded to (1) ?
+
+ (1):
+
+  (progn (declaim inline foo) (defun foo nil)
+         (declaim inline bar) (defun bar nil)
+
+or (2) ?
+
+ (2):
+
+  (defun bar
+    (declare (inline defun foo nil))
+     t)
+
+This may be a problem when the first form is a macro for shorthanding to be expanded to `defun'.
+
+I choose (1) of above example, so I try to expand the first form at first.
+Algorithm is here:
+
+  (if <Checks the first form is a name or a list of names.>
+     (if <Try `add-declaim' to the first form.>
+         <Use the expansion and apply the at-macro to rest forms.> ; (a)
+         <It is treated as a first argument of  `add-declaration' and apply it to rest forms.>)
+      <Leave the first form and apply the at-macro to rest forms.> ; (b)
+     )
+
+I noticed (a) and (b) does almost same, so I will some cleanups.
+|#
+
 (defmacro @inline (&optional function-names-or-form &body body)
   ;; TODO: add docstrings
   (expand-at-declaration-for-function '(inline) function-names-or-form body))
@@ -314,3 +351,6 @@ If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), this i
 
 
 ;;; FIXME: what is '@type' and `the'?
+
+;;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
+;;;   (@inline (func-a) (declaim)) ; => (declaim (inline func-a))
