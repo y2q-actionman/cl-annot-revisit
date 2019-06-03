@@ -14,6 +14,7 @@
                  (:file "form-traversal" :depends-on ("package"))
                  (:file "export" :depends-on ("util" "form-traversal"))
                  (:file "declaration" :depends-on ("util" "form-traversal"))
+                 (:file "declamation" :depends-on ("util" "form-traversal" "declaration"))
                  (:file "documentation" :depends-on ("util" "form-traversal"))
                  (:file "defclass" :depends-on ("util" "form-traversal"
                                                        "export")) ; FIXME
