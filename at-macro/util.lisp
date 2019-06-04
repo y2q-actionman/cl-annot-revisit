@@ -10,7 +10,7 @@ This is only for developing at-macro codes. Used at nowhere."
      finally (return (sort ret #'string< :key #'symbol-name))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun ensure-list-with (names &optional (test (complement #'listp)))
+  (defun ensure-list-with (names test)
     "Do like `ensure-list' except testing atom with TEST."
     (if (funcall test names)
         (list names)

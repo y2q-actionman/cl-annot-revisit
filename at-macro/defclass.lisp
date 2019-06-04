@@ -49,7 +49,7 @@
          for (slot-name) in slot-specifiers
          collect slot-name into names
          finally (return
-                   (wrap-with-export names form))))
+                   (add-export names form))))
     (:method ((form-op (eql 'define-condition)) form)
       (expand-@export-slots-1* 'defclass form)))
 
@@ -93,7 +93,7 @@
                             (second value))))
          into accessors
          finally (return
-                   (wrap-with-export accessors form))))
+                   (add-export accessors form))))
     (:method ((form-op (eql 'define-condition)) form)
       (expand-@export-accessors-1* 'defclass form)))
 

@@ -4,7 +4,7 @@
   ())
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun wrap-with-export (names form)
+  (defun add-export (names form)
     (check-type names list)
     (if names
         `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -14,20 +14,19 @@
   
   (defgeneric expand-@export-1* (form-head form)
     (:documentation "Called by `expand-@export-1' to compute a result.
-If FORM can be expanded, returns its expansion. If not, returns nil."))
-
-  (defmethod expand-@export-1* (form-head form)
-    "The bottom case. If FORM found by `find-name-to-be-defined',
+If FORM can be expanded, returns its expansion. If not, returns nil.")
+    (:method (form-head form)
+      "The bottom case. If FORM found by `find-name-to-be-defined',
 returns the expansion of FORM. If not, returns nil."
-    (if-let ((name (find-name-to-be-defined form)))
-      (cond ((listp name)
-             (unless (and (function-definition-operator-p form-head)
-                          (function-name-p name))
-               (warn '@export-style-warning
-                     :form form :message "Name ~A looks like non-conforming" name))
-             (wrap-with-export (list (second name)) form))
-            (t
-             (wrap-with-export (list name) form)))))
+      (if-let ((name (find-name-to-be-defined form)))
+        (cond ((listp name)
+               (unless (and (function-definition-operator-p form-head)
+                            (function-name-p name))
+                 (warn '@export-style-warning
+                       :form form :message "Name ~A looks like non-conforming" name))
+               (add-export (list (second name)) form))
+              (t
+               (add-export (list name) form))))))
 
   (defun warn-around-defsetf-like (operator form)
     (when *at-macro-verbose*

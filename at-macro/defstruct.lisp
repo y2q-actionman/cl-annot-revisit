@@ -1,7 +1,7 @@
 (in-package :cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun parse-defstruct-option (name-and-options &optional (*package* *package*))
+  (defun parse-defstruct-option (name-and-options)
     (let* ((name-and-options (ensure-list name-and-options))
            (name (first name-and-options))
            (options-list (rest name-and-options))
@@ -95,7 +95,7 @@
       ;; Done
       (values name options-table)))
 
-  (defun parse-defstruct-form (form &optional (*package* *package*))
+  (defun parse-defstruct-form (form)
     (let ((operator (pop form)))
       (unless (eq operator 'defstruct)
         (when *at-macro-verbose*
@@ -109,13 +109,7 @@
              (slot-descriptions (mapcar #'ensure-list form)))
         (values name options slot-descriptions documentation))))
 
-  (define-constant +all-kinds+
-      '(:structure-name :constructor :copier :predicate :slot-name :reader)
-    :test 'equal)
-
-  (defun pick-names-of-defstruct-form (form kinds &optional (*package* *package*))
-    (when (eq kinds t)
-      (setf kinds +all-kinds+))
+  (defun pick-names-of-defstruct-form (form kinds)
     (multiple-value-bind (struct-name options slot-descriptions)
         (parse-defstruct-form form)
       (when (gethash :include options)
@@ -157,7 +151,7 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defmethod expand-@export-accessors-1* ((form-op (eql 'defstruct)) form)
     (let ((readers (pick-names-of-defstruct-form form '(:reader))))
-      (wrap-with-export readers form))))
+      (add-export readers form))))
 
 
 ;;; `@export-constructors'
@@ -168,7 +162,7 @@
       nil)
     (:method ((form-op (eql 'defstruct)) form)
       (let ((constructors (pick-names-of-defstruct-form form '(:constructor))))
-        (wrap-with-export constructors form))))
+        (add-export constructors form))))
 
   (defun expand-@export-constructors-1 (form)
     (try-macroexpand
@@ -188,8 +182,10 @@
       (declare (ignore form-op form))
       nil)
     (:method ((form-op (eql 'defstruct)) form)
-      (let ((all (pick-names-of-defstruct-form form t)))
-        (wrap-with-export all form))))
+      (let ((all (pick-names-of-defstruct-form
+                  form
+                  '(:structure-name :constructor :copier :predicate :slot-name :reader))))
+        (add-export all form))))
 
   (defun expand-@export-structure-1 (form)
     (try-macroexpand
@@ -198,8 +194,6 @@
      form)))
 
 (defmacro @export-structure (&body forms &environment env)
-  ;; Original cl-annot does `@export-slots', but it does nothing.
-  ;; Just an alias of nested  `@export-accessors',`@export-constructors', and `@export'.
+  ;; In original, Just an alias of nested `@export-accessors',`@export-constructors',
+  ;; `@export-slots', and `@export'. (But `@export-slots' does nothing).
   (apply-at-macro '(@export-structure) #'expand-@export-structure-1 forms env))
-
-;;; TODO: make a function for (if ... `(progn (eval-when ...)) form)

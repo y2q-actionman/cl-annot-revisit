@@ -2,12 +2,13 @@
 
 (test test-ensure-list-with
   (with-interpackage-falias (ensure-list-with) cl-annot-revisit/at-macro
-    (is (equal (ensure-list-with nil)
-               nil))
-    (is (equal (ensure-list-with 1)
-               '(1)))
-    (is (equal (ensure-list-with '(1 2))
-               '(1 2)))
+    (let ((test (complement #'listp)))
+      (is (equal (ensure-list-with nil test)
+                 nil))
+      (is (equal (ensure-list-with 1 test)
+                 '(1)))
+      (is (equal (ensure-list-with '(1 2) test)
+                 '(1 2))))
     (flet ((test-fn (x)
              (starts-with 'foo x)))
       (is (equal (ensure-list-with nil #'test-fn)

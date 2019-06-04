@@ -30,10 +30,11 @@
                               #3=(defclass foo () ())))
              '(@export-slots (@export-accessors (@export #3#))))))
 
-
-
 (test test-@export-accessors-defstruct
-  (is (equal (macroexpand-1 '(@export-accessors
-                              #1=(defstruct foo slot1 slot2)))
+  ;; XXX: I must let `*package*' because 1am does not preserve current package
+  ;; when it runs `macroexpand-1' which will call `intern' in defstruct parser.
+  (is (equal (let ((*package* (find-package :cl-annot-revisit-test)))
+               (macroexpand-1 '(@export-accessors
+                                #1=(defstruct foo slot1 slot2))))
              '(progn (eval-when #.+at-macro-eval-always+ (export '(foo-slot1 foo-slot2)))
                #1#))))

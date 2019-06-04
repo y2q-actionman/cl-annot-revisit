@@ -83,23 +83,23 @@ To distinguish a macro form from a list of names, I try to `macroexpand-1' to th
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun expand-at-declamation (decl-head names-or-form body name-p-function env)
-    (cond
-      ((and (not (funcall name-p-function names-or-form))
-            (consp names-or-form)
-            (every name-p-function names-or-form)
-            (nth-value 1 (macroexpand-1 names-or-form env))) ; TODO: use env.
-       ;; Like '(@inline (defun func nil) ...)'
-       `(@add-declamation ,decl-head
-                          ;; I don't use `macroexpand-1' result,
-                          ;; because other at-macros may want to see original forms.
-                          ,names-or-form ,@body))
-      (t                             ; Like '(@notinline (x y z) ...)'
-       (let* ((names (ensure-list-with names-or-form name-p-function))
-              (decl-specifier `(,@decl-head ,@names)))
-         (if body
-             `(@add-declaration ,decl-specifier ,@body) ; Use it as a local declaration.
-             `(progn (declaim ,decl-specifier)
-                     '(declare ,decl-specifier))))))))
+    (if (or (funcall name-p-function names-or-form) ; It is a name.
+            (and (consp names-or-form)  ; It is like a list of names,
+                 (every name-p-function names-or-form)
+                 (not                   ; AND not `macroexpand-1'-able.
+                  (nth-value 1 (macroexpand-1 names-or-form env)))))
+        ;; Like '(@notinline (x y z) ...)'
+        (let* ((names (ensure-list-with names-or-form name-p-function))
+               (decl-specifier `(,@decl-head ,@names)))
+          (if body
+              `(@add-declaration ,decl-specifier ,@body) ; Use it as a local declaration.
+              `(progn (declaim ,decl-specifier)
+                      '(declare ,decl-specifier))))
+        ;; Like '(@inline (defun func nil) ...)'
+        `(@add-declamation ,decl-head
+                           ;; I don't use the above `macroexpand-1' result,
+                           ;; because other at-macros may want to see original forms.
+                           ,names-or-form ,@body))))
 
 (defmacro @special (&optional vars-or-form &body body &environment env)
   ;; TODO: add 'VARS-OR-FORM' treating
