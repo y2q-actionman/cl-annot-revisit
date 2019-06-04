@@ -1,7 +1,7 @@
 (in-package :cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun split-defclass-form (form)
+  (defun parse-defclass-form (form)
     (destructuring-bind (op class-name (&rest superclass-names)
                             (&rest slot-specifiers)
                             &rest class-options)
@@ -18,10 +18,10 @@
       nil)
     (:method ((form-op (eql 'defclass)) form metaclass)
       (multiple-value-bind (op class-name superclass-names slot-specifiers class-options)
-          (split-defclass-form form)
-        (when-let (old-metaclass (assoc :metaclass class-options))
+          (parse-defclass-form form)
+        (when (assoc :metaclass class-options)
           (error 'at-macro-error :form form
-                :message (format nil "Metaclass ~A already exists." (cdr old-metaclass))))
+                :message "A metaclass already exists."))
         `(,op ,class-name (,@superclass-names)
               (,@slot-specifiers)
               (:metaclass ,metaclass)
@@ -45,7 +45,7 @@
       (declare (ignore form-op form))
       nil)
     (:method ((form-op (eql 'defclass)) form)
-      (loop with slot-specifiers = (nth-value 3 (split-defclass-form form))
+      (loop with slot-specifiers = (nth-value 3 (parse-defclass-form form))
          for (slot-name) in slot-specifiers
          collect slot-name into names
          finally (return
@@ -72,7 +72,7 @@
       (declare (ignore form-op form))
       nil)
     (:method ((form-op (eql 'defclass)) form)
-      (loop with slot-specifiers = (nth-value 3 (split-defclass-form form))
+      (loop with slot-specifiers = (nth-value 3 (parse-defclass-form form))
          for (nil . slot-options) in slot-specifiers
          nconc (loop for (option-name value) on slot-options by #'cddr
                   ;; TODO: FIXME:

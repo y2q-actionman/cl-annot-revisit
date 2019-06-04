@@ -1,7 +1,7 @@
 (in-package :cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defgeneric insert-declamation-1* (declaration form decl-specifier)
+  (defgeneric expand-@add-declamation-1* (declaration form decl-specifier)
     (:method (declaration form decl-specifier)
       (declare (ignore operator declaration form decl-specifier))
       nil))
@@ -11,62 +11,49 @@
       `(progn (declaim (,@decl-specifier ,name))
               ,form)))
 
-  (defmethod insert-declamation-1* ((declaration (eql 'special)) form decl-specifier)
+  (defmethod expand-@add-declamation-1* ((declaration (eql 'special)) form decl-specifier)
     (if (variable-definition-operator-p (first form)) ; FORM is like `defvar'.
         (add-declaim-to-definiton-form form decl-specifier)))
 
-  (defmethod insert-declamation-1* ((declaration (eql 'type)) form decl-specifier)
+  (defmethod expand-@add-declamation-1* ((declaration (eql 'type)) form decl-specifier)
     (if (variable-definition-operator-p (first form)) ; FORM is like `defvar'.
         (add-declaim-to-definiton-form form decl-specifier)))
 
-  (defmethod insert-declamation-1* ((declaration (eql 'ftype)) form decl-specifier)
+  (defmethod expand-@add-declamation-1* ((declaration (eql 'ftype)) form decl-specifier)
     (if (function-definition-operator-p (first form)) ; FORM is like `defun'.
         (add-declaim-to-definiton-form form decl-specifier)))
 
-  (defmethod insert-declamation-1* ((declaration (eql 'inline)) form decl-specifier)
+  (defmethod expand-@add-declamation-1* ((declaration (eql 'inline)) form decl-specifier)
     (if (function-definition-operator-p (first form))
         (add-declaim-to-definiton-form form decl-specifier)))
 
-  (defmethod insert-declamation-1* ((declaration (eql 'notinline)) form decl-specifier)
+  (defmethod expand-@add-declamation-1* ((declaration (eql 'notinline)) form decl-specifier)
     (if (function-definition-operator-p (first form))
         (add-declaim-to-definiton-form form decl-specifier)))
 
-  (defun insert-declamation-1 (form decl-specifier)
+  (defun expand-@add-declamation-1 (form decl-specifier)
     (try-macroexpand
      (if (consp form)
-         (insert-declamation-1* (first decl-specifier) form decl-specifier))
+         (expand-@add-declamation-1* (first decl-specifier) form decl-specifier))
      form)))
 
 
 (defmacro @add-declamation (decl-specifier &body body &environment env)
-  (let ((at-macro-form `(@add-declamation ,decl-specifier)))
-    (cond
-      ((not body)
-       nil)
-      ((not (length= 1 body))           ; recursive expansion
-       `(progn ,@(apply-to-all-forms at-macro-form body)))
-      (t
-       (let ((form (first body)))
-         (mv-cond-let2 (expansion expanded-p)
-           ((insert-declamation-1 form decl-specifier)) ; try known expansions.
-           ((apply-to-special-form-1 at-macro-form form)) ; try recursive expansion.
-           ((macroexpand-1 form env) ; try `macroexpand-1'.
-            `(,@at-macro-form ,expansion))
-           (t
-            form)))))))
+  (apply-at-macro `(@add-declamation ,decl-specifier)
+                  (lambda (form) (expand-@add-declamation-1 form decl-specifier))
+                  body env))
 
 ;;; Declaration and proclamation -- `type', `ftype', `inline', `notinline', `optimize', `special'
 
 #|
 This macro is ambiguous when the first value is a list of names.
-Here is an example:
+Consider:
 
   (@inline
      (defun foo nil) ; defining a function takes zero arguments and returns nil.
      (defun bar () t))
 
-
-I think it should expanded to below:
+I think it should expanded to next:
 
   (progn (declaim inline foo) (defun foo nil)
          (declaim inline bar) (defun bar () t))
@@ -76,7 +63,6 @@ Not like:
   (defun bar
     (declare (inline defun foo nil))
     t)
-
 
 To distinguish a macro form from a list of names, I try to `macroexpand-1' to the form.
 |#

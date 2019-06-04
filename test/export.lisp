@@ -26,7 +26,7 @@
   (is (equal
        (macroexpand
         '(@export
-          #4=(defstruct (struct2 :copier cpstruct2)
+          #4=(defstruct (struct2 (:copier cpstruct2))
                slot1 slot2)))
        '(progn
          (eval-when #.+at-macro-eval-always+ (export '(struct2)))

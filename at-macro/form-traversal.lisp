@@ -57,14 +57,9 @@ first argument is a name to be defined."))
     (if (member form-head *definiton-form-list*)
         (second form)))
 
-  (defmethod find-name-to-be-defined* ((form-head (eql 'cl:defstruct)) form)
-    "A special handling for `defstruct'. Its second form may contain some options."
-    (let ((name-or-options (second form)))
-      (etypecase name-or-options
-        (symbol name-or-options)
-        (list (first name-or-options)))))
+  ;; special handling for `defstruct' is in 'defstruct.lisp'.
 
-    (defun find-name-to-be-defined (form)
+  (defun find-name-to-be-defined (form)
     "If FORM is a form defining something, returns the name to be
 defined. Its type depends on FORM. (e.g. may be a List if `defun', A
 string-designater if `defpackage'.)
@@ -113,7 +108,8 @@ If FORM is not so, returns nil."
 
 ;; TODO: rewrite..
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun apply-at-macro (at-macro-form expander-function forms env)
+  (defun apply-at-macro (at-macro-form expander-function forms env
+                         &key (if-no-expansion #'identity))
     (cond
       ((null forms)
        nil)
@@ -126,6 +122,5 @@ If FORM is not so, returns nil."
            ((apply-to-special-form-1 at-macro-form form)) ; try recursive expansion.
            ((macroexpand-1 form env)      ; try `macroexpand-1'.
             `(,@at-macro-form ,expansion))
-           (t                       ; nothing to do. return FORM itself.
-            form)))))
-    ))
+           (t                       ; nothing to be expanded.
+            (funcall if-no-expansion form))))))))

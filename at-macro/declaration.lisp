@@ -56,11 +56,11 @@
                                       :documentation documentation :whole form))))
 
 
-  (defgeneric insert-declaration-1* (operator form decl-specifier)
-    (:documentation "Called by `insert-declaration-1' to insert DECL-SPECIFIER into FORM.
+  (defgeneric expand-@add-declaration-1* (operator form decl-specifier)
+    (:documentation "Called by `expand-@add-declaration-1' to insert DECL-SPECIFIER into FORM.
 If FORM can be expanded, returns its expansion. If not, returns nil."))
 
-  (defmethod insert-declaration-1* (operator form decl-specifier)
+  (defmethod expand-@add-declaration-1* (operator form decl-specifier)
     "General case."
     (when (and (operator-take-local-declaration-p operator)
                *at-macro-verbose*)
@@ -71,7 +71,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
       (insert-declaration-to-nth-body body-location form decl-specifier
                                       :documentation (operator-accept-docstring-in-body-p operator))))
 
-  (defmethod insert-declaration-1* ((operator (eql 'defgeneric)) form decl-specifier)
+  (defmethod expand-@add-declaration-1* ((operator (eql 'defgeneric)) form decl-specifier)
     (unless (starts-with decl-specifier 'optimize)
       (error 'at-macro-error :form
             :message (format nil "`defgeneric' accepts only `optimize' declarations.")))
@@ -84,7 +84,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
                                operator)))
       `(,op ,function-name ,gf-lambda-list (declare ,decl-specifier) ,@option)))
 
-  (defmethod insert-declaration-1* ((operator (eql 'define-method-combination))
+  (defmethod expand-@add-declaration-1* ((operator (eql 'define-method-combination))
                                     form decl-specifier)
     (if (<= (length form) 3)
         (when *at-macro-verbose*
@@ -103,7 +103,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
                   ,@(insert-declaration-to-body rest decl-specifier
                                                 :whole form :documentation t))))))
 
-  (defmethod insert-declaration-1* ((operator (eql 'defmethod)) form decl-specifier)
+  (defmethod expand-@add-declaration-1* ((operator (eql 'defmethod)) form decl-specifier)
     (destructuring-bind (op name &rest rest) form
       (let* ((method-qualifier (if (not (listp (first rest)))
                                    (pop rest)))
@@ -112,7 +112,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
               ,@(insert-declaration-to-body rest decl-specifier
                                             :whole form :documentation t)))))
 
-  (defmethod insert-declaration-1* ((operator (eql 'defsetf)) form decl-specifier)
+  (defmethod expand-@add-declaration-1* ((operator (eql 'defsetf)) form decl-specifier)
     (if (or (<= (length form) 3)
             (stringp (fourth form)))
         (when *at-macro-verbose*
@@ -122,13 +122,13 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
         (insert-declaration-to-nth-body 4 form decl-specifier :documentation t)))
 
 
-  (defun insert-declaration-1 (form decl-specifier)
+  (defun expand-@add-declaration-1 (form decl-specifier)
     "Insert DECL-SPECIFIER into FORM.
 If expansion successed, returns (values <expansion> t).
 If failed, returns (values <original-form> nil)."
     (try-macroexpand
      (if (consp form)
-         (insert-declaration-1* (first form) form decl-specifier))
+         (expand-@add-declaration-1* (first form) form decl-specifier))
      form)))
 
 
@@ -136,22 +136,12 @@ If failed, returns (values <original-form> nil)."
   "Used by at-macros of declarations for processing recursive expansion.
 If BODY is a form accepts declarations, adds a DECL-SPECIFIER into it.
 If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
-  (let ((at-macro-form `(@add-declaration ,decl-specifier)))
-    (cond
-      ((not body)
-       nil)
-      ((not (length= 1 body))           ; recursive expansion
-       `(progn ,@(apply-to-all-forms at-macro-form body)))
-      (t
-       (let ((form (first body)))
-         (mv-cond-let2 (expansion expanded-p)
-           ((insert-declaration-1 form decl-specifier)) ; try known expansions.
-           ((apply-to-special-form-1 at-macro-form form)) ; try recursive expansion.
-           ((macroexpand-1 form env) ; try `macroexpand-1'.
-            `(,@at-macro-form ,expansion))
-           (t
-            `(locally (declare ,decl-specifier)
-               ,form))))))))
+  (apply-at-macro `(@add-declaration ,decl-specifier)
+                  (lambda (form) (expand-@add-declaration-1 form decl-specifier))
+                  body env
+                  :if-no-expansion
+                  (lambda (form) `(locally (declare ,decl-specifier)
+                                    ,form))))
 
 ;;; Declaration only -- `ignore', `ignorable', `dynamic-extent'
 

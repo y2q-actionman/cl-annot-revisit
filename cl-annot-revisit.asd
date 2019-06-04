@@ -12,15 +12,13 @@
                  (:file "util" :depends-on ("package"))
                  (:file "eval-when" :depends-on ("package"))
                  (:file "form-traversal" :depends-on ("package"))
-                 (:file "export" :depends-on ("util" "form-traversal"))
                  (:file "declaration" :depends-on ("util" "form-traversal"))
-                 (:file "declamation" :depends-on ("util" "form-traversal" "declaration"))
+                 (:file "declamation" :depends-on ("declaration"))
                  (:file "documentation" :depends-on ("util" "form-traversal"))
-                 (:file "defclass" :depends-on ("util" "form-traversal"
-                                                       "export")) ; FIXME
-                 (:file "defstruct" :depends-on ("util" "form-traversal"
-                                                        "export" "defclass" ; FIXME
-                                                        ))))
+                 (:file "export" :depends-on ("util" "form-traversal"))
+                 (:file "defclass" :depends-on ("export"))
+                 (:file "defstruct" :depends-on ("defclass"
+                                                 "documentation"))))
 	       (:module "at-syntax"
                 :serial nil
                 :components

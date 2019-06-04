@@ -10,6 +10,9 @@
                (setf (gethash key options-table) val))
              (push-it (key val)
                (push val (gethash key options-table)))
+             (zero-arg-option-p (name option)
+               (or (eq option name)
+                   (equal option `(,name))))
              ;; They are functions to suppress needless `intern' till used.
              (default-conc-name ()
                (symbolicate name #\-))
@@ -21,56 +24,58 @@
                (symbolicate name "-P")))
         ;; parse options
         (dolist (option options-list)
-          (flet ((parse-conc-name-like-option (o-name)
-                   (cond ((or (eq option o-name)
-                              (equal option `(,o-name)))
-                          (set-it o-name nil)
-                          t)
-                         ((starts-with o-name option)
-                          (set-it o-name (second option))
-                          t)
-                         (t nil))))
-            (cond
-              ;; :conc-name
-              ((parse-conc-name-like-option :conc-name))
-              ;; :constructor ; It is a list on options-table because it may appear twice or more.
-              ((or (eq option :constructor)
-                   (equal option '(:constructor)))
-               (push-it :constructor (default-constructor)))
-              ((starts-with :constructor option)
-               (push-it :constructor (rest option)))
-              ;; :copier
-              ((parse-conc-name-like-option :copier))
-              ;; :include
-              ((starts-with :include option)
-               (assert (gethash :include options-table) ()
+          (cond
+            ;; :conc-name
+            ((zero-arg-option-p :conc-name option)
+             (set-it :conc-name nil)) ; If nil or no arg, no prefix is used.
+            ((starts-with :conc-name option)
+             (set-it :conc-name (second option)))
+            ;; :constructor ; It is a list on options-table because it may appear twice or more.
+            ((zero-arg-option-p :constructor option)
+             (push-it :constructor (default-constructor)))
+            ((starts-with :constructor option)
+             (push-it :constructor (rest option)))
+            ;; :copier
+            ((zero-arg-option-p :copier option)
+             (set-it :copier (default-copier))) ; if no argument, uses default
+            ((starts-with :copier option)
+             (set-it :copier (second option)))
+            ;; :include
+            ((starts-with :include option)
+             (assert (gethash :include options-table) ()
+                     'at-macro-error :form name-and-options
+                     :message "Two :include options appeared.")
+             (set-it :include (rest option)))
+            ;; :initial-offset
+            ((starts-with :initial-offset option)
+             (let ((offset (second option)))
+               (assert (typep offset '(integer 0)) ()
                        'at-macro-error :form name-and-options
-                       :message "Two :include options appeared.")
-               (set-it :include (rest option)))
-              ;; :initial-offset
-              ((starts-with :initial-offset option)
-               (let ((offset (second option)))
-                 (assert (typep offset '(integer 0)) ()
-                         'at-macro-error :form name-and-options
-                         :message ":initial-offset must be a non-zero integer")
-                 (set-it :initial-offset offset)))
-              ;; :named
-              ((eq option :named)
-               (set-it :named t))
-              ;; :predicate
-              ((parse-conc-name-like-option :predicate))
-              ;; :print-function
-              ((starts-with :print-function option)
-               (set-it :print-function
-                       ;; If no name and :named, `print-object' will be defined.
-                       ;; I assign T on this situation.
-                       (if (length= 1 option) t (second option))))
-              ;; :print-object
-              ((starts-with :print-object option)
-               (set-it :print-object (if (length= 1 option) t (second option))))
-              ;; :type
-              ((starts-with :type option)
-               (set-it :type (second option))))))
+                       :message ":initial-offset must be a non-zero integer")
+               (set-it :initial-offset offset)))
+            ;; :named
+            ((eq option :named)
+             (set-it :named t))
+            ;; :predicate
+            ((zero-arg-option-p :predicate option)
+             (set-it :predicate (default-predicate)))
+            ((starts-with :predicate option)
+             (set-it :predicate (second option)))
+            ;; :print-function
+            ((starts-with :print-function option)
+             (set-it :print-function
+                     ;; If no name and :named, `print-object' will be defined.
+                     ;; I assign T on this situation.
+                     (if (length= 1 option) t (second option))))
+            ;; :print-object
+            ((starts-with :print-object option)
+             (set-it :print-object (if (length= 1 option) t (second option))))
+            ;; :type
+            ((starts-with :type option)
+             (set-it :type (second option)))
+            ;; 
+            (t (error 'at-macro-error :form name-and-options
+                      :message (format nil "Unknown defstruct option ~A" option)))))
         ;; Checks and set defaults
         (ensure-gethash :conc-name options-table (default-conc-name))
         (ensure-gethash :constructor options-table (list (default-constructor)))
@@ -124,35 +129,51 @@
                      *at-macro-verbose*)
             (warn 'at-macro-style-warning :form form
                   :message "Unnamed defstruct does not define its name as a type-specifier"))
-          (push struct-name ret))
+          (pushnew struct-name ret))
         (when (member :constructor kinds) 
           (loop for (name) in (gethash :constructor options)
              when name
-             do (push name ret)))
-        (when (member :copier kinds) 
-          (push (gethash :copier options) ret))
+             do (pushnew name ret)))
+        (when (member :copier kinds)
+          (when-let ((c-name (gethash :copier options)))
+            (pushnew c-name ret)))
         (when (member :predicate kinds) 
           (when-let ((p-name (gethash :predicate options)))
-            (push p-name ret)))
+            (pushnew p-name ret)))
         (when (intersection '(:slot-name :reader) kinds)
           (loop with conc-name = (gethash :conc-name options)
              for (s-name) in slot-descriptions
              when (member :slot-name kinds)
-             do (push s-name ret)
+             do (pushnew s-name ret)
              when (member :reader kinds)
-             do (push (if conc-name
-                          (symbolicate conc-name s-name)
-                          s-name)
-                      ret)))
+             do (pushnew (if conc-name
+                             (symbolicate conc-name s-name)
+                             s-name)
+                         ret)))
         (nreverse ret)))))
 
+;;; for `find-name-to-be-defined'
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmethod find-name-to-be-defined* ((form-head (eql 'cl:defstruct)) form)
+    "Special handling for `defstruct'. Its second form may contain some options."
+    (nth-value 0 (parse-defstruct-form form))))
+
+;;; for `@documentation'
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmethod expand-@documentation-1* ((operator (eql 'defstruct)) form docstring)
+    "Special handling for `defstruct', which define a new type only when it doesn't have :type."
+    (let* ((options (nth-value 1 (parse-defstruct-form form)))
+           (type-supplied-p (gethash :type options)))
+      `(let ((name ,form))
+         (setf (documentation name 'structure) ,docstring
+               ,@(if type-supplied-p
+                     `((documentation name 'type) ,docstring)))))))
 
 ;;; `@export-accessors'
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defmethod expand-@export-accessors-1* ((form-op (eql 'defstruct)) form)
     (let ((readers (pick-names-of-defstruct-form form '(:reader))))
       (add-export readers form))))
-
 
 ;;; `@export-constructors'
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -173,7 +194,6 @@
 (defmacro @export-constructors (&body forms &environment env)
   (apply-at-macro '(@export-constructors) #'expand-@export-constructors-1
                   forms env))
-
 
 ;;; `@export-structure'
 (eval-when (:compile-toplevel :load-toplevel :execute)
