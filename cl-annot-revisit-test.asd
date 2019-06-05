@@ -1,6 +1,6 @@
 (defsystem :cl-annot-revisit-test
   :description "Tests for cl-annot-revisit"
-  :license "LLGPL"
+  :license "WTFPL"
   :author "YOKOTA Yuki <y2q.actionman@gmail.com>"
   :pathname #.(make-pathname :directory '(:relative "test"))
   :depends-on (#:cl-annot-revisit #:1am)

@@ -1,10 +1,9 @@
 (defsystem :cl-annot-revisit
   :description "Re-implementation of 'cl-annot', authored by Tomohiro Matsuyama."
-  :license "LLGPL"
+  :license "WTFPL"
   :author "YOKOTA Yuki <y2q.actionman@gmail.com>"
   :depends-on (#:alexandria)
   :serial t
-  ;; TODO
   :components ((:module "at-macro"
                 :components
                 ((:file "package")
