@@ -17,7 +17,8 @@
                  (:file "export" :depends-on ("util" "form-traversal"))
                  (:file "defclass" :depends-on ("export"))
                  (:file "defstruct" :depends-on ("defclass"
-                                                 "documentation"))))
+                                                 "documentation"))
+                 (:file "slot" :depends-on ("package"))))
 	       (:module "at-syntax"
                 :serial nil
                 :components

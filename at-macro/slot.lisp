@@ -1,1 +1,57 @@
 (in-package :cl-annot-revisit/at-macro)
+
+;;; NOTE:
+;;; The macros defined here is derived from cl-annot.  They use a
+;;; keyword having a same name of slot-name as :initarg.  However, I
+;;; think using it always is not a good style. Additionally, I should
+;;; argue whether :initarg is added *ONLY* when no :initarg there.
+
+(defun split-slot-specifier (slot-specifier)
+  (etypecase slot-specifier
+    (symbol (values slot-specifier nil))
+    (cons (values (first slot-specifier) (rest slot-specifier)))))
+
+(defmacro @optional (initform slot-specifier)
+  "Works like as '@optional' of cl-annot. This is intended to used with '#.'"
+  (multiple-value-bind (name options)
+      (split-slot-specifier slot-specifier)
+    (unless (get-properties options '(:initarg))
+      (setf options (list* :initarg (make-keyword name) options)))
+    (if (get-properties options '(:initform))
+        (when *at-macro-verbose*
+          (warn 'at-macro-style-warning :form slot-specifier
+                :message "@optional's initform is ignored because slot has :initform already"))
+        (setf options (list* :initform initform options)))
+    `'(,name ,@options)))
+
+(define-condition @required-precondition-error (simple-error)
+  ((slot-name :initarg :slot-name :initform nil))
+  (:report
+   (lambda (stream condition)
+     (with-slots (slot-name) condition
+       (format stream "Required slot ~A must not have :initform" slot-name)))))
+
+(define-condition @required-runtime-error (simple-error)
+  ((slot-name :initarg :slot-name :initform nil)
+   (initarg :initarg :initarg :initform nil))
+  (:report
+   (lambda (stream condition)
+     (with-slots (slot-name initarg) condition
+       (format stream "Must supply ~A slot ~@[with :initarg ~A~]"
+               slot-name initarg)))))
+
+(defmacro @required (slot-specifier)
+  "Works like as '@required' of cl-annot. This is intended to used with '#.'"
+  (multiple-value-bind (name options)
+      (split-slot-specifier slot-specifier)
+    (unless (get-properties options '(:initarg))
+      (setf options (list* :initarg (make-keyword name) options)))
+    (if (get-properties options '(:initform))
+        (error '@required-precondition-error :slot-name name)
+        (setf options
+              (list* :initform
+                     `(cerror "Enter a value."
+                              '@required-runtime-error
+                              :slot-name ',name :initarg ',(getf :initarg options))
+                     options)))
+    `'(,name ,@options)))

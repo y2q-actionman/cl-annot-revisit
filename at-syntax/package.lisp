@@ -4,3 +4,5 @@
   (:documentation "The at-syntax reader macro of cl-annot-revisit.")
   (:use :cl)
   (:export))
+
+;;; TODO: use https://github.com/Shinmera/trivial-arguments
