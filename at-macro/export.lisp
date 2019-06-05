@@ -1,8 +1,5 @@
 (in-package :cl-annot-revisit/at-macro)
 
-(define-condition @export-style-warning (at-macro-style-warning)
-  ())
-
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun add-export (names form)
     (check-type names list)
@@ -22,7 +19,7 @@ returns the expansion of FORM. If not, returns nil."
         (cond ((listp name)
                (unless (and (function-definition-operator-p form-head)
                             (function-name-p name))
-                 (warn '@export-style-warning
+                 (warn 'at-macro-style-warning
                        :form form :message "Name ~A looks like non-conforming" name))
                (add-export (list (second name)) form))
               (t
@@ -30,7 +27,7 @@ returns the expansion of FORM. If not, returns nil."
 
   (defun warn-around-defsetf-like (operator form)
     (when *at-macro-verbose*
-      (warn '@export-style-warning :form form
+      (warn 'at-macro-style-warning :form form
             :message (format nil "Exporting names in ~A should be placed around its non-setf definition."
                              operator))))
 
@@ -43,7 +40,7 @@ returns the expansion of FORM. If not, returns nil."
   (defmethod expand-@export-1* ((form-head (eql 'cl:defpackage)) form)
     "A special handling for `defpackage'. It does not define a name as a symbol."
     (when *at-macro-verbose*
-      (warn '@export-style-warning
+      (warn 'at-macro-style-warning
             :form form :message "@export does not works on DEFPACKAGE."))
     form)
 

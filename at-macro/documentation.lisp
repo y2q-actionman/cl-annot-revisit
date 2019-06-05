@@ -1,8 +1,5 @@
 (in-package :cl-annot-revisit/at-macro)
 
-(define-condition @documentation-style-warning (at-macro-style-warning)
-  ())
-
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter *operator-doc-type-alist*
     '((defclass . type)
@@ -46,7 +43,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
 
   (defun warn-around-defclass (operator form)
     (when *at-macro-verbose*
-      (warn '@documentation-style-warning :form form
+      (warn 'at-macro-style-warning :form form
             :message (format nil "Adding documentation into ~A form does not works for slots."
                              operator))))
   
@@ -60,7 +57,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
 
   (defun warn-around-local-form (operator form)
     (when *at-macro-verbose*
-      (warn '@documentation-style-warning :form form
+      (warn 'at-macro-style-warning :form form
             :message (format nil "Adding declarations into ~A form doesn't work for local docstrings."
                              operator))))
   

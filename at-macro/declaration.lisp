@@ -1,8 +1,5 @@
 (in-package :cl-annot-revisit/at-macro)
 
-(define-condition at-declaration-style-warning (at-macro-style-warning)
-  ())
-
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter *operator-body-location-alist*
     (append '((locally . 1))
@@ -64,7 +61,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
     "General case."
     (when (and (operator-take-local-declaration-p operator)
                *at-macro-verbose*)
-      (warn 'at-declaration-style-warning :form form
+      (warn 'at-macro-style-warning :form form
             :message (format nil "Adding declarations into ~A form does not works for local declarations"
                              operator)))
     (if-let ((body-location (operator-body-location operator)))
@@ -79,7 +76,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
         form
       (when (and (assoc :method option)
                  *at-macro-verbose*)
-        (warn 'at-declaration-style-warning :form form
+        (warn 'at-macro-style-warning :form form
               :message (format nil "Adding declarations into ~A form does not works for methods."
                                operator)))
       `(,op ,function-name ,gf-lambda-list (declare ,decl-specifier) ,@option)))
@@ -88,7 +85,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
                                     form decl-specifier)
     (if (<= (length form) 3)
         (when *at-macro-verbose*
-          (warn 'at-declaration-style-warning :form form
+          (warn 'at-macro-style-warning :form form
                 :message "The short-form of `define-method-combination' doesn't take declarations."))
         (destructuring-bind (op name lambda-list (&rest method-group-specifier) &rest rest)
             form
@@ -116,7 +113,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
     (if (or (<= (length form) 3)
             (stringp (fourth form)))
         (when *at-macro-verbose*
-          (warn 'at-declaration-style-warning
+          (warn 'at-macro-style-warning
                 :message "The short-form of `defsetf' does not take declarations."
                 :form form))
         (insert-declaration-to-nth-body 4 form decl-specifier :documentation t)))
