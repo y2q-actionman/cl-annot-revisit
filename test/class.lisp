@@ -6,7 +6,12 @@
                                 ())))
              '(defclass foo ()
                ()
-               (:metaclass bar)))))
+               (:metaclass bar))))
+  (signals at-macro-error
+    (macroexpand-1 '(@metaclass bar
+                     (defclass foo ()
+                       ()
+                       (:metaclass baz))))))
 
 (test test-@export-slots
   (is (equal (macroexpand-1 '(@export-slots

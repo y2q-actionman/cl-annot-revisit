@@ -1,4 +1,4 @@
-(in-package :cl-annot-revisit/at-macro)
+(in-package #:cl-annot-revisit/at-macro)
 
 (defmacro @eval-when-compile (&body body)
   "Just an alias of (eval-when (:compile-toplevel) ...)"

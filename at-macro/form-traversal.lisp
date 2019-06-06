@@ -1,4 +1,4 @@
-(in-package :cl-annot-revisit/at-macro)
+(in-package #:cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun apply-to-all-forms (operator-head forms)

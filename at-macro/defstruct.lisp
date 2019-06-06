@@ -1,4 +1,4 @@
-(in-package :cl-annot-revisit/at-macro)
+(in-package #:cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun parse-defstruct-option (name-and-options)
@@ -192,6 +192,7 @@
      form)))
 
 (defmacro @export-constructors (&body forms &environment env)
+  "`Export' constructors of the structure will be defined in FORMS."
   (apply-at-macro '(@export-constructors) #'expand-@export-constructors-1
                   forms env))
 
@@ -214,6 +215,8 @@
      form)))
 
 (defmacro @export-structure (&body forms &environment env)
+  "`Export' a name, constructors, copier, predicate, slot-names and
+accessors of the structure will be defined in FORMS."
   ;; In original, Just an alias of nested `@export-accessors',`@export-constructors',
   ;; `@export-slots', and `@export'. (But `@export-slots' does nothing).
   (apply-at-macro '(@export-structure) #'expand-@export-structure-1 forms env))

@@ -1,42 +1,39 @@
-(in-package :cl-annot-revisit/at-macro)
+(in-package #:cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defgeneric expand-@add-declamation-1* (declaration form decl-specifier)
-    (:method (declaration form decl-specifier)
-      (declare (ignore operator declaration form decl-specifier))
-      nil))
+  (defparameter *declaration-expecting-operator-alist*
+    '((special . variable-definition-operator-p)
+      (type . variable-definition-operator-p)
+      (ftype . function-definition-operator-p)
+      (inline . function-definition-operator-p)
+      (notinline . function-definition-operator-p)))
 
   (defun add-declaim-to-definiton-form (form decl-specifier)
     (let ((name (find-name-to-be-defined form)))
       `(progn (declaim (,@decl-specifier ,name))
               ,form)))
 
-  (defmethod expand-@add-declamation-1* ((declaration (eql 'special)) form decl-specifier)
-    (if (variable-definition-operator-p (first form)) ; FORM is like `defvar'.
-        (add-declaim-to-definiton-form form decl-specifier)))
+  (defgeneric expand-@add-declamation-1* (declaration form decl-specifier)
+    (:documentation "Called by `expand-@add-declamation-1' to expand FORM.")
+    (:method (declaration form decl-specifier)
+      (if-let ((op-type-func (cdr (assoc declaration *declaration-expecting-operator-alist*))))
+        (if (funcall op-type-func (first form))
+            (add-declaim-to-definiton-form form decl-specifier)))))
 
-  (defmethod expand-@add-declamation-1* ((declaration (eql 'type)) form decl-specifier)
-    (if (variable-definition-operator-p (first form)) ; FORM is like `defvar'.
-        (add-declaim-to-definiton-form form decl-specifier)))
+  (defmethod expand-@add-declamation-1* :before ((declaration (eql 'type)) form decl-specifier)
+    (when (and (starts-with 'the form)
+               *at-macro-verbose*)
+      (warn 'at-macro-style-warning :form form
+            :message "`@type' does not effect to `the' special form.")))
 
-  (defmethod expand-@add-declamation-1* ((declaration (eql 'ftype)) form decl-specifier)
-    (if (function-definition-operator-p (first form)) ; FORM is like `defun'.
-        (add-declaim-to-definiton-form form decl-specifier)))
-
-  (defmethod expand-@add-declamation-1* ((declaration (eql 'inline)) form decl-specifier)
-    (if (function-definition-operator-p (first form))
-        (add-declaim-to-definiton-form form decl-specifier)))
-
-  (defmethod expand-@add-declamation-1* ((declaration (eql 'notinline)) form decl-specifier)
-    (if (function-definition-operator-p (first form))
-        (add-declaim-to-definiton-form form decl-specifier)))
-
+  ;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
+  ;;   (@inline (func-a) (declaim)) ; => (declaim (inline func-a))
+  
   (defun expand-@add-declamation-1 (form decl-specifier)
     (try-macroexpand
      (if (consp form)
          (expand-@add-declamation-1* (first decl-specifier) form decl-specifier))
      form)))
-
 
 (defmacro @add-declamation (decl-specifier &body body &environment env)
   (apply-at-macro `(@add-declamation ,decl-specifier)
@@ -97,7 +94,6 @@ If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), this i
 (defmacro @type (typespec &optional vars-or-form &body body &environment env)
   (expand-at-declamation `(type ,typespec) vars-or-form body
                          #'symbolp env))
-;;; FIXME: what is relationships between '@type' and `the'?
 
 (defmacro @ftype (typespec &optional function-names-or-form &body body &environment env)
   (expand-at-declamation `(ftype ,typespec) function-names-or-form body
@@ -126,9 +122,6 @@ If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this 
   (expand-at-declamation `(optimize ,@(ensure-list-with qualities #'optimize-quality-p))
                          nil body
                          (constantly nil) env))
-
-;;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
-;;;   (@inline (func-a) (declaim)) ; => (declaim (inline func-a))
 
 
 ;;; Proclamation only -- `declaration'.

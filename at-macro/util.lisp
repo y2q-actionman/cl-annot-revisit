@@ -1,4 +1,4 @@
-(in-package :cl-annot-revisit/at-macro)
+(in-package #:cl-annot-revisit/at-macro)
 
 #+ ()
 (defun collect-special-forms (&optional (package :common-lisp))

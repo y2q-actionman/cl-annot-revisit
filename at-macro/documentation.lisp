@@ -1,4 +1,4 @@
-(in-package :cl-annot-revisit/at-macro)
+(in-package #:cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter *operator-doc-type-alist*
@@ -28,16 +28,15 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defgeneric expand-@documentation-1* (operator form docstring)
     (:documentation "Called by `expand-@documentation-1' to insert DOCSTRING into FORM.
-If FORM can be expanded, returns its expansion. If not, returns nil."))
-
-  (defmethod expand-@documentation-1* (operator form docstring)
-    "General case."
-    (if-let ((doc-type (operator-doc-type operator)))
-      ;; Using the result of FORM is simple, but may prevent compilation as a top-level form.
-      (let ((obj (gensym)))
-        `(let ((,obj ,form))
-           (setf (documentation ,obj ',doc-type) ,docstring)
-           ,obj))))
+If FORM can be expanded, returns its expansion. If not, returns nil.")
+    (:method (operator form docstring)
+      "General case."
+      (if-let ((doc-type (operator-doc-type operator)))
+        ;; Using the result of FORM is simple, but may prevent compilation as a top-level form.
+        (with-gensyms (obj)
+          `(let ((,obj ,form))
+             (setf (documentation ,obj ',doc-type) ,docstring)
+             ,obj)))))
 
   ;; special handling for `defstruct' is in 'defstruct.lisp'.
 
@@ -92,8 +91,7 @@ If FORM can be expanded, returns its expansion. If not, returns nil."))
   (defmethod expand-@documentation-1* ((operator (eql 'function)) form docstring)
     "Special handling for #'(lambda ..), adds docstring to an anonymous function."
     (if (starts-with 'lambda (second form))
-        `(function ,(expand-@documentation-1* 'lambda (second form) docstring))
-        (call-next-method)))
+        `(function ,(expand-@documentation-1* 'lambda (second form) docstring))))
 
   
   (defun expand-@documentation-1 (form docstring)
@@ -106,6 +104,7 @@ If failed, returns (values <original-form> nil)."
      form)))
 
 (defmacro @documentation (docstring &body forms &environment env)
+  "Insert DOCSTRING into FORMS."
   ;; Should I warn about 'setting same docstrings into many forms'?
   (apply-at-macro `(@documentation ,docstring)
                   (lambda (form) (expand-@documentation-1 form docstring)) 

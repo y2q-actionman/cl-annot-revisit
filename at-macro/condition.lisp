@@ -1,4 +1,4 @@
-(in-package :cl-annot-revisit/at-macro)
+(in-package #:cl-annot-revisit/at-macro)
 
 (defvar *at-macro-verbose* nil
   "When true, at-macros raise style-warnings.")

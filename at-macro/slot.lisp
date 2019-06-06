@@ -1,4 +1,4 @@
-(in-package :cl-annot-revisit/at-macro)
+(in-package #:cl-annot-revisit/at-macro)
 
 ;;; NOTE:
 ;;; The macros defined here is derived from cl-annot.  They use a
@@ -27,7 +27,7 @@
 (define-condition @required-precondition-error (simple-error)
   ((slot-name :initarg :slot-name :initform nil))
   (:report
-   (lambda (stream condition)
+   (lambda (condition stream)
      (with-slots (slot-name) condition
        (format stream "Required slot ~A must not have :initform" slot-name)))))
 
@@ -35,7 +35,7 @@
   ((slot-name :initarg :slot-name :initform nil)
    (initarg :initarg :initarg :initform nil))
   (:report
-   (lambda (stream condition)
+   (lambda (condition stream)
      (with-slots (slot-name initarg) condition
        (format stream "Must supply ~A slot ~@[with :initarg ~A~]"
                slot-name initarg)))))
@@ -52,6 +52,6 @@
               (list* :initform
                      `(cerror "Enter a value."
                               '@required-runtime-error
-                              :slot-name ',name :initarg ',(getf :initarg options))
+                              :slot-name ',name :initarg ',(getf options :initarg))
                      options)))
     `'(,name ,@options)))

@@ -1,4 +1,4 @@
-(in-package :cl-annot-revisit/at-macro)
+(in-package #:cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun add-export (names form)
@@ -13,7 +13,7 @@
     (:documentation "Called by `expand-@export-1' to compute a result.
 If FORM can be expanded, returns its expansion. If not, returns nil.")
     (:method (form-head form)
-      "The bottom case. If FORM found by `find-name-to-be-defined',
+      "General case. If FORM found by `find-name-to-be-defined',
 returns the expansion of FORM. If not, returns nil."
       (if-let ((name (find-name-to-be-defined form)))
         (cond ((listp name)

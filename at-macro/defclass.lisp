@@ -1,31 +1,20 @@
-(in-package :cl-annot-revisit/at-macro)
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun parse-defclass-form (form)
-    (destructuring-bind (op class-name (&rest superclass-names)
-                            (&rest slot-specifiers)
-                            &rest class-options)
-        form
-      (values op class-name superclass-names
-              (mapcar #'ensure-list slot-specifiers)
-              class-options))))
+(in-package #:cl-annot-revisit/at-macro)
 
 ;;; `@metaclass'
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun pick-defclass-options (defclass-form)
+    (nthcdr 4 defclass-form))
+  
   (defgeneric expand-@metaclass-1* (form-op form metaclass)
     (:method (form-op form metaclass)
       (declare (ignore form-op form metaclass))
       nil)
     (:method ((form-op (eql 'defclass)) form metaclass)
-      (multiple-value-bind (op class-name superclass-names slot-specifiers class-options)
-          (parse-defclass-form form)
+      (let ((class-options (pick-defclass-options form)))
         (when (assoc :metaclass class-options)
           (error 'at-macro-error :form form
-                :message "A metaclass already exists."))
-        `(,op ,class-name (,@superclass-names)
-              (,@slot-specifiers)
-              (:metaclass ,metaclass)
-              ,@class-options))))
+                 :message "A metaclass already exists."))
+        `(,@form (:metaclass ,metaclass)))))
 
   (defun expand-@metaclass-1 (form metaclass)
     (try-macroexpand
@@ -40,12 +29,15 @@
 
 ;;; `@export-slots'
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun pick-defclass-slots (defclass-form)
+    (mapcar #'ensure-list (nth 3 defclass-form)))
+  
   (defgeneric expand-@export-slots-1* (form-op form)
     (:method (form-op form)
       (declare (ignore form-op form))
       nil)
     (:method ((form-op (eql 'defclass)) form)
-      (loop with slot-specifiers = (nth-value 3 (parse-defclass-form form))
+      (loop with slot-specifiers = (pick-defclass-slots form)
          for (slot-name) in slot-specifiers
          collect slot-name into names
          finally (return
@@ -72,17 +64,20 @@
       (declare (ignore form-op form))
       nil)
     (:method ((form-op (eql 'defclass)) form)
-      (loop with slot-specifiers = (nth-value 3 (parse-defclass-form form))
+      (when (assoc :metaclass (pick-defclass-options form))
+        ;; TODO: FIXME:
+        ;; If this class was extended by metaclass, it may has more
+        ;; keywords making an accessor. The correct way to seeing it is
+        ;; accessing the class object, but it does not exist because
+        ;; this macro works before `defclass' works!
+        ;; My only idea is leaving `*slot-accessor-option-names*' for
+        ;; this purpose...
+        (when *at-macro-verbose*
+          (warn 'at-macro-style-warning :form form
+                :message "Additional slot options added by metaclass is ignored, if it is not in *slot-accessor-option-names*.")))
+      (loop with slot-specifiers = (pick-defclass-slots form)
          for (nil . slot-options) in slot-specifiers
          nconc (loop for (option-name value) on slot-options by #'cddr
-                  ;; TODO: FIXME:
-                  ;; If this class was extended by metaclass, it may
-                  ;; has more keywords making an accessor. The correct
-                  ;; way to seeing it is accessing the class object, but
-                  ;; it does not exist because this macro works before
-                  ;; `defclass' works!
-                  ;; My only idea is leaving `*slot-accessor-option-names*'
-                  ;; for this purpose...
                   when (member option-name *slot-accessor-option-names*)
                   collect
                     (etypecase value

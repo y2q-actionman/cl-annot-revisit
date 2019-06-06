@@ -1,4 +1,4 @@
-(in-package :cl-annot-revisit/at-macro)
+(in-package #:cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter *operator-body-location-alist*
@@ -55,18 +55,17 @@
 
   (defgeneric expand-@add-declaration-1* (operator form decl-specifier)
     (:documentation "Called by `expand-@add-declaration-1' to insert DECL-SPECIFIER into FORM.
-If FORM can be expanded, returns its expansion. If not, returns nil."))
-
-  (defmethod expand-@add-declaration-1* (operator form decl-specifier)
-    "General case."
-    (when (and (operator-take-local-declaration-p operator)
-               *at-macro-verbose*)
-      (warn 'at-macro-style-warning :form form
-            :message (format nil "Adding declarations into ~A form does not works for local declarations"
-                             operator)))
-    (if-let ((body-location (operator-body-location operator)))
-      (insert-declaration-to-nth-body body-location form decl-specifier
-                                      :documentation (operator-accept-docstring-in-body-p operator))))
+If FORM can be expanded, returns its expansion. If not, returns nil.")
+    (:method (operator form decl-specifier)
+      "General case."
+      (when (and (operator-take-local-declaration-p operator)
+                 *at-macro-verbose*)
+        (warn 'at-macro-style-warning :form form
+              :message (format nil "Adding declarations into ~A form does not works for local declarations"
+                               operator)))
+      (if-let ((body-location (operator-body-location operator)))
+        (insert-declaration-to-nth-body body-location form decl-specifier
+                                        :documentation (operator-accept-docstring-in-body-p operator)))))
 
   (defmethod expand-@add-declaration-1* ((operator (eql 'defgeneric)) form decl-specifier)
     (unless (starts-with decl-specifier 'optimize)
