@@ -2,7 +2,7 @@
   :description "Re-implementation of 'cl-annot', authored by Tomohiro Matsuyama."
   :license "WTFPL"
   :author "YOKOTA Yuki <y2q.actionman@gmail.com>"
-  :depends-on (#:alexandria)
+  :depends-on (#:alexandria #:named-readtables)
   :serial t
   :components ((:module "at-macro"
                 :components
@@ -20,7 +20,9 @@
                                                  "documentation"))
                  (:file "slot" :depends-on ("package"))))
 	       (:module "at-syntax"
-                :serial nil
+                :serial t        
                 :components
-                ((:file "package"))))
+                ((:file "package")
+                 (:file "defannotation")
+                 (:file "reader"))))
   :in-order-to ((test-op (test-op #:cl-annot-revisit-test))))

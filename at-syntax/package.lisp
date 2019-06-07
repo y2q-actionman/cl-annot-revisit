@@ -2,7 +2,12 @@
 
 (defpackage #:cl-annot-revisit/at-syntax
   (:documentation "The at-syntax reader macro of cl-annot-revisit.")
-  (:use :cl)
+  (:use #:cl #:alexandria #:named-readtables)
+  (:import-from #:cl-annot-revisit/at-macro
+                ;; FIXME
+                #:*at-macro-verbose*
+                #:at-macro-style-warning
+                #:at-macro-error)
   (:export
    ;; extra
    ;; #:@defannotation
