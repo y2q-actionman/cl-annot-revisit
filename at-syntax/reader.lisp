@@ -9,15 +9,14 @@
          (delete-package ',name)))))
 
 (defun read-at-macro-symbol (stream at-char)
-  (unread-char at-char stream)             ; push back '@' char.
+  (unread-char at-char stream)          ; push back '@' char.
   (let* ((at-symbol-tmp
           (with-temporal-package ()
             (read-preserving-whitespace stream t nil t)))
          (at-symbol-name (symbol-name at-symbol-tmp)))
-    (when (string= at-symbol-name "@")
-      (when *at-macro-verbose*
-        (warn 'at-macro-style-warning :form nil
-              :message "Character '@' appeared alone.")))
+    (when (and *at-macro-verbose*
+               (string= at-symbol-name "@"))
+      (warn "Character '@' appeared alone."))
     (or (find-symbol at-symbol-name)
         (and *cl-annot-compatibility*
              ;; for achieving cl-annot compatibility, I should see non-@ symbols.
@@ -31,23 +30,24 @@
     (values (find-symbol symbol-name package) package)
     (values nil nil)))
 
-(defun find-at-syntax-arity (symbol)
-  (or (get symbol 'arity)
-      (if *cl-annot-compatibility*
-          (get symbol (find-cl-annot-symbol "ANNOTATION-ARITY")))))
-
-(defun find-at-syntax-inline-p (symbol)
-  (or (get symbol 'inline-p)
-      (if *cl-annot-compatibility*      ; TODO: use `defmethod' :around ?
-          (get symbol (find-cl-annot-symbol "ANNOTATION-INLINE-P")))))
-
 (defconstant +at-syntax-default-arity+ 1)
+
+(defgeneric find-at-syntax-arity (symbol)
+  (:method ((symbol symbol))
+    (or (if *cl-annot-compatibility*
+            (get symbol (find-cl-annot-symbol "ANNOTATION-ARITY")))
+        +at-syntax-default-arity+)))
+
+(defgeneric find-at-syntax-inline-p (symbol)
+  (:method ((symbol symbol))
+    (or (if *cl-annot-compatibility*
+            (get symbol (find-cl-annot-symbol "ANNOTATION-INLINE-P")))
+        nil)))
 
 (defun read-at-syntax (stream at-char arity)
   (let* ((at-symbol (read-at-macro-symbol stream at-char))
          (arity (or arity
-                    (find-at-syntax-arity at-symbol)
-                    +at-syntax-default-arity+))
+                    (find-at-syntax-arity at-symbol)))
          (args (if (eq arity :infinite)
                    (loop for form = (read stream nil 'eof t)
                       until (eq form 'eof)
