@@ -23,6 +23,6 @@
                 :serial t        
                 :components
                 ((:file "package")
-                 (:file "defannotation")
-                 (:file "reader"))))
+                 (:file "reader")
+                 (:file "cl-annot-compatibility"))))
   :in-order-to ((test-op (test-op #:cl-annot-revisit-test))))
