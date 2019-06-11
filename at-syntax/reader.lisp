@@ -35,14 +35,24 @@ This function is not exported, by design.")
   (:method ((symbol symbol))
     nil))
 
+(defun read-delimited-list-no-eof (char &optional (stream *standard-input*) recursive-p)
+  "Reads until CHAR appearance or the end of stream."
+  (let* ((last-char-stream (make-string-input-stream (string char)))
+         ;; To suppress `end-of-file' error, I add ")" to the last.
+         (tmp-stream (make-concatenated-stream stream last-char-stream))
+         (ret (read-delimited-list char tmp-stream recursive-p)))
+    (when (peek-char nil last-char-stream nil)
+      ;; If last-char-stream still has a char, `read-delimited-list' does not reached to there.
+      ;; Unread the char we read.
+      (unread-char char stream))
+    ret))
+
 (defun read-at-syntax (stream at-char arity)
   (let* ((at-symbol (read-at-macro-symbol stream at-char))
          (arity (or arity
                     (find-at-syntax-arity at-symbol)))
          (args (if (eq arity :infinite)
-                   (loop for form = (read stream nil 'eof t) ; TODO: see ')'.
-                      until (eq form 'eof)
-                      collect form)
+                   (read-delimited-list-no-eof #\) stream t)
                    (loop repeat arity
                       collect (read stream t nil t))))
          (at-macro-form `(,at-symbol ,@args)))
