@@ -1,4 +1,3 @@
-;;; TODO: move to another package.
 (in-package #:cl-annot-revisit/at-syntax)
 
 (defvar *cl-annot-compatibility* nil)
@@ -27,47 +26,23 @@
           (get symbol (find-cl-annot-symbol "ANNOTATION-INLINE-P")))
       (call-next-method)))
 
+;;; TODO: use this and https://github.com/Shinmera/trivial-arguments
+;;; for calc arity in `find-at-syntax-arity'.
+(defun lambda-list-required-arguments (lambda-list)
+  ;; Drop &whole or &environment and its argument.
+  (loop for i = (first lambda-list)
+     while (member i '(&whole &environment))
+     do (setf lambda-list (nthcdr 2 lambda-list)))
+  (loop for i in lambda-list
+     until (member i lambda-list-keywords)
+     collect i))
 
-;; (define-at-syntax @eval-when-compile 1)
-;; (define-at-syntax @eval-when-load 1)
-;; (define-at-syntax @eval-when-execute 1)
-;; (define-at-syntax @eval-when-always 1)
-
-(define-at-syntax @ignore 1 :inline t)
-(define-at-syntax @ignorable 1 :inline t)
-(define-at-syntax @dynamic-extent 1 :inline t)
-
-(define-at-syntax @special 1 :inline t)
-(define-at-syntax @type 2 :inline t)
-(define-at-syntax @ftype 2 :inline t)
-(define-at-syntax @inline 1 :inline t)
-(define-at-syntax @notinline 1 :inline t)
-(define-at-syntax @optimize 1 :inline t)
-
-;; (define-at-syntax @declaration 1) ; This is :inline in cl-annot, but not required on us.
-
-(define-at-syntax @documentation 2)
-(define-at-syntax @doc 2)
-
-;; (define-at-syntax @export 1) ; This has :alias in cl-annot, but not required on us.
-
-(define-at-syntax @metaclass 2)
-
-;; (define-at-syntax @export-slots 1)
-;; (define-at-syntax @export-accessors 1)
-;; (define-at-syntax @export-class 1)
-;; (define-at-syntax @export-constructors 1)
-;; (define-at-syntax @export-structure 1)
-
-(define-at-syntax @optional 2 :inline t)
-(define-at-syntax @required 1 :inline t)
-
-
-(defmacro defannotation (name lambda-list
-                         (&key (arity (length (lambda-list-required-arguments lambda-list)))
-                               (inline nil inline-supplied-p)
-                               alias)
-                         &body body)
+(defmacro cl-annot-revisit/cl-annot-interface:defannotation
+    (name lambda-list
+     (&key (arity (length (lambda-list-required-arguments lambda-list)))
+           (inline nil inline-supplied-p)
+           alias)
+     &body body)
   (let ((alias-form
          (when alias
            (when *at-macro-verbose*

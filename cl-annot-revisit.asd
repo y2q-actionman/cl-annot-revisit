@@ -24,5 +24,6 @@
                 :components
                 ((:file "package")
                  (:file "reader")
+                 (:file "definitions")
                  (:file "cl-annot-compatibility"))))
   :in-order-to ((test-op (test-op #:cl-annot-revisit-test))))

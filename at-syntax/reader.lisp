@@ -30,6 +30,8 @@
     +at-syntax-default-arity+))
 
 (defgeneric find-at-syntax-inline-p (symbol)
+  (:documentation "If this returns T, the macro named SYMBOL will be expanded at read-time.
+This function is not exported, by design.")
   (:method ((symbol symbol))
     nil))
 
@@ -38,7 +40,7 @@
          (arity (or arity
                     (find-at-syntax-arity at-symbol)))
          (args (if (eq arity :infinite)
-                   (loop for form = (read stream nil 'eof t)
+                   (loop for form = (read stream nil 'eof t) ; TODO: see ')'.
                       until (eq form 'eof)
                       collect form)
                    (loop repeat arity
@@ -58,37 +60,3 @@
   (:merge :standard)
   (:macro-char #\@ #'read-at t)
   (:dispatch-macro-char #\# #\@ #'read-sharp-at))
-
-
-(defmacro define-at-syntax (name arity &key (inline nil inline-supplied-p))
-  (check-type name symbol)
-  (when (and *at-macro-verbose*
-             (not (starts-with #\@ (symbol-name name))))
-    (warn "Name for defannotation should be started with @."))
-  (unless (or (integerp arity)
-              (eq arity :infinite))
-    ;; FIXME
-    (cerror "Use value."
-            ":arity must be an integer or ':infinite'."))
-  (when (and *at-macro-verbose*
-             inline-supplied-p)
-    (warn ":inline keyword is not recommended."))
-  `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (defmethod find-at-syntax-arity ((_ (eql ',name)))
-       (declare (ignorable _))
-       ,arity)
-     ,@(if inline-supplied-p
-           `((defmethod find-at-syntax-inline-p ((_ (eql ',name)))
-               (declare (ignorable _))
-               ,inline)))))
-
-
-;;; TODO: use this and https://github.com/Shinmera/trivial-arguments for calc arity.
-(defun lambda-list-required-arguments (lambda-list)
-  ;; Drop &whole or &environment and its argument.
-  (loop for i = (first lambda-list)
-     while (member i '(&whole &environment))
-     do (setf lambda-list (nthcdr 2 lambda-list)))
-  (loop for i in lambda-list
-     until (member i lambda-list-keywords)
-     collect i))
