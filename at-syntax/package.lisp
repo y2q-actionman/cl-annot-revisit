@@ -9,8 +9,7 @@
                 #:at-macro-style-warning
                 #:at-macro-error)
   (:export
-   ;; extra
-   ;; #:@defannotation
-   ))
+   #:at-macro-readtable
+   #:defannotation))
 
 ;;; TODO: use https://github.com/Shinmera/trivial-arguments
