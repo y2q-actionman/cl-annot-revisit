@@ -2,7 +2,7 @@
 
 (defpackage #:cl-annot-revisit/at-macro
   (:documentation "The at-macros of cl-annot-revisit.")
-  (:use #:cl #:alexandria)
+  (:use #:cl #:cl-annot-revisit #:alexandria)
   (:export
    ;; condition.lisp
    #:*at-macro-verbose*
@@ -57,7 +57,6 @@
    #:@export-structure
    ;; slot.lisp
    #:@optional
-   #:@required-precondition-error
-   #:@required-runtime-error
-   #:@required
-   ))
+   #:at-required-precondition-error
+   #:at-required-runtime-error
+   #:@required))

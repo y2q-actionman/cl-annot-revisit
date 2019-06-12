@@ -1,4 +1,4 @@
-(in-package #:cl-annot-revisit/at-syntax)
+(in-package #:cl-annot-revisit/cl-annot-interface)
 
 (defvar *cl-annot-compatibility* nil)
 
@@ -9,7 +9,8 @@
 
 (pushnew 'find-non-@-symbol *intern-at-macro-symbol-hook*)
 
-(defconstant +cl-annot-core-package-name+ "CL-ANNOT.CORE")
+(define-constant +cl-annot-core-package-name+ "CL-ANNOT.CORE"
+  :test 'equal)
 
 (defun find-cl-annot-symbol (symbol-name)
   (if-let ((package (find-package +cl-annot-core-package-name+)))
@@ -21,7 +22,7 @@
           (get symbol (find-cl-annot-symbol "ANNOTATION-ARITY")))
       (call-next-method)))
 
-(defmethod find-at-syntax-inline-p :around ((symbol symbol))
+(defmethod cl-annot-revisit::find-at-syntax-inline-p :around ((symbol symbol))
   (or (if *cl-annot-compatibility*
           (get symbol (find-cl-annot-symbol "ANNOTATION-INLINE-P")))
       (call-next-method)))
@@ -37,7 +38,7 @@
      until (member i lambda-list-keywords)
      collect i))
 
-(defmacro cl-annot-revisit/cl-annot-interface:defannotation
+(defmacro defannotation
     (name lambda-list
      (&key (arity (length (lambda-list-required-arguments lambda-list)))
            (inline nil inline-supplied-p)

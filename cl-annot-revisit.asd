@@ -4,7 +4,8 @@
   :author "YOKOTA Yuki <y2q.actionman@gmail.com>"
   :depends-on (#:alexandria #:named-readtables)
   :serial t
-  :components ((:module "at-macro"
+  :components ((:file "package")
+               (:module "at-macro"
                 :components
                 ((:file "package")
                  (:file "condition" :depends-on ("package"))

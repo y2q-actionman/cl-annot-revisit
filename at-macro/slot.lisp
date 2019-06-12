@@ -24,14 +24,14 @@
         (setf options (list* :initform initform options)))
     `'(,name ,@options)))
 
-(define-condition @required-precondition-error (simple-error)
+(define-condition at-required-precondition-error (simple-error)
   ((slot-name :initarg :slot-name :initform nil))
   (:report
    (lambda (condition stream)
      (with-slots (slot-name) condition
        (format stream "Required slot ~A must not have :initform" slot-name)))))
 
-(define-condition @required-runtime-error (simple-error)
+(define-condition at-required-runtime-error (simple-error)
   ((slot-name :initarg :slot-name :initform nil)
    (initarg :initarg :initarg :initform nil))
   (:report
@@ -47,11 +47,11 @@
     (unless (get-properties options '(:initarg))
       (setf options (list* :initarg (make-keyword name) options)))
     (if (get-properties options '(:initform))
-        (error '@required-precondition-error :slot-name name)
+        (error 'at-required-precondition-error :slot-name name)
         (setf options
               (list* :initform
                      `(cerror "Enter a value."
-                              '@required-runtime-error
+                              'at-required-runtime-error
                               :slot-name ',name :initarg ',(getf options :initarg))
                      options)))
     `'(,name ,@options)))

@@ -2,12 +2,13 @@
 
 (defpackage #:cl-annot-revisit/at-syntax
   (:documentation "The at-syntax reader macro of cl-annot-revisit.")
-  (:use #:cl #:alexandria #:named-readtables)
-  (:use #:cl-annot-revisit/at-macro) ; FIXME
+  (:use #:cl #:cl-annot-revisit #:alexandria #:named-readtables)
   (:export
+   #:*intern-at-macro-symbol-hook*
    #:at-syntax-readtable
    #:find-at-syntax-arity))
 
 (defpackage #:cl-annot-revisit/cl-annot-interface
-  (:use)
+  (:use #:cl #:cl-annot-revisit #:cl-annot-revisit/at-syntax
+        #:alexandria)
   (:export #:defannotation))
