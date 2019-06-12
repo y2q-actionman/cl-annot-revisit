@@ -1,4 +1,4 @@
-(defsystem :cl-annot-revisit-test
+(defsystem #:cl-annot-revisit-test
   :description "Tests for cl-annot-revisit"
   :license "WTFPL"
   :author "YOKOTA Yuki <y2q.actionman@gmail.com>"

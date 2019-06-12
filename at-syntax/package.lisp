@@ -7,8 +7,3 @@
    #:*intern-at-macro-symbol-hook*
    #:at-syntax-readtable
    #:find-at-syntax-arity))
-
-(defpackage #:cl-annot-revisit/cl-annot-interface
-  (:use #:cl #:cl-annot-revisit #:cl-annot-revisit/at-syntax
-        #:alexandria)
-  (:export #:defannotation))

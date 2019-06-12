@@ -1,4 +1,4 @@
-(defsystem :cl-annot-revisit
+(defsystem #:cl-annot-revisit
   :description "Re-implementation of 'cl-annot', authored by Tomohiro Matsuyama."
   :license "WTFPL"
   :author "YOKOTA Yuki <y2q.actionman@gmail.com>"
@@ -25,6 +25,5 @@
                 :components
                 ((:file "package")
                  (:file "reader")
-                 (:file "definitions")
-                 (:file "cl-annot-compatibility"))))
+                 (:file "definitions"))))
   :in-order-to ((test-op (test-op #:cl-annot-revisit-test))))

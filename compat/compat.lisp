@@ -1,4 +1,9 @@
-(in-package #:cl-annot-revisit/cl-annot-interface)
+(defpackage #:cl-annot-revisit-compat
+  (:use #:cl #:alexandria
+        #:cl-annot-revisit/at-syntax)
+  (:export #:defannotation))
+
+(in-package #:cl-annot-revisit-compat)
 
 (defvar *cl-annot-compatibility* nil)
 
@@ -17,12 +22,12 @@
     (values (find-symbol symbol-name package) package)
     (values nil nil)))
 
-(defmethod find-at-syntax-arity :around ((symbol symbol))
+(defmethod cl-annot-revisit/at-syntax:find-at-syntax-arity :around ((symbol symbol))
   (or (if *cl-annot-compatibility*
           (get symbol (find-cl-annot-symbol "ANNOTATION-ARITY")))
       (call-next-method)))
 
-(defmethod cl-annot-revisit::find-at-syntax-inline-p :around ((symbol symbol))
+(defmethod cl-annot-revisit/at-syntax::find-at-syntax-inline-p :around ((symbol symbol))
   (or (if *cl-annot-compatibility*
           (get symbol (find-cl-annot-symbol "ANNOTATION-INLINE-P")))
       (call-next-method)))
