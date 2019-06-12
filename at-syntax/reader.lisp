@@ -1,14 +1,17 @@
 (in-package #:cl-annot-revisit/at-syntax)
 
 (defmacro with-temporal-package (() &body body)
+  "Bind `*package*' to a temporal package and evaluates BODY."
   (let ((name (gensym "tmp-package")))
     `(let ((*package* (make-package ',name :use nil)))
        (unwind-protect (progn ,@body)
          (delete-package ',name)))))
 
-(defvar *intern-at-macro-symbol-hook* nil)
+(defvar *intern-at-macro-symbol-hook* nil
+  "A list of functions called by `read-at-macro-symbol' for hooking interning process.")
 
 (defun read-at-macro-symbol (stream at-char)
+  "Reads an symbol, starting with AT-CHAR, from STREAM."
   (unread-char at-char stream)          ; push back '@' char.
   (let* ((at-symbol-tmp
           (with-temporal-package ()
@@ -23,9 +26,11 @@
            return it)
         (intern at-symbol-name))))
 
-(defconstant +at-syntax-default-arity+ 1)
+(defconstant +at-syntax-default-arity+ 1
+  "The default arity of at-syntax macros.")
 
 (defgeneric find-at-syntax-arity (symbol)
+  (:documentation "Returns at-syntax arity of SYMBOL.")
   (:method ((symbol symbol))
     +at-syntax-default-arity+))
 
@@ -48,6 +53,10 @@ This function is not exported, by design.")
     ret))
 
 (defun read-at-syntax (stream at-char arity)
+  "The main reader of at-syntax. It reads at-macro and its arguments
+ by `find-at-syntax-arity' and returns a form.  If the at-macro was
+ requested read-time expansion by `find-at-syntax-inline-p', the form
+ is expaneded at read time."
   (let* ((at-symbol (read-at-macro-symbol stream at-char))
          (arity (or arity
                     (find-at-syntax-arity at-symbol)))
@@ -61,9 +70,11 @@ This function is not exported, by design.")
         at-macro-form)))
 
 (defun read-at (stream char)
+  "The reader-macro function of '@' char."
   (read-at-syntax stream char nil))
 
 (defun read-sharp-at (stream char n)
+  "The reader-macro function of '#@' syntax."
   (read-at-syntax stream char (or n :infinite)))
 
 (defreadtable at-syntax-readtable

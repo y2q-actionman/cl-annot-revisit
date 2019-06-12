@@ -5,6 +5,7 @@
     (mapcar (lambda (form) (append operator-head (list form))) forms))
 
   (defun function-name-p (x)
+    "Return true when it is a function name."
     (typecase x
       (symbol t)
       (cons (starts-with 'cl:setf x))))

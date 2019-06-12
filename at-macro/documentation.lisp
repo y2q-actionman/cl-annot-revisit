@@ -20,7 +20,8 @@
       (defun . function)
       (defvar . variable)
       ;; There is no docstring for `define-symbol-macro'.
-      ))
+      )
+    "An alist between an operator name and a doc-type of `cl:documentation' function.")
   
   (defun operator-doc-type (name)
     (cdr (assoc name *operator-doc-type-alist*))))

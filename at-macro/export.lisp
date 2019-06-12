@@ -54,6 +54,7 @@ If failed, returns (values FORM nil)."
      form)))
 
 (defmacro @export (&body forms &environment env)
+  "`export' the defined names in FORMS."
   (apply-at-macro '(@export) #'expand-@export-1 forms env))
 
 ;;; TODO: support `restart-case'?

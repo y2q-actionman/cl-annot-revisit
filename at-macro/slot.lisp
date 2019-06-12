@@ -7,6 +7,7 @@
 ;;; argue whether :initarg is added *ONLY* when no :initarg there.
 
 (defun split-slot-specifier (slot-specifier)
+  "Returns the slot name and slot options from SLOT-SPECIFIER."
   (etypecase slot-specifier
     (symbol (values slot-specifier nil))
     (cons (values (first slot-specifier) (rest slot-specifier)))))
@@ -26,6 +27,7 @@
 
 (define-condition at-required-precondition-error (simple-error)
   ((slot-name :initarg :slot-name :initform nil))
+  (:documentation "Raised when :initform supplied for @required slot.")
   (:report
    (lambda (condition stream)
      (with-slots (slot-name) condition
@@ -34,6 +36,7 @@
 (define-condition at-required-runtime-error (simple-error)
   ((slot-name :initarg :slot-name :initform nil)
    (initarg :initarg :initarg :initform nil))
+  (:documentation "Raised when no value supplied for @required slot.")
   (:report
    (lambda (condition stream)
      (with-slots (slot-name initarg) condition
