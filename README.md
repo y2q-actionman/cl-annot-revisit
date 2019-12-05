@@ -14,11 +14,12 @@ cl-annot-revisit is a re-implementation of [cl-annot](https://github.com/m2ym/cl
 - inline expansion なんて、 macro でサポートする必要ない。勝手に `#.` 置けばいいじゃない。
   at-syntax ではサポートしてもよいが。
 - @required 系は https://lisp-journey.gitlab.io/blog/how-to-check-slots-types-at-make-instance/
-- compat な annotation (例えば inline 入り) と、通常の annotation の使い分けは、どの @ 系 symbol を use-package するかに依存
 
 困った点
 
 - @ reader macro と @ normal macro は共存できない。自分でリーダいじってもらわないと。
+- compat な annotation (例えば inline 入り) と、通常の annotation の使い分けは、どの @ 系 symbol を use-package するかに依存
+- ・・すると思っていたが、 @ で別package の symbol を参照できないと不便な気がする。
 
 # cl-annot user memo
 
