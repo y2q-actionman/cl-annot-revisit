@@ -1,10 +1,11 @@
 (in-package #:cl-annot-revisit/at-syntax)
 
 (defmacro define-at-syntax (name arity &key ((inline inline) nil inline-supplied-p))
+  "Internal helper"
   (check-type name symbol)
   (when (and *at-macro-verbose*
-             (not (starts-with #\@ (symbol-name name))))
-    (warn "Name for defannotation should be started with @."))
+             (starts-with #\@ (symbol-name name)))
+    (warn "Name for define-at-syntax should not be started with @."))
   (unless (or (integerp arity)
               (eq arity :infinite))
     ;; FIXME
@@ -22,11 +23,12 @@
                (declare (ignorable _))
                ,inline)))))
 
+(define-at-syntax cl-annot-revisit:eval-when-compile 1)
+(define-at-syntax cl-annot-revisit:eval-when-load 1)
+(define-at-syntax cl-annot-revisit:eval-when-execute 1)
+(define-at-syntax cl-annot-revisit:eval-always 1)
+
 #|
-;; @eval-when-compile
-;; @eval-when-load
-;; @eval-when-execute
-;; @eval-when-always
 
 (define-at-syntax @ignore 1 :inline t)
 (define-at-syntax @ignorable 1 :inline t)

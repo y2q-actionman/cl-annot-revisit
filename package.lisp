@@ -4,18 +4,18 @@
   (:documentation "cl-annot-revisit root package.")
   (:use)
   (:export
-   ;; at-macro
+   ;; conditions and switches
    #:*at-macro-verbose*
    #:at-macro-condition
    #:at-macro-style-warning
    #:at-macro-error
-   #:@add-declaration
-   #:@add-declamation
-
-   #:@eval-when-compile
-   #:@eval-when-load
-   #:@eval-when-execute
-   #:@eval-always
+   ;; at-macro
+   #:eval-when-compile
+   #:eval-when-load
+   #:eval-when-execute
+   #:eval-always
+   ;; #:@add-declaration
+   ;; #:@add-declamation
    #:@ignore
    #:@ignorable
    #:@dynamic-extent

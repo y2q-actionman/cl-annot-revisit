@@ -20,3 +20,8 @@ CL-ANNOT-REVISIT/AT-SYNTAX> (count-macro-lambda-list-required-arguments '(&whole
 
 (@hoge 100)
 (@fuga 100)
+
+(named-readtables:in-readtable cl-annot-revisit/at-syntax:at-syntax-readtable)
+
+(equal '@cl-annot-revisit:eval-when-load (1 2 3)
+       (CL-ANNOT-REVISIT:EVAL-WHEN-LOAD (1 2 3)))

@@ -10,6 +10,12 @@ This is only for developing at-macro codes. Used at nowhere."
      finally (return (sort ret #'string< :key #'symbol-name))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (ftype (function (t) boolean) to-boolean)
+           (inline to-boolean))
+  (defun to-boolean (x)
+    "Return `T' if X is true or `NIL' otherwise."
+    (if x t nil))
+  
   (defun ensure-list-with (names test)
     "Do like `ensure-list' except testing atom with TEST."
     (if (funcall test names)

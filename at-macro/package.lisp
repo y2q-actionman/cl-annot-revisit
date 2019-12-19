@@ -2,7 +2,12 @@
 
 (defpackage #:cl-annot-revisit/at-macro
   (:documentation "The at-macros of cl-annot-revisit.")
-  (:use #:cl #:cl-annot-revisit #:alexandria)
+  (:use #:cl #:alexandria)
+  (:import-from #:cl-annot-revisit
+                #:*at-macro-verbose*
+                #:at-macro-condition
+                #:at-macro-style-warning
+                #:at-macro-error)
   (:export
    ;; condition.lisp
    #:*at-macro-verbose*
@@ -11,10 +16,10 @@
    #:at-macro-error
    ;; util.lisp
    ;; eval-when.lisp
-   #:@eval-when-compile
-   #:@eval-when-load
-   #:@eval-when-execute
-   #:@eval-always
+   ;; #:eval-when-compile
+   ;; #:eval-when-load
+   ;; #:eval-when-execute
+   ;; #:eval-always
    ;; form-traversal.lisp
    #:find-name-to-be-defined*
    #:find-name-to-be-defined
