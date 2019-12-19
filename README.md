@@ -1,98 +1,73 @@
+(This README is under writing.)
+
 # Abstract
 
 cl-annot-revisit is a re-implementation of [cl-annot](https://github.com/m2ym/cl-annot), authored by Tomohiro Matsuyama.
 
-元の実装と異なる点:
+The Motivation why I implemented again is described in [this article (Japanese)]().
 
-- [構文乗っ取りマクロ](https://g000001.cddddr.org/3756404769) を明示して使えるようにする。
-- 上で定義したマクロへの expander として '@' reader macro を定義する。
+# Overview
 
-思いつき
+This implementation splits the '@' syntax of cl-annot to the two potions:
 
-- @defannotation で defmacro を囲えば @ reader macro にできる
-- 無限引数 annotation を作れば、ファイル全体に作用できる(ひどい)
-- inline expansion なんて、 macro でサポートする必要ない。勝手に `#.` 置けばいいじゃない。
-  at-syntax ではサポートしてもよいが。
-- @required 系は https://lisp-journey.gitlab.io/blog/how-to-check-slots-types-at-make-instance/
+- Normal `defmacro`-s acting like `export`, `doc`, etc in cl-annot.
+- `@` reader macro, which expands `@foo (bar baz)` to `(foo bar baz)`.
 
-困った点
+And:
 
-- @ reader macro と @ normal macro は共存できない。自分でリーダいじってもらわないと。
-- compat な annotation (例えば inline 入り) と、通常の annotation の使い分けは、どの @ 系 symbol を use-package するかに依存
-- ・・すると思っていたが、 @ で別package の symbol を参照できないと不便な気がする。
+- Fixes many bugs [commented in reddit](https://www.reddit.com/r/Common_Lisp/comments/556mpn/reader_macros_common_lisp_bad_examples/)
+- `#n@` reader macro, which can specify '@' syntax arity by its infix parameter.
 
-# cl-annot user memo
+# Examples
 
-version: 2018-12-10
+## Loading
 
-## cl-annot
+Clone this repository, locate it into `~/quicklisp/local-projects/`, and:
+
+``` common-lisp
+(ql:quickload "cl-annot-revisit")
+```
+
+## Using without '@' syntax
+
+`defun` and export its name.
+
+``` common-lisp
+(cl-annot-revisit:export
+  (defun foo () t))
+```
+
+And, adding a docstring
+
+``` common-lisp
+(cl-annot-revisit:documentation "docstring"
+   (cl-annot-revisit:export
+     (defun foo () t)))
+```
+
+## Using with '@' syntax
+
+``` common-lisp
+;; Enables @ syntax
+(named-readtables:in-readtable cl-annot-revisit:at-syntax-readtable)
+
+;; This is same as the nested example above.
+@cl-annot-revisit:documentation "docstring"
+@cl-annot-revisit:export
+(defun foo () t)
+```
+
+# License 
+
+WTFPL
 
 
-## cl-annot-prove (by Rudolph Miller)
+<!-- # Memo -->
 
-- Uses `@doc`.
-- Defines `@tests`, `@tests.around`, `@tests.before`, `@tests.after`, `@tests.around.each`, `@tests.before.each`, `@tests.after.each`.
-- No inline definition.
+<!-- - 無限引数 annotation を作れば、ファイル全体に作用できる(ひどい) -->
+<!-- - inline expansion なんて、 macro でサポートする必要ない。勝手に `#.` 置けばいいじゃない。 -->
+<!--   at-syntax ではサポートしてもよいが。 -->
 
-## cl-flowd (by Mike Maul)
+<!-- - @required 系は https://lisp-journey.gitlab.io/blog/how-to-check-slots-types-at-make-instance/ -->
 
-- Uses `@export`, `@export-class`, `@inline` (top-level usage).
-
-## cl-influxdb (by Mike Maul)
-
-- Uses `@export`, `@export-class`, `@export-structure`.
-
-## cl-locale (by Eitarow Fukamachi)
-
-- Uses `@export`.
-
-## cl-oclapi (by gos-k)
-
-- Uses `@export`.
-
-## cl-pattern (by Tomohiro Matsuyama)
-
-- Uses `@eval-always`, `@export`, `@export-accessors`.
-
-## cl-syntax (by Tomohiro Matsuyama)
-
-only dependency.
-
-## cl-tasukete (by gos-k)
-
-- Uses `@export`, `@export-class`.
-
-## clache (by Tomohiro Matsuyama)
-
-- Uses `@export`, `@annotation`, `@type` (in comment), `@ignore`, `@annot.slot:required` (this is inline!).
-- Defines `@cache`.
-- No inline definition.
-
-## elb-log (by Rudolph Miller)
-
-- Uses `@doc`, `@export-structure`, and `@tests`, `@tests.around` in **cl-annot-prove**.
-
-## glisph (by Tamamu)
-
-- Uses `@export`, `@type` and `@optimize` (in *declare* usage).
-
-## jonathan (by Rudolph Miller)
-
-- Uses `@doc`.
-
-## lucerne (by Fernando Borretti)
-
-- Defines `@route`.
-- No inline definition.
-
-## multival-plist (by Eitarow Fukamachi)
-
-- Uses `@export`.
-
-## thread.comm.rendezvous (by Kazuo Koga)
-
-- Uses `@export`.
-
-## zenekindarl (by κeen)
-
-- Uses `@export`, `@export-accessors`, `@export-constructors` in nested style, and `@ignore` (this is inline!).
+<!-- - @ reader macro と @ normal macro は共存できない。自分でリーダいじってもらわないと。 -->
