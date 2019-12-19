@@ -27,8 +27,8 @@
     (cdr (assoc name *operator-doc-type-alist*))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defgeneric expand-@documentation-1* (operator form docstring)
-    (:documentation "Called by `expand-@documentation-1' to insert DOCSTRING into FORM.
+  (defgeneric expand-documentation-1* (operator form docstring)
+    (:documentation "Called by `expand-documentation-1' to insert DOCSTRING into FORM.
 If FORM can be expanded, returns its expansion. If not, returns nil.")
     (:method (operator form docstring)
       "General case."
@@ -47,11 +47,11 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
             :message (format nil "Adding documentation into ~A form does not works for slots."
                              operator))))
   
-  (defmethod expand-@documentation-1* :before ((operator (eql 'defclass)) form docstring)
+  (defmethod expand-documentation-1* :before ((operator (eql 'defclass)) form docstring)
     (declare (ignore docstring))
     (warn-around-defclass operator form))
 
-  (defmethod expand-@documentation-1* :before ((operator (eql 'define-condition)) form docstring)
+  (defmethod expand-documentation-1* :before ((operator (eql 'define-condition)) form docstring)
     (declare (ignore docstring))
     (warn-around-defclass operator form))
 
@@ -61,20 +61,20 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
             :message (format nil "Adding declarations into ~A form doesn't work for local docstrings."
                              operator))))
   
-  (defmethod expand-@documentation-1* :before ((operator (eql 'flet)) form docstring)
+  (defmethod expand-documentation-1* :before ((operator (eql 'flet)) form docstring)
     (declare (ignore docstring))
     (warn-around-local-form operator form))
 
-  (defmethod expand-@documentation-1* :before ((operator (eql 'labels)) form docstring)
+  (defmethod expand-documentation-1* :before ((operator (eql 'labels)) form docstring)
     (declare (ignore docstring))
     (warn-around-local-form operator form))
 
-  (defmethod expand-@documentation-1* :before ((operator (eql 'macrolet)) form docstring)
+  (defmethod expand-documentation-1* :before ((operator (eql 'macrolet)) form docstring)
     (declare (ignore docstring))
     (warn-around-local-form operator form))
 
   
-  (defmethod expand-@documentation-1* ((operator (eql 'lambda)) form docstring)
+  (defmethod expand-documentation-1* ((operator (eql 'lambda)) form docstring)
     "Special handling for `lambda', adds docstring to an anonymous function."
     (destructuring-bind (op lambda-list &rest body0) form
       (multiple-value-bind (body decls old-doc)
@@ -89,28 +89,28 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
                 ,@(ensure-list new-doc)
                 ,@new-body)))))
   
-  (defmethod expand-@documentation-1* ((operator (eql 'function)) form docstring)
+  (defmethod expand-documentation-1* ((operator (eql 'function)) form docstring)
     "Special handling for #'(lambda ..), adds docstring to an anonymous function."
     (if (starts-with 'lambda (second form))
-        `(function ,(expand-@documentation-1* 'lambda (second form) docstring))))
+        `(function ,(expand-documentation-1* 'lambda (second form) docstring))))
 
   
-  (defun expand-@documentation-1 (form docstring)
+  (defun expand-documentation-1 (form docstring)
     "Insert DOCSTRING into FORM.
 If insertion successed, returns (values <expansion> t).
 If failed, returns (values <original-form> nil)."
     (try-macroexpand
      (if (consp form)
-         (expand-@documentation-1* (first form) form docstring))
+         (expand-documentation-1* (first form) form docstring))
      form)))
 
-(defmacro @documentation (docstring &body forms &environment env)
+(defmacro cl-annot-revisit:documentation (docstring &body forms &environment env)
   "Insert DOCSTRING into FORMS."
   ;; Should I warn about 'setting same docstrings into many forms'?
-  (apply-at-macro `(@documentation ,docstring)
-                  (lambda (form) (expand-@documentation-1 form docstring)) 
+  (apply-at-macro `(cl-annot-revisit:documentation ,docstring)
+                  (lambda (form) (expand-documentation-1 form docstring)) 
                   forms env))
 
-(defmacro @doc (docstring form)
-  "Just an alias of (@documentation ...)"
-  `(@documentation ,docstring ,form))
+(defmacro cl-annot-revisit:doc (docstring form)
+  "Just an alias of (cl-annot-revisit:documentation ...)"
+  `(cl-annot-revisit:documentation ,docstring ,form))

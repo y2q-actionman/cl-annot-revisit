@@ -10,58 +10,40 @@
                 #:at-macro-error)
   (:export
    ;; condition.lisp
-   #:*at-macro-verbose*
-   #:at-macro-condition
-   #:at-macro-style-warning
-   #:at-macro-error
+   ;;
    ;; util.lisp
+   ;;
    ;; eval-when.lisp
-   ;; #:eval-when-compile
-   ;; #:eval-when-load
-   ;; #:eval-when-execute
-   ;; #:eval-always
+   ;;
    ;; form-traversal.lisp
    #:find-name-to-be-defined*
    #:find-name-to-be-defined
    ;; declaration.lisp
-   #:expand-@add-declaration-1*
-   #:@add-declaration
-   #:@ignore
-   #:@ignorable
-   #:@dynamic-extent
+   #:expand-add-declaration-1*
+   #:expand-add-declaration-1
    ;; declamation.lisp
-   #:expand-@add-declamation-1*
-   #:@add-declamation
-   #:@special
-   #:@type
-   #:@ftype
-   #:@inline
-   #:@notinline
-   #:@optimize
-   #:@declaration
+   #:expand-add-declamation-1*
+   #:expand-add-declamation-1
    ;; documentation.lisp
-   #:expand-@documentation-1*
-   #:@documentation
-   #:@doc
+   #:expand-documentation-1*
+   #:expand-documentation-1
    ;; export.lisp
-   #:expand-@export-1*
-   #:@export
+   #:expand-export-1*
+   #:expand-export-1
    ;; defclass.lisp
-   #:expand-@metaclass-1*
-   #:@metaclass
-   #:expand-@export-slots-1*
-   #:@export-slots
+   #:expand-metaclass-1*
+   #:expand-metaclass-1
+   #:expand-export-slots-1*
+   #:expand-export-slots-1
    #:*slot-accessor-option-names*
-   #:expand-@export-accessors-1*
-   #:@export-accessors
-   #:@export-class
+   #:expand-export-accessors-1*
+   #:expand-export-accessors-1
    ;; defstruct.lisp
-   #:expand-@export-constructors-1*
-   #:@export-constructors
-   #:expand-@export-structure-1*
-   #:@export-structure
+   #:expand-export-constructors-1*
+   #:expand-export-constructors-1
+   #:expand-export-structure-1*
+   #:expand-export-structure-1
    ;; slot.lisp
-   #:@optional
    #:at-required-precondition-error
    #:at-required-runtime-error
-   #:@required))
+   ))

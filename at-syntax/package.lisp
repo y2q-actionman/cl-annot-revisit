@@ -8,5 +8,4 @@
                 #:at-syntax-readtable
                 #:find-at-syntax-arity)
   (:export
-   #:at-syntax-readtable
-   #:find-at-syntax-arity))
+   #:define-at-syntax))

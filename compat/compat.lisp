@@ -1,18 +1,15 @@
 (defpackage #:cl-annot-revisit-compat
-  (:use #:cl #:alexandria
-        #:cl-annot-revisit #:cl-annot-revisit/at-syntax)
-  (:export #:defannotation))
+  (:use #:cl #:alexandria)
+  (:import-from #:cl-annot-revisit
+                #:*at-macro-verbose*)
+  (:import-from #:cl-annot-revisit/at-syntax
+                #:define-at-syntax)
+  (:export #:*cl-annot-compatibility*
+           #:defannotation))
 
 (in-package #:cl-annot-revisit-compat)
 
 (defvar *cl-annot-compatibility* nil)
-
-(defun find-non-@-symbol (at-symbol-name)
-  "For achieving cl-annot compatibility, I should see non-@ symbols."
-  (if *cl-annot-compatibility*
-      (find-symbol (subseq at-symbol-name 1))))
-
-(pushnew 'find-non-@-symbol *intern-at-macro-symbol-hook*)
 
 (define-constant +cl-annot-core-package-name+ "CL-ANNOT.CORE"
   :test 'equal)

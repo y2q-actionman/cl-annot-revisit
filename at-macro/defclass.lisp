@@ -1,11 +1,11 @@
 (in-package #:cl-annot-revisit/at-macro)
 
-;;; `@metaclass'
+;;; `metaclass'
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun pick-defclass-options (defclass-form)
     (nthcdr 4 defclass-form))
   
-  (defgeneric expand-@metaclass-1* (form-op form metaclass)
+  (defgeneric expand-metaclass-1* (form-op form metaclass)
     (:method (form-op form metaclass)
       (declare (ignore form-op form metaclass))
       nil)
@@ -16,23 +16,23 @@
                  :message "A metaclass already exists."))
         `(,@form (:metaclass ,metaclass)))))
 
-  (defun expand-@metaclass-1 (form metaclass)
+  (defun expand-metaclass-1 (form metaclass)
     (try-macroexpand
      (if (consp form)
-         (expand-@metaclass-1* (first form) form metaclass))
+         (expand-metaclass-1* (first form) form metaclass))
      form)))
 
-(defmacro @metaclass (class-name &body forms &environment env)
-  (apply-at-macro `(@metaclass ,class-name)
-                  (lambda (form) (expand-@metaclass-1 form class-name))
+(defmacro cl-annot-revisit:metaclass (class-name &body forms &environment env)
+  (apply-at-macro `(cl-annot-revisit:metaclass ,class-name)
+                  (lambda (form) (expand-metaclass-1 form class-name))
                   forms env))
 
-;;; `@export-slots'
+;;; `export-slots'
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun pick-defclass-slots (defclass-form)
     (mapcar #'ensure-list (nth 3 defclass-form)))
   
-  (defgeneric expand-@export-slots-1* (form-op form)
+  (defgeneric expand-export-slots-1* (form-op form)
     (:method (form-op form)
       (declare (ignore form-op form))
       nil)
@@ -43,23 +43,23 @@
          finally (return
                    (add-export names form))))
     (:method ((form-op (eql 'define-condition)) form)
-      (expand-@export-slots-1* 'defclass form)))
+      (expand-export-slots-1* 'defclass form)))
 
-  (defun expand-@export-slots-1 (form)
+  (defun expand-export-slots-1 (form)
     (try-macroexpand
      (if (consp form)
-         (expand-@export-slots-1* (first form) form))
+         (expand-export-slots-1* (first form) form))
      form)))
 
-(defmacro @export-slots (&body forms &environment env)
-  (apply-at-macro '(@export-slots) #'expand-@export-slots-1 forms env))
+(defmacro cl-annot-revisit:export-slots (&body forms &environment env)
+  (apply-at-macro '(cl-annot-revisit:export-slots) #'expand-export-slots-1 forms env))
 
-;;; `@export-accessors'
+;;; `export-accessors'
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *slot-accessor-option-names*
     '(:reader :writer :accessor))
   
-  (defgeneric expand-@export-accessors-1* (form-op form)
+  (defgeneric expand-export-accessors-1* (form-op form)
     (:method (form-op form)
       (declare (ignore form-op form))
       nil)
@@ -90,17 +90,20 @@
          finally (return
                    (add-export accessors form))))
     (:method ((form-op (eql 'define-condition)) form)
-      (expand-@export-accessors-1* 'defclass form)))
+      (expand-export-accessors-1* 'defclass form)))
 
-  (defun expand-@export-accessors-1 (form)
+  (defun expand-export-accessors-1 (form)
     (try-macroexpand
      (if (consp form)
-         (expand-@export-accessors-1* (first form) form))
+         (expand-export-accessors-1* (first form) form))
      form)))
 
-(defmacro @export-accessors (&body forms &environment env)
-  (apply-at-macro '(@export-accessors) #'expand-@export-accessors-1 forms env))
+(defmacro cl-annot-revisit:export-accessors (&body forms &environment env)
+  (apply-at-macro '(cl-annot-revisit:export-accessors) #'expand-export-accessors-1 forms env))
 
-(defmacro @export-class (&body forms)
-  "Just an alias of nested `@export-slots', `@export-accessors', and `@export'."
-  `(@export-slots (@export-accessors (@export ,@forms))))
+(defmacro cl-annot-revisit:export-class (&body forms)
+  "Just an alias of nested `cl-annot-revisit:export-slots',
+`cl-annot-revisit:export-accessors', and `cl-annot-revisit:export'."
+  `(cl-annot-revisit:export-slots
+    (cl-annot-revisit:export-accessors
+     (cl-annot-revisit:export ,@forms))))
