@@ -39,7 +39,7 @@ values and see N-th value as a condition."
          (clause1-cond (first clause1))
          (clause1-body (rest clause1)))
     (cond
-      ((null clauses)
+      ((endp clauses)
        nil)
       ((null clause1)
        (error "Using NIL in mv-cond-let is not allowed."))
