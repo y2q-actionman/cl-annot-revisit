@@ -71,7 +71,7 @@
   "The reader-macro function of '#@' syntax."
   (read-at-syntax stream char n))
 
-(defreadtable at-syntax-readtable
+(defreadtable cl-annot-revisit:at-syntax-readtable
   (:merge :standard)
   (:macro-char #\@ #'read-at t)
   (:dispatch-macro-char #\# #\@ #'read-sharp-at))

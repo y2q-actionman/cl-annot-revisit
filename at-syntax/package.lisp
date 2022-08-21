@@ -5,7 +5,8 @@
   (:use #:cl #:alexandria #:named-readtables)
   (:import-from #:cl-annot-revisit
                 #:*at-macro-verbose*
-                #:at-syntax-readtable
+                #:define-at-syntax
                 #:find-at-syntax-arity)
   (:export
-   #:define-at-syntax))
+    #:define-at-syntax
+    #:find-at-syntax-arity))
