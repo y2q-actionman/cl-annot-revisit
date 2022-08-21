@@ -10,17 +10,12 @@ This is only for developing at-macro codes. Used at nowhere."
      finally (return (sort ret #'string< :key #'symbol-name))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (declaim (ftype (function (t) boolean) to-boolean)
-           (inline to-boolean))
-  (defun to-boolean (x)
-    "Return `T' if X is true or `NIL' otherwise."
-    (if x t nil))
-  
-  (defun ensure-list-with (names test)
-    "Do like `ensure-list' except testing atom with TEST."
-    (if (funcall test names)
-        (list names)
-        (ensure-list names)))
+  (defun ensure-list-with (obj test)
+    "Do like `ensure-list', except this function returns (list OBJ)
+when (funcall TEST OBJ) results true."
+    (if (funcall test obj)
+        (list obj)
+        (ensure-list obj)))
 
   (defun split-list-at (n list)
     "Return first N elements and rests of LIST."
@@ -57,10 +52,6 @@ values and see N-th value as a condition."
                    `(values ,@vars))
 	      (mv-cond-let-n ,n (,@vars) ,@(rest clauses))))))))
 
-(defmacro mv-cond-let ((&rest vars) &body clauses)
-  "Uses `mv-cond-let-n' seeing the first value."
-  `(mv-cond-let-n 0 (,@vars) ,@clauses))
-
 (defmacro mv-cond-let2 ((&rest vars) &body clauses)
-  "Uses `mv-cond-let-n' seeing the second value."
+  "Uses `mv-cond-let-n' to see the second value."
   `(mv-cond-let-n 1 (,@vars) ,@clauses))

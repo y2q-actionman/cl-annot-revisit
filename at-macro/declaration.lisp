@@ -132,7 +132,7 @@ If failed, returns (values <original-form> nil)."
   "Used by at-macros of declarations for processing recursive expansion.
 If BODY is a form accepts declarations, adds a DECL-SPECIFIER into it.
 If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
-  (apply-at-macro `(@add-declaration ,decl-specifier)
+  (apply-at-macro `(add-declaration ,decl-specifier)
                   (lambda (form) (expand-add-declaration-1 form decl-specifier))
                   body env
                   :if-no-expansion
