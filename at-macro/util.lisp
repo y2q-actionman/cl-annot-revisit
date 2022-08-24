@@ -55,3 +55,13 @@ values and see N-th value as a condition."
 (defmacro mv-cond-let2 ((&rest vars) &body clauses)
   "Uses `mv-cond-let-n' to see the second value."
   `(mv-cond-let-n 1 (,@vars) ,@clauses))
+
+(defmacro macroexpand-convention ((original-form) &body body)
+  "Executes BODY as like `progn' and return the result as the first
+value.  As the second value, returns a boolean whether the result is
+not same with ORIGINAL-FORM or not.
+This macro is designed to follow the `macroexpand' convention."
+  (let ((result (gensym)))
+    `(let ((,result (progn ,@body)))
+       (values ,result
+               (not (eq ,result ,original-form))))))

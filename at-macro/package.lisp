@@ -28,8 +28,8 @@
    #:expand-documentation-1*
    #:expand-documentation-1
    ;; export.lisp
-   #:expand-export-1*
-   #:expand-export-1
+   #:expand-export-form-using-head
+   #:expand-export-form
    ;; defclass.lisp
    #:expand-metaclass-1*
    #:expand-metaclass-1

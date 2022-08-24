@@ -10,6 +10,7 @@
       (symbol t)
       (cons (starts-with 'cl:setf x))))
 
+  ;; TODO: Remove this.
   (defun try-macroexpand (value alt)
     "If VALUE is true, return (values VALUE t). If not, returns (values ALT nil).
 This function is intended to follow `macroexpand' convention."
