@@ -69,35 +69,28 @@ returns the name to be defined. If not, returns nil."
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defgeneric apply-to-special-form-1* (at-macro-form form-head form)
-    (:documentation
-     "An internal function called by `apply-to-special-form-1'")
-    (:method (at-macro-form form-head form)
-      "Bottom case, returns nil."
-      (declare (ignore at-macro-form form-head form))
-      nil))
-
-  (defmethod apply-to-special-form-1* (at-macro-form (form-head (eql 'progn)) form)
-    `(progn ,@(apply-to-all-forms at-macro-form (rest form))))
-
-  (defmethod apply-to-special-form-1* (at-macro-form (form-head (eql 'eval-when)) form)
-    (destructuring-bind ((&rest situations) &body e-w-body) (rest form)
-      `(eval-when (,@situations)
-         ,@(apply-to-all-forms at-macro-form e-w-body))))
-
-  (defmethod apply-to-special-form-1* (at-macro-form (form-head (eql 'locally)) form)
-    (multiple-value-bind (remaining-forms declarations)
-        (parse-body (rest form))
-      `(locally ,@declarations
-         ,@(apply-to-all-forms at-macro-form remaining-forms))))
-
-  (defun apply-to-special-form-1 (at-macro-form form)
+  (defun apply-at-macro-to-special-form (at-macro-form form)
     "If form is a special form (one of `progn', `eval-when', or
 `locally'), expand FORM into AT-MACRO-FORM recursively."
-    (try-macroexpand
-     (if (consp form)
-         (apply-to-special-form-1* at-macro-form (first form) form))
-     form)))
+    (macroexpand-convention (form)
+      (if (not (consp form))
+          form
+          (case (first form)
+            ((progn)
+             `(progn
+                ,@(apply-to-all-forms at-macro-form (rest form))))
+            ((eval-when)
+             (let ((eval-when-situations (second form))
+                   (eval-when-body (nthcdr 2 form)))
+               `(eval-when (,@eval-when-situations)
+                  ,@(apply-to-all-forms at-macro-form eval-when-body))))
+            ((locally)
+             (multiple-value-bind (remaining-forms declarations)
+                 (parse-body (rest form))
+               `(locally ,@declarations
+                  ,@(apply-to-all-forms at-macro-form remaining-forms))))
+            (otherwise
+             form))))))
 
 ;;; NOTE: At the top level, Common Lisp specially treats `macrolet',
 ;;; `symbol-macrolet', and *ALL* macro forms. But I need a real code-walker
@@ -117,7 +110,7 @@ returns the name to be defined. If not, returns nil."
        (let ((form (first forms)))
          (mv-cond-let2 (expansion expanded-p)
            ((funcall expander-function form)) ; try known expansions.
-           ((apply-to-special-form-1 at-macro-form form)) ; try recursive expansion.
+           ((apply-at-macro-to-special-form at-macro-form form)) ; try recursive expansion.
            ((macroexpand-1 form env)      ; try `macroexpand-1'.
             `(,@at-macro-form ,expansion))
            (t                       ; nothing to be expanded.

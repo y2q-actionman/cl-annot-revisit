@@ -46,9 +46,9 @@
           (equal head nil)
           (equal tail nil)))))
 
-(with-interpackage-falias (apply-to-special-form-1) cl-annot-revisit/at-macro
+(with-interpackage-falias (apply-at-macro-to-special-form) cl-annot-revisit/at-macro
   (test expand-recursive-1-progn
-    (is (equal (apply-to-special-form-1
+    (is (equal (apply-at-macro-to-special-form
                 '(cl-annot-revisit:export)
                 '(progn x y (+ x y)))
                '(PROGN
@@ -57,7 +57,7 @@
                  (cl-annot-revisit:EXPORT (+ X Y))))))
 
   (test expand-recursive-1-eval-when
-    (is (equal (apply-to-special-form-1
+    (is (equal (apply-at-macro-to-special-form
                 '(cl-annot-revisit:export)
                 '(eval-when (:execute)
                   x y (+ x y)))
@@ -67,7 +67,7 @@
                  (cl-annot-revisit:EXPORT (+ X Y))))))
 
   (test expand-recursive-1-locally
-    (is (equal (apply-to-special-form-1
+    (is (equal (apply-at-macro-to-special-form
                 '(cl-annot-revisit:export)
                 '(locally (declare (type fixnum x))
                   x y (+ x y)))
@@ -77,7 +77,7 @@
                  (cl-annot-revisit:EXPORT (+ X Y))))))
 
   (test expand-recursive-1-symbol-other
-    (is (equal (apply-to-special-form-1
+    (is (equal (apply-at-macro-to-special-form
                 '(cl-annot-revisit:export)
                 '#1=(let ((x 100))
                       x y (+ x y)))
