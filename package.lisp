@@ -39,5 +39,4 @@
    
    ;; at-syntax
    #:at-syntax-readtable
-   #:define-at-syntax
    #:find-at-syntax-arity))
