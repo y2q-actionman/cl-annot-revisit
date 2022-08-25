@@ -89,7 +89,7 @@ To distinguish a macro form from a list of names, I try to `macroexpand-1' to th
               `(add-declaration ,decl-specifier ,@body) ; Use it as a local declaration.
               `(progn (declaim ,decl-specifier)
                       '(declare ,decl-specifier))))
-        ;; Like '(cl-annot-revist:inline (defun func nil) ...)'
+        ;; Like '(cl-annot-revisit:inline (defun func nil) ...)'
         `(add-declamation
           ,decl-head
           ;; I don't use the above `macroexpand-1' result,
@@ -99,7 +99,7 @@ To distinguish a macro form from a list of names, I try to `macroexpand-1' to th
 (defmacro cl-annot-revisit:special (&optional vars-or-form &body body &environment env)
   ;; TODO: add 'VARS-OR-FORM' treating
   "Adds `special' declaration into BODY.
-If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), this is intended to embed it as a declaration using '#.'"
+If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), to embed it as a declaration using '#.'"
   (expand-at-declamation '(cl:special) vars-or-form body
                          #'symbolp env))
 
@@ -130,7 +130,7 @@ If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), this i
 
 (defmacro cl-annot-revisit:optimize (qualities &body body &environment env)
   "Adds `optimize' declaration into BODY.
-If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), this is intended to embed it as a declaration using '#.'"
+If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), to embed it as a declaration using '#.'"
   (expand-at-declamation `(cl:optimize ,@(ensure-list-with qualities #'optimize-quality-p))
                          nil body
                          (constantly nil) env))
