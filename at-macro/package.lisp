@@ -22,8 +22,8 @@
    #:expand-add-declaration-using-head
    #:expand-add-declaration
    ;; declamation.lisp
-   #:expand-add-declamation-1*
-   #:expand-add-declamation-1
+   #:expand-add-declamation-using-head
+   #:expand-add-declamation
    ;; documentation.lisp
    #:expand-documentation-1*
    #:expand-documentation-1
