@@ -57,12 +57,12 @@ returns the name to be defined. If not, returns nil."
     (typecase form
       (symbol nil) ; It may be a symbol macro. Callers must check it.
       (cons (find-name-to-be-defined-using-head (first form) form))
-      (otherwise nil))))
+      (otherwise nil)))
 
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun apply-to-all-forms (operator-head forms)
-    (mapcar (lambda (form) (append operator-head (list form))) forms))
+  (defun apply-at-macro-to-all-forms (at-macro-form forms)
+    (loop for form in forms
+          collect `(,@at-macro-form ,form)))
 
   (defun apply-at-macro-to-special-form (at-macro-form form)
     "If form is a special form (one of `progn', `eval-when', or
@@ -73,17 +73,17 @@ returns the name to be defined. If not, returns nil."
           (case (first form)
             ((progn)
              `(progn
-                ,@(apply-to-all-forms at-macro-form (rest form))))
+                ,@(apply-at-macro-to-all-forms at-macro-form (rest form))))
             ((eval-when)
              (let ((eval-when-situations (second form))
                    (eval-when-body (nthcdr 2 form)))
                `(eval-when (,@eval-when-situations)
-                  ,@(apply-to-all-forms at-macro-form eval-when-body))))
+                  ,@(apply-at-macro-to-all-forms at-macro-form eval-when-body))))
             ((locally)
              (multiple-value-bind (remaining-forms declarations)
                  (parse-body (rest form))
                `(locally ,@declarations
-                  ,@(apply-to-all-forms at-macro-form remaining-forms))))
+                  ,@(apply-at-macro-to-all-forms at-macro-form remaining-forms))))
             (otherwise
              form))))))
 
@@ -100,7 +100,7 @@ returns the name to be defined. If not, returns nil."
       ((null forms)
        nil)
       ((not (length= 1 forms))            ; recursive expansion
-       `(progn ,@(apply-to-all-forms at-macro-form forms)))
+       `(progn ,@(apply-at-macro-to-all-forms at-macro-form forms)))
       (t
        (let ((form (first forms)))
          (mv-cond-let2 (expansion expanded-p)
