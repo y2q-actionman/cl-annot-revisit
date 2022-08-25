@@ -21,6 +21,7 @@
             (add-declaim-to-definiton-form form decl-specifier)))))
 
   (defmethod expand-add-declamation-1* :before ((declaration (eql 'type)) form decl-specifier)
+    (declare (ignorable decl-specifier))
     (when (and (starts-with 'the form)
                *at-macro-verbose*)
       (warn 'at-macro-style-warning :form form
