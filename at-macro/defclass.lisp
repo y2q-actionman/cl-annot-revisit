@@ -59,11 +59,11 @@
   (defvar *slot-accessor-option-names*
     '(:reader :writer :accessor))
   
-  (defgeneric expand-export-accessors-1* (form-op form)
-    (:method (form-op form)
-      (declare (ignore form-op form))
-      nil)
-    (:method ((form-op (eql 'defclass)) form)
+  (defgeneric expand-export-accessors-using-head (operator form)
+    (:method (operator form)
+      (declare (ignore operator))
+      form)
+    (:method ((operator (eql 'defclass)) form)
       (when (assoc :metaclass (pick-defclass-options form))
         ;; TODO: FIXME:
         ;; If this class was extended by metaclass, it may has more
@@ -74,7 +74,7 @@
         ;; this purpose...
         (when *at-macro-verbose*
           (warn 'at-macro-style-warning :form form
-                :message "Additional slot options added by metaclass is ignored, if it is not in *slot-accessor-option-names*.")))
+                :message "Additional slot options added by metaclass is ignored. Please add them into `*slot-accessor-option-names*'.")))
       (loop with slot-specifiers = (pick-defclass-slots form)
          for (nil . slot-options) in slot-specifiers
          nconc (loop for (option-name value) on slot-options by #'cddr
@@ -89,18 +89,19 @@
          into accessors
          finally (return
                    (add-export accessors form))))
-    (:method ((form-op (eql 'define-condition)) form)
-      (expand-export-accessors-1* 'defclass form)))
+    (:method ((operator (eql 'define-condition)) form)
+      (expand-export-accessors-using-head 'defclass form)))
 
-  (defun expand-export-accessors-1 (form)
-    (try-macroexpand
+  (defun expand-export-accessors (form)
+    (macroexpand-convention (form)
      (if (consp form)
-         (expand-export-accessors-1* (first form) form))
-     form)))
+         (expand-export-accessors-using-head (first form) form)
+         form))))
 
 (defmacro cl-annot-revisit:export-accessors (&body forms &environment env)
-  (apply-at-macro '(cl-annot-revisit:export-accessors) #'expand-export-accessors-1 forms env))
+  (apply-at-macro '(cl-annot-revisit:export-accessors) #'expand-export-accessors forms env))
 
+;;; `export-class'
 (defmacro cl-annot-revisit:export-class (&body forms)
   "Just an alias of nested `cl-annot-revisit:export-slots',
 `cl-annot-revisit:export-accessors', and `cl-annot-revisit:export'."

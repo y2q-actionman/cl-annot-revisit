@@ -171,7 +171,7 @@
 
 ;;; `export-accessors'
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defmethod expand-export-accessors-1* ((form-op (eql 'defstruct)) form)
+  (defmethod expand-export-accessors-using-head ((form-op (eql 'defstruct)) form)
     (let ((readers (pick-names-of-defstruct-form form '(:reader))))
       (add-export readers form))))
 

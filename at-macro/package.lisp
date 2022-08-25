@@ -36,8 +36,8 @@
    #:expand-export-slots-using-head
    #:expand-export-slots
    #:*slot-accessor-option-names*
-   #:expand-export-accessors-1*
-   #:expand-export-accessors-1
+   #:expand-export-accessors-using-head
+   #:expand-export-accessors
    ;; defstruct.lisp
    #:expand-export-constructors-1*
    #:expand-export-constructors-1
