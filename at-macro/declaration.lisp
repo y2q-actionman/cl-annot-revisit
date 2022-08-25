@@ -149,12 +149,15 @@ If failed, returns (values <original-form> nil)."
   "Used by at-macros of declarations for processing recursive expansion.
 If BODY is a form accepts declarations, adds a DECL-SPECIFIER into it.
 If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
-  (apply-at-macro `(add-declaration ,decl-specifier)
-                  (alexandria:curry #'expand-add-declaration decl-specifier)
-                  body env
-                  :if-no-expansion
-                  (lambda (form) `(locally (declare ,decl-specifier)
-                                    ,form))))
+  (multiple-value-bind (expansion expanded-p)
+      (apply-at-macro `(add-declaration ,decl-specifier)
+                      (alexandria:curry #'expand-add-declaration decl-specifier)
+                      body env)
+    (values (if expanded-p
+                expansion
+                `(locally (declare ,decl-specifier)
+                   ,@body))
+            t)))
 
 ;;; Declaration only -- `ignore', `ignorable', `dynamic-extent'
 

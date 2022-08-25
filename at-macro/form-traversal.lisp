@@ -61,8 +61,10 @@ returns the name to be defined. If not, returns nil."
 
 
   (defun apply-at-macro-to-all-forms (at-macro-form forms)
-    (loop for form in forms
-          collect `(,@at-macro-form ,form)))
+    (values
+     (loop for form in forms
+           collect `(,@at-macro-form ,form))
+     t))                                ; `macroexpand' convention.
 
   (defun apply-at-macro-to-special-form (at-macro-form form)
     "If form is a special form (one of `progn', `eval-when', or
@@ -94,19 +96,20 @@ returns the name to be defined. If not, returns nil."
 
 ;; TODO: rewrite..
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun apply-at-macro (at-macro-form expander-function forms env
-                         &key (if-no-expansion #'identity))
+  (defun apply-at-macro (at-macro-form expander-function forms env)
     (cond
       ((null forms)
-       nil)
+       (values nil nil))
       ((not (length= 1 forms))            ; recursive expansion
-       `(progn ,@(apply-at-macro-to-all-forms at-macro-form forms)))
+       (values
+        `(progn ,@(apply-at-macro-to-all-forms at-macro-form forms))
+        t))
       (t
        (let ((form (first forms)))
          (mv-cond-let2 (expansion expanded-p)
            ((funcall expander-function form)) ; try known expansions.
            ((apply-at-macro-to-special-form at-macro-form form)) ; try recursive expansion.
            ((macroexpand-1 form env)      ; try `macroexpand-1'.
-            `(,@at-macro-form ,expansion))
+            (values `(,@at-macro-form ,expansion) t))
            (t                       ; nothing to be expanded.
-            (funcall if-no-expansion form))))))))
+            (values form nil))))))))

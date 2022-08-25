@@ -7,3 +7,12 @@
   (is (equal
        '(let ((x 1)) #.(cl-annot-revisit:ignore (x x x)) 0)
        '(let ((x 1)) (declare (ignore x x x)) 0))))
+
+(test test-decl-ignore-toplevel
+  (is (equal
+       (macroexpand
+        '(cl-annot-revisit:ignore (x y z)
+          (+ x y z)))
+       '(locally
+         (declare (ignore x y z))
+         (+ x y z)))))
