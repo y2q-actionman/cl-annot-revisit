@@ -1,16 +1,6 @@
 (in-package #:cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun apply-to-all-forms (operator-head forms)
-    (mapcar (lambda (form) (append operator-head (list form))) forms))
-
-  (defun function-name-p (x)
-    "Return true when it is a function name."
-    (typecase x
-      (symbol t)
-      (cons (starts-with 'cl:setf x)))))
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter *variable-definiton-form-list*
     '(defconstant defparameter defvar)
     "List of symbols naming a definition form and its
@@ -61,6 +51,9 @@ returns the name to be defined. If not, returns nil."
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun apply-to-all-forms (operator-head forms)
+    (mapcar (lambda (form) (append operator-head (list form))) forms))
+
   (defun apply-at-macro-to-special-form (at-macro-form form)
     "If form is a special form (one of `progn', `eval-when', or
 `locally'), expand FORM into AT-MACRO-FORM recursively."

@@ -25,7 +25,13 @@ when (funcall TEST OBJ) results true."
        repeat n
        for i on list
        collect (car i) into head
-       finally (return (values head (cdr i))))))
+       finally (return (values head (cdr i)))))
+
+  (defun function-name-p (x)
+    "Return true when it is a function name."
+    (typecase x
+      (symbol t)
+      (cons (starts-with 'cl:setf x)))))
 
 (defmacro mv-cond-let-n (n (&rest vars) &body clauses)
   "Multiple value variant of the famous 'COND-LET'. It takes multiple
