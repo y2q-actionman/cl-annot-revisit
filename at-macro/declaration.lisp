@@ -165,15 +165,15 @@ If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
 
 (defmacro cl-annot-revisit:ignore (names &body body)
   "Adds `cl:ignore' declaration into BODY.
-If BODY is nil, it is expanded to '(declare (ignore ...)), this is intended to embed it as a declaration using '#.'"
+If BODY is nil, it is expanded to '(declare (ignore ...)), to embed it as a declaration using '#.'"
   (expand-at-declaration 'cl:ignore names body))
 
 (defmacro cl-annot-revisit:ignorable (names &body body)
   "Adds `ignorable' declaration into BODY.
-If BODY is nil, it is expanded to '(declare (ignorable ...)), this is intended to embed it as a declaration using '#.'"
+If BODY is nil, it is expanded to '(declare (ignorable ...)), to embed it as a declaration using '#.'"
   (expand-at-declaration 'cl:ignorable names body))
 
 (defmacro cl-annot-revisit:dynamic-extent (names &body body)
   "Adds `dynamic-extent' declaration into BODY.
-If BODY is nil, it is expanded to '(declare (dynamic-extent ...)), this is intended to embed it as a declaration using '#.'"
+If BODY is nil, it is expanded to '(declare (dynamic-extent ...)), to embed it as a declaration using '#.'"
   (expand-at-declaration 'cl:dynamic-extent names body))
