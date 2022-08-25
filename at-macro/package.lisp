@@ -16,6 +16,8 @@
    ;; eval-when.lisp
    ;;
    ;; form-traversal.lisp
+   #:variable-definition-operator-p
+   #:function-definition-operator-p
    #:find-name-to-be-defined-using-head
    #:find-name-to-be-defined
    ;; declaration.lisp

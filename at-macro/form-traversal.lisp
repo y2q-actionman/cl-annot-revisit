@@ -1,32 +1,40 @@
 (in-package #:cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defparameter *variable-definiton-form-list*
-    '(defconstant defparameter defvar)
-    "List of symbols naming a definition form and its
-first argument is a variable name to be defined.")
+  (define-constant +standard-variable-definiton-form-list+
+      '(cl:defconstant cl:defparameter cl:defvar)
+    :test 'equal)
+  
+  (defgeneric variable-definition-operator-p (symbol)
+    (:documentation "Returns T if SYMBOL naming a definition form and
+its first argument is a variable name to be defined.")
+    (:method (_)
+      (declare (ignore _))
+      nil)
+    (:method ((symbol symbol))
+      (member symbol +standard-variable-definiton-form-list+)))
 
-  (defun variable-definition-operator-p (symbol)
-    (member symbol *variable-definiton-form-list*))
+  (define-constant +standard-function-definiton-form-list+
+      '(cl:defgeneric cl:define-compiler-macro cl:defmethod cl:defun)
+    :test 'equal)
 
-  (defparameter *function-definiton-form-list*
-    '(defgeneric define-compiler-macro defmethod defun)
-    "List of symbols naming a definition form and its
-first argument is a function name to be defined.")
+  (defgeneric function-definition-operator-p (symbol)
+    (:documentation "Returns T if SYMBOL naming a definition form and
+its first argument is a function name to be defined.")
+    (:method (_)
+      (declare (ignore _))
+      nil)
+    (:method ((symbol symbol))
+      (member symbol +standard-function-definiton-form-list+)))
 
-  (defun function-definition-operator-p (symbol)
-    (member symbol *function-definiton-form-list*))
+  (define-constant +standard-definiton-form-list+
+      (append '(cl:defclass cl:define-condition cl:define-method-combination
+                cl:define-modify-macro cl:define-setf-expander cl:define-symbol-macro
+                cl:defmacro cl:defpackage cl:defsetf cl:defstruct cl:deftype)
+              +standard-variable-definiton-form-list+
+              +standard-function-definiton-form-list+)
+    :test 'equal)
 
-  (defparameter *definiton-form-list*
-    `(defclass define-condition define-method-combination
-      define-modify-macro define-setf-expander define-symbol-macro
-      defmacro defpackage defsetf defstruct deftype
-      ,@*variable-definiton-form-list*
-      ,@*function-definiton-form-list*)
-    "List of symbols naming a definition form and its
-first argument is a name to be defined."))
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
   (defgeneric find-name-to-be-defined-using-head (form-head form)
     (:documentation "Called by `find-name-to-be-defined' to compute a result.")
     (:method ((form-head list) form)
@@ -36,7 +44,9 @@ first argument is a name to be defined."))
       nil)
     (:method ((form-head symbol) form)
       "Called if FORM-HEAD is symbol."
-      (if (member form-head *definiton-form-list*)
+      (if (or (member form-head +standard-definiton-form-list+)
+              (variable-definition-operator-p form-head) ; Calls it because defmethod may exist.
+              (function-definition-operator-p form-head))
           (second form))))
   
   ;; special handling for `defstruct' is in 'defstruct.lisp'.
