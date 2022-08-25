@@ -24,7 +24,7 @@
 
 (defmacro cl-annot-revisit:metaclass (class-name &body forms &environment env)
   (apply-at-macro `(cl-annot-revisit:metaclass ,class-name)
-                  (lambda (form) (expand-metaclass class-name form))
+                  (alexandria:curry #'expand-metaclass class-name)
                   forms env))
 
 ;;; `export-slots'

@@ -47,7 +47,7 @@
 
 (defmacro add-declamation (decl-specifier &body body &environment env)
   (apply-at-macro `(add-declamation ,decl-specifier)
-                  (lambda (form) (expand-add-declamation decl-specifier form))
+                  (alexandria:curry #'expand-add-declamation decl-specifier)
                   body env))
 
 ;;; Declaration and proclamation -- `type', `ftype', `inline', `notinline', `optimize', `special'

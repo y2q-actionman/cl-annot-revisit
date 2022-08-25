@@ -150,7 +150,7 @@ If failed, returns (values <original-form> nil)."
 If BODY is a form accepts declarations, adds a DECL-SPECIFIER into it.
 If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
   (apply-at-macro `(add-declaration ,decl-specifier)
-                  (lambda (form) (expand-add-declaration decl-specifier form))
+                  (alexandria:curry #'expand-add-declaration decl-specifier)
                   body env
                   :if-no-expansion
                   (lambda (form) `(locally (declare ,decl-specifier)
