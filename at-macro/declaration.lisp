@@ -1,40 +1,55 @@
 (in-package #:cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defparameter *operator-body-location-alist*
-    (append '((locally . 1))
-            (mapcar
-             (lambda (op) (cons op 2))
-             '(do-all-symbols do-external-symbols do-symbols dolist
-               dotimes flet labals lambda let let* macrolet
-               pprint-logical-block prog prog* symbol-macrolet
-               with-hash-table-iterator with-input-from-string
-               with-open-file with-open-stream with-output-to-string
-               with-package-iterator))
-            (mapcar
-             (lambda (op) (cons op 3))
-             '(define-compiler-macro define-setf-expander defmacro
-               deftype defun destructuring-bind do do*
-               multiple-value-bind with-accessors with-slots)))
-    "Alist of operators which can be treated by our at-macros for declaration.")
-  
-  (defun operator-body-location (name)
-    (cdr (assoc name *operator-body-location-alist*)))
+  (defgeneric operator-body-location (symbol)
+    (:documentation "When SYMBOL naming an operator which can be
+    treated by our at-macros for declaration, returns an integer where
+    its body locates.")
+    (:method (_)
+      (declare (ignore _))
+      nil)
+    (:method ((symbol symbol))
+      (case symbol
+        ((cl:locally)
+         1)
+        ((cl:do-all-symbols cl:do-external-symbols cl:do-symbols cl:dolist
+           cl:dotimes cl:flet cl:labels cl:lambda cl:let cl:let* cl:macrolet
+           cl:pprint-logical-block cl:prog cl:prog* cl:symbol-macrolet
+           cl:with-hash-table-iterator cl:with-input-from-string
+           cl:with-open-file cl:with-open-stream cl:with-output-to-string
+           cl:with-package-iterator)
+         2)
+        ((cl:define-compiler-macro cl:define-setf-expander cl:defmacro
+           cl:deftype cl:defun cl:destructuring-bind cl:do cl:do*
+           cl:multiple-value-bind cl:with-accessors cl:with-slots)
+         3)
+        (otherwise
+         nil))))
 
-  (defparameter *operators-accept-docstring-in-body*
-    '(define-compiler-macro define-setf-expander defmacro deftype
-      defun lambda)
-    "List of operators accepts docstring in its body.")
+  (define-constant +standard-operators-accept-docstring-in-body+
+      '(cl:define-compiler-macro cl:define-setf-expander cl:defmacro
+        cl:deftype cl:defun cl:lambda)
+    :test 'equal)
 
-  (defun operator-accept-docstring-in-body-p (name)
-    (member name *operators-accept-docstring-in-body*))
+  (defgeneric operator-accept-docstring-in-body-p (symbol)
+    (:documentation "Returns T if SYMBOL naming an operator accepts docstring in its body.")
+    (:method (_)
+      (declare (ignore _))
+      nil)
+    (:method ((symbol symbol))
+      (member symbol +standard-operators-accept-docstring-in-body+)))
 
-  (defparameter *operators-take-local-declaration*
-    '(flet labels macrolet handler-case restart-case)
-    "List of operators may take local declarations.")
+  (define-constant +standard-operators-take-local-declaration+
+      '(cl:flet cl:labels cl:macrolet cl:handler-case cl:restart-case)
+    :test 'equal)
 
-  (defun operator-take-local-declaration-p (name)
-    (member name *operators-take-local-declaration*))
+  (defgeneric operator-take-local-declaration-p (symbol)
+    (:documentation "Returns T if SYMBOL naming an operator may take local declarations.")
+    (:method (_)
+      (declare (ignore _))
+      nil)
+    (:method ((symbol symbol))
+      (member symbol +standard-operators-take-local-declaration+)))
 
   
   (defun insert-declaration-to-body (form-body decl-specifier &key documentation whole)
