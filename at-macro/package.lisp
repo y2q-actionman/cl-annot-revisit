@@ -30,6 +30,7 @@
    #:expand-add-declamation-using-head
    #:expand-add-declamation
    ;; documentation.lisp
+   #:operator-doc-type
    #:expand-documentation-using-head
    #:expand-documentation
    ;; export.lisp

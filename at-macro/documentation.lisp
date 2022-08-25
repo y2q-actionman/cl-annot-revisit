@@ -1,32 +1,34 @@
 (in-package #:cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defparameter *operator-doc-type-alist*
-    '((defclass . type)
-      (defconstant . variable)
-      (defgeneric . function)
-      (define-compiler-macro . compiler-macro)
-      (define-condition . type)
-      (define-method-combination . method-combination)
-      (define-modify-macro . function) ; define-modify-macro == defmacro == `function'
-      (define-setf-expander . setf)
-      (defmacro . function)
-      (defmethod . t)
-      (defpackage . t)
-      (defparameter . variable)
-      (defsetf . setf)
-      (defstruct . (structure type)) ; `defstruct' is specially treated.
-      (deftype . type)
-      (defun . function)
-      (defvar . variable)
-      ;; There is no docstring for `define-symbol-macro'.
-      )
-    "An alist between an operator name and a doc-type of `cl:documentation' function.")
+  (defgeneric operator-doc-type (symbol)
+    (:documentation "Returns the doc-type (in `cl:documentation') of SYMBOL.")
+    (:method (_)
+      (declare (ignore _))
+      nil)
+    (:method ((symbol symbol))
+      (case symbol
+        ((cl:defclass cl:define-condition cl:deftype)
+         'cl:type)
+        ((cl:defconstant cl:defparameter cl:defvar)
+         'cl:variable)
+        ((cl:defgeneric cl:defmacro cl:defun
+           cl:define-modify-macro) ; define-modify-macro == defmacro == `function'
+         'cl:function)
+        ((cl:define-compiler-macro)
+         'cl:compiler-macro)
+        ((cl:define-method-combination)
+         'cl:method-combination)
+        ((cl:define-setf-expander cl:defsetf)
+         'cl:setf)
+        ((cl:defmethod cl:defpackage)
+         t)
+        ((cl:defstruct)            ; `defstruct' is specially treated.
+         '(cl:structure cl:type))
+        ;; There is no docstring for `define-symbol-macro'.
+        (otherwise
+         nil))))
   
-  (defun operator-doc-type (name)
-    (cdr (assoc name *operator-doc-type-alist*))))
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
   (defun warn-around-defclass (operator form)
     (when *at-macro-verbose*
       (warn 'at-macro-style-warning :form form
