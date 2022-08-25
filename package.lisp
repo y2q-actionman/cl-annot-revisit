@@ -19,7 +19,6 @@
    #:ignore
    #:ignorable
    #:dynamic-extent
-   #:add-declamation
    #:special
    #:type
    #:ftype

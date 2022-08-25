@@ -21,7 +21,6 @@
 (define-at-syntax cl-annot-revisit:ignorable 1 :inline t)
 (define-at-syntax cl-annot-revisit:dynamic-extent 1 :inline t)
 
-(define-at-syntax cl-annot-revisit:add-declamation 1)
 (define-at-syntax cl-annot-revisit:special 1 :inline t)
 (define-at-syntax cl-annot-revisit:type 2 :inline t)
 (define-at-syntax cl-annot-revisit:ftype 2 :inline t)

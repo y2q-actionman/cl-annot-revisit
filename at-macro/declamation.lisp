@@ -35,8 +35,8 @@
          (expand-add-declamation-1* (first decl-specifier) form decl-specifier))
      form)))
 
-(defmacro cl-annot-revisit:add-declamation (decl-specifier &body body &environment env)
-  (apply-at-macro `(cl-annot-revisit:add-declamation ,decl-specifier)
+(defmacro add-declamation (decl-specifier &body body &environment env)
+  (apply-at-macro `(add-declamation ,decl-specifier)
                   (lambda (form) (expand-add-declamation-1 form decl-specifier))
                   body env))
 
@@ -79,7 +79,7 @@ To distinguish a macro form from a list of names, I try to `macroexpand-1' to th
               `(progn (declaim ,decl-specifier)
                       '(declare ,decl-specifier))))
         ;; Like '(cl-annot-revist:inline (defun func nil) ...)'
-        `(cl-annot-revisit:add-declamation
+        `(add-declamation
           ,decl-head
           ;; I don't use the above `macroexpand-1' result,
           ;; because other at-macros may want to see original forms.
