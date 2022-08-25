@@ -28,14 +28,13 @@
       (let ((declaration-name (first decl-specifier)))
         (if (declaration-target-operator-p declaration-name operator)
             (add-declaim-to-definiton-form form decl-specifier)
-            form))))
-
-  (defmethod expand-add-declamation-using-head :before ((operator (eql 'cl:the)) decl-specifier form)
-    (declare (ignorable decl-specifier))
-    (when (and (eq 'cl:type (first decl-specifier)) 
-               *at-macro-verbose*)
-      (warn 'at-macro-style-warning :form form
-            :message "`cl-annot-revisit:type' does not effect to `the' special form.")))
+            form)))
+    (:method :before ((operator (eql 'cl:the)) decl-specifier form)
+      (declare (ignorable decl-specifier))
+      (when (and (eq 'cl:type (first decl-specifier)) 
+                 *at-macro-verbose*)
+        (warn 'at-macro-style-warning :form form
+              :message "`cl-annot-revisit:type' does not effect to `the' special form."))))
 
   ;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
   ;;   (cl-annot-revisit:inline (func-a) (declaim)) ; => (declaim (inline func-a))
