@@ -27,88 +27,81 @@
     (cdr (assoc name *operator-doc-type-alist*))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defgeneric expand-documentation-1* (operator form docstring)
-    (:documentation "Called by `expand-documentation-1' to insert DOCSTRING into FORM.
-If FORM can be expanded, returns its expansion. If not, returns nil.")
-    (:method (operator form docstring)
-      "General case."
-      (if-let ((doc-type (operator-doc-type operator)))
-        ;; Using the result of FORM is simple, but may prevent compilation as a top-level form.
-        (with-gensyms (obj)
-          `(let ((,obj ,form))
-             (setf (documentation ,obj ',doc-type) ,docstring)
-             ,obj)))))
-
-  ;; special handling for `defstruct' is in 'defstruct.lisp'.
-
   (defun warn-around-defclass (operator form)
     (when *at-macro-verbose*
       (warn 'at-macro-style-warning :form form
             :message (format nil "Adding documentation into ~A form does not works for slots."
                              operator))))
   
-  (defmethod expand-documentation-1* :before ((operator (eql 'defclass)) form docstring)
-    (declare (ignore docstring))
-    (warn-around-defclass operator form))
-
-  (defmethod expand-documentation-1* :before ((operator (eql 'define-condition)) form docstring)
-    (declare (ignore docstring))
-    (warn-around-defclass operator form))
-
   (defun warn-around-local-form (operator form)
     (when *at-macro-verbose*
       (warn 'at-macro-style-warning :form form
             :message (format nil "Adding declarations into ~A form doesn't work for local docstrings."
                              operator))))
   
-  (defmethod expand-documentation-1* :before ((operator (eql 'flet)) form docstring)
-    (declare (ignore docstring))
-    (warn-around-local-form operator form))
+  (defgeneric expand-documentation-using-head (operator docstring form)
+    (:documentation "Called by `expand-documentation' to insert DOCSTRING into FORM.
+If FORM can be expanded, returns its expansion. If not, returns FORM.")
+    (:method (operator docstring form)
+      "General case."
+      (if-let ((doc-type (operator-doc-type operator)))
+        ;; Using the result of FORM is simple, but may prevent compilation as a top-level form.
+        (with-gensyms (obj)
+          `(let ((,obj ,form))
+             (setf (documentation ,obj ',doc-type) ,docstring)
+             ,obj))
+        form))
+    (:method :before ((operator (eql 'defclass)) docstring form)
+      (declare (ignore docstring))
+      (warn-around-defclass operator form))
+    (:method :before ((operator (eql 'define-condition)) docstring form)
+      (declare (ignore docstring))
+      (warn-around-defclass operator form))
+    (:method :before ((operator (eql 'flet)) docstring form)
+      (declare (ignore docstring))
+      (warn-around-local-form operator form))
+    (:method :before ((operator (eql 'labels)) docstring form)
+      (declare (ignore docstring))
+      (warn-around-local-form operator form))
+    (:method :before ((operator (eql 'macrolet)) docstring form)
+      (declare (ignore docstring))
+      (warn-around-local-form operator form))
+    (:method ((operator (eql 'lambda)) docstring form)
+      "Special handling for `lambda', adds docstring to an anonymous function."
+      (destructuring-bind (op lambda-list &rest body0) form
+        (multiple-value-bind (body decls old-doc)
+            (parse-body body0 :documentation t :whole form)
+          (when (and old-doc docstring)
+            (error 'at-macro-error :form form
+                                   :message "Lambda form already has a docstring."))
+          (let* ((new-doc (or docstring old-doc))
+                 (new-body (or body
+                               (if new-doc `(nil) nil)))) ; Handling no body ; (lambda ())
+            `(,op ,lambda-list ,@decls
+                  ,@(ensure-list new-doc)
+                  ,@new-body)))))
+    (:method ((operator (eql 'function)) docstring form)
+      "Special handling for #'(lambda ..), adds docstring to an anonymous function."
+      (if (starts-with 'lambda (second form))
+          `(function ,(expand-documentation-using-head 'lambda docstring (second form)))
+          form)))
 
-  (defmethod expand-documentation-1* :before ((operator (eql 'labels)) form docstring)
-    (declare (ignore docstring))
-    (warn-around-local-form operator form))
+  ;; special handling for `defstruct' is in 'defstruct.lisp'.
 
-  (defmethod expand-documentation-1* :before ((operator (eql 'macrolet)) form docstring)
-    (declare (ignore docstring))
-    (warn-around-local-form operator form))
-
-  
-  (defmethod expand-documentation-1* ((operator (eql 'lambda)) form docstring)
-    "Special handling for `lambda', adds docstring to an anonymous function."
-    (destructuring-bind (op lambda-list &rest body0) form
-      (multiple-value-bind (body decls old-doc)
-          (parse-body body0 :documentation t :whole form)
-        (when (and old-doc docstring)
-          (error 'at-macro-error :form form
-                 :message "Lambda form already has a docstring."))
-        (let* ((new-doc (or docstring old-doc))
-               (new-body (or body
-                             (if new-doc `(nil) nil)))) ; Handling no body ; (lambda ())
-          `(,op ,lambda-list ,@decls
-                ,@(ensure-list new-doc)
-                ,@new-body)))))
-  
-  (defmethod expand-documentation-1* ((operator (eql 'function)) form docstring)
-    "Special handling for #'(lambda ..), adds docstring to an anonymous function."
-    (if (starts-with 'lambda (second form))
-        `(function ,(expand-documentation-1* 'lambda (second form) docstring))))
-
-  
-  (defun expand-documentation-1 (form docstring)
+  (defun expand-documentation (docstring form)
     "Insert DOCSTRING into FORM.
 If insertion successed, returns (values <expansion> t).
 If failed, returns (values <original-form> nil)."
-    (try-macroexpand
+    (macroexpand-convention (form)
      (if (consp form)
-         (expand-documentation-1* (first form) form docstring))
-     form)))
+         (expand-documentation-using-head (first form) docstring form)
+         form))))
 
 (defmacro cl-annot-revisit:documentation (docstring &body forms &environment env)
   "Insert DOCSTRING into FORMS."
   ;; Should I warn about 'setting same docstrings into many forms'?
   (apply-at-macro `(cl-annot-revisit:documentation ,docstring)
-                  (lambda (form) (expand-documentation-1 form docstring)) 
+                  (lambda (form) (expand-documentation docstring form)) 
                   forms env))
 
 (defmacro cl-annot-revisit:doc (docstring form)

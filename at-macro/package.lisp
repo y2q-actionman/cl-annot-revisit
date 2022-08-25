@@ -25,8 +25,8 @@
    #:expand-add-declamation-using-head
    #:expand-add-declamation
    ;; documentation.lisp
-   #:expand-documentation-1*
-   #:expand-documentation-1
+   #:expand-documentation-using-head
+   #:expand-documentation
    ;; export.lisp
    #:expand-export-form-using-head
    #:expand-export-form

@@ -160,7 +160,7 @@
 
 ;;; for `cl-annot-revisit:documentation'
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defmethod expand-documentation-1* ((operator (eql 'defstruct)) form docstring)
+  (defmethod expand-documentation-using-head ((operator (eql 'defstruct)) docstring form)
     "Special handling for `defstruct', which define a new type only when it doesn't have :type."
     (let* ((options (nth-value 1 (parse-defstruct-form form)))
            (type-supplied-p (gethash :type options)))
