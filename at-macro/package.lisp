@@ -16,7 +16,7 @@
    ;; eval-when.lisp
    ;;
    ;; form-traversal.lisp
-   #:find-name-to-be-defined*
+   #:find-name-to-be-defined-using-head
    #:find-name-to-be-defined
    ;; declaration.lisp
    #:expand-add-declaration-1*

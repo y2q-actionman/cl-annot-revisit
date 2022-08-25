@@ -154,7 +154,7 @@
 
 ;;; for `find-name-to-be-defined'
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defmethod find-name-to-be-defined* ((form-head (eql 'cl:defstruct)) form)
+  (defmethod find-name-to-be-defined-using-head ((form-head (eql 'cl:defstruct)) form)
     "Special handling for `defstruct'. Its second form may contain some options."
     (nth-value 0 (parse-defstruct-form form))))
 

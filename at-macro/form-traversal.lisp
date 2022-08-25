@@ -45,30 +45,26 @@ first argument is a function name to be defined.")
 first argument is a name to be defined."))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defgeneric find-name-to-be-defined* (form-head form)
-    (:documentation "Called by `find-name-to-be-defined' to compute a result."))
-
-  (defmethod find-name-to-be-defined* ((form-head list) form)
-    "Handling the lambda forms. It returns nil."
-    (declare (ignorable form-head form))
-    (assert (starts-with 'lambda form-head))
-    nil)
-
-  (defmethod find-name-to-be-defined* ((form-head symbol) form)
-    "Called if FORM-HEAD is symbol."
-    (if (member form-head *definiton-form-list*)
-        (second form)))
-
+  (defgeneric find-name-to-be-defined-using-head (form-head form)
+    (:documentation "Called by `find-name-to-be-defined' to compute a result.")
+    (:method ((form-head list) form)
+      "Handling the lambda forms. It returns nil."
+      (declare (ignorable form-head form))
+      (assert (starts-with 'lambda form-head))
+      nil)
+    (:method ((form-head symbol) form)
+      "Called if FORM-HEAD is symbol."
+      (if (member form-head *definiton-form-list*)
+          (second form))))
+  
   ;; special handling for `defstruct' is in 'defstruct.lisp'.
 
   (defun find-name-to-be-defined (form)
-    "If FORM is a form defining something, returns the name to be
-defined. Its type depends on FORM. (e.g. may be a List if `defun', A
-string-designater if `defpackage'.)
-If FORM is not so, returns nil."
+    "If FORM is defining something (like `defun', `defpackage', etc),
+returns the name to be defined. If not, returns nil."
     (typecase form
-      (symbol nil) ; It may be a symbol macro, so caller must check it.
-      (cons (find-name-to-be-defined* (first form) form))
+      (symbol nil) ; It may be a symbol macro. Callers must check it.
+      (cons (find-name-to-be-defined-using-head (first form) form))
       (otherwise nil))))
 
 
