@@ -8,15 +8,7 @@
     "Return true when it is a function name."
     (typecase x
       (symbol t)
-      (cons (starts-with 'cl:setf x))))
-
-  ;; TODO: Remove this.
-  (defun try-macroexpand (value alt)
-    "If VALUE is true, return (values VALUE t). If not, returns (values ALT nil).
-This function is intended to follow `macroexpand' convention."
-    (if value
-        (values value t)
-        (values alt nil))))
+      (cons (starts-with 'cl:setf x)))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter *variable-definiton-form-list*

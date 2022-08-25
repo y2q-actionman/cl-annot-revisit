@@ -177,46 +177,46 @@
 
 ;;; `export-constructors'
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defgeneric expand-export-constructors-1* (form-op form)
+  (defgeneric expand-export-constructors-using-head (form-op form)
     (:method (form-op form)
-      (declare (ignore form-op form))
-      nil)
+      (declare (ignore form-op))
+      form)
     (:method ((form-op (eql 'defstruct)) form)
       (let ((constructors (pick-names-of-defstruct-form form '(:constructor))))
         (add-export constructors form))))
 
-  (defun expand-export-constructors-1 (form)
-    (try-macroexpand
+  (defun expand-export-constructors (form)
+    (macroexpand-convention (form)
      (if (consp form)
-         (expand-export-constructors-1* (first form) form))
-     form)))
+         (expand-export-constructors-using-head (first form) form)
+         form))))
 
 (defmacro cl-annot-revisit:export-constructors (&body forms &environment env)
   "`Export' constructors of the structure will be defined in FORMS."
-  (apply-at-macro '(cl-annot-revisit:export-constructors) #'expand-export-constructors-1
+  (apply-at-macro '(cl-annot-revisit:export-constructors) #'expand-export-constructors
                   forms env))
 
 ;;; `export-structure'
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defgeneric expand-export-structure-1* (form-op form)
+  (defgeneric expand-export-structure-using-head (form-op form)
     (:method (form-op form)
-      (declare (ignore form-op form))
-      nil)
+      (declare (ignore form-op))
+      form)
     (:method ((form-op (eql 'defstruct)) form)
       (let ((all (pick-names-of-defstruct-form
                   form
                   '(:structure-name :constructor :copier :predicate :slot-name :reader))))
         (add-export all form))))
 
-  (defun expand-export-structure-1 (form)
-    (try-macroexpand
+  (defun expand-export-structure (form)
+    (macroexpand-convention (form)
      (if (consp form)
-         (expand-export-structure-1* (first form) form))
-     form)))
+         (expand-export-structure-using-head (first form) form)
+         form))))
 
 (defmacro cl-annot-revisit:export-structure (&body forms &environment env)
   "`Export' the name, constructors, copier, predicate, slot-names and
 accessors of the structure will be defined in FORMS."
   ;; In original, Just an alias of nested `@export-accessors',`@export-constructors',
   ;; `@export-slots', and `@export'. (But `@export-slots' does nothing).
-  (apply-at-macro '(cl-annot-revisit:export-structure) #'expand-export-structure-1 forms env))
+  (apply-at-macro '(cl-annot-revisit:export-structure) #'expand-export-structure forms env))

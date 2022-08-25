@@ -39,10 +39,10 @@
    #:expand-export-accessors-using-head
    #:expand-export-accessors
    ;; defstruct.lisp
-   #:expand-export-constructors-1*
-   #:expand-export-constructors-1
-   #:expand-export-structure-1*
-   #:expand-export-structure-1
+   #:expand-export-constructors-using-head
+   #:expand-export-constructors
+   #:expand-export-structure-using-head
+   #:expand-export-structure
    ;; slot.lisp
    #:at-required-precondition-error
    #:at-required-runtime-error
