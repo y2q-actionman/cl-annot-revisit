@@ -19,8 +19,8 @@
    #:find-name-to-be-defined-using-head
    #:find-name-to-be-defined
    ;; declaration.lisp
-   #:expand-add-declaration-1*
-   #:expand-add-declaration-1
+   #:expand-add-declaration-using-head
+   #:expand-add-declaration
    ;; declamation.lisp
    #:expand-add-declamation-1*
    #:expand-add-declamation-1

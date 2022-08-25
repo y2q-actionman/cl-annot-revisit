@@ -53,21 +53,22 @@
                                       :documentation documentation :whole form))))
 
 
-  (defgeneric expand-add-declaration-1* (operator form decl-specifier)
-    (:documentation "Called by `expand-add-declaration-1' to insert DECL-SPECIFIER into FORM.
-If FORM can be expanded, returns its expansion. If not, returns nil.")
-    (:method (operator form decl-specifier)
+  (defgeneric expand-add-declaration-using-head (operator decl-specifier form)
+    (:documentation "Called by `expand-add-declaration' to insert DECL-SPECIFIER into FORM.
+If FORM can be expanded, returns the expansion. If not, returns FORM.")
+    (:method (operator decl-specifier form)
       "General case."
       (when (and (operator-take-local-declaration-p operator)
                  *at-macro-verbose*)
         (warn 'at-macro-style-warning :form form
-              :message (format nil "Adding declarations into ~A form does not works for local declarations"
+              :message (format nil "Adding declarations into ~A form does not works for local declarations."
                                operator)))
       (if-let ((body-location (operator-body-location operator)))
         (insert-declaration-to-nth-body body-location form decl-specifier
-                                        :documentation (operator-accept-docstring-in-body-p operator)))))
+                                        :documentation (operator-accept-docstring-in-body-p operator))
+        form)))
 
-  (defmethod expand-add-declaration-1* ((operator (eql 'defgeneric)) form decl-specifier)
+  (defmethod expand-add-declaration-using-head ((operator (eql 'defgeneric)) decl-specifier form)
     (unless (starts-with decl-specifier 'optimize)
       (error 'at-macro-error :form
             :message (format nil "`defgeneric' accepts only `optimize' declarations.")))
@@ -80,26 +81,30 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
                                operator)))
       `(,op ,function-name ,gf-lambda-list (declare ,decl-specifier) ,@option)))
 
-  (defmethod expand-add-declaration-1* ((operator (eql 'define-method-combination))
-                                    form decl-specifier)
-    (if (<= (length form) 3)
-        (when *at-macro-verbose*
-          (warn 'at-macro-style-warning :form form
-                :message "The short-form of `define-method-combination' doesn't take declarations."))
-        (destructuring-bind (op name lambda-list (&rest method-group-specifier) &rest rest)
-            form
-          (let (options)
-            (when (starts-with :arguments (first rest))
-              (push (pop rest) options))
-            (when (starts-with :generic-function (first rest))
-              (push (pop rest) options))
-            (nreversef options)
-            `(,op ,name ,lambda-list (,@method-group-specifier)
-                  ,@options
-                  ,@(insert-declaration-to-body rest decl-specifier
-                                                :whole form :documentation t))))))
+  (defmethod expand-add-declaration-using-head ((operator (eql 'define-method-combination))
+                                                decl-specifier form)
+    (cond
+      ((<= (length form) 3)
+       (when *at-macro-verbose*
+         (warn 'at-macro-style-warning
+               :message "The short-form of `define-method-combination' doesn't take declarations."
+               :form form))
+       form)
+      (t
+       (destructuring-bind (op name lambda-list (&rest method-group-specifier) &rest rest)
+           form
+         (let (options)
+           (when (starts-with :arguments (first rest))
+             (push (pop rest) options))
+           (when (starts-with :generic-function (first rest))
+             (push (pop rest) options))
+           (nreversef options)
+           `(,op ,name ,lambda-list (,@method-group-specifier)
+                 ,@options
+                 ,@(insert-declaration-to-body rest decl-specifier
+                                               :whole form :documentation t)))))))
 
-  (defmethod expand-add-declaration-1* ((operator (eql 'defmethod)) form decl-specifier)
+  (defmethod expand-add-declaration-using-head ((operator (eql 'defmethod)) decl-specifier form)
     (destructuring-bind (op name &rest rest) form
       (let* ((method-qualifier (if (not (listp (first rest)))
                                    (pop rest)))
@@ -108,24 +113,27 @@ If FORM can be expanded, returns its expansion. If not, returns nil.")
               ,@(insert-declaration-to-body rest decl-specifier
                                             :whole form :documentation t)))))
 
-  (defmethod expand-add-declaration-1* ((operator (eql 'defsetf)) form decl-specifier)
-    (if (or (<= (length form) 3)
-            (stringp (fourth form)))
-        (when *at-macro-verbose*
-          (warn 'at-macro-style-warning
-                :message "The short-form of `defsetf' does not take declarations."
-                :form form))
-        (insert-declaration-to-nth-body 4 form decl-specifier :documentation t)))
+  (defmethod expand-add-declaration-using-head ((operator (eql 'defsetf)) decl-specifier form)
+    (cond
+      ((or (<= (length form) 3)
+           (stringp (fourth form)))
+       (when *at-macro-verbose*
+         (warn 'at-macro-style-warning
+               :message "The short-form of `defsetf' does not take declarations."
+               :form form))
+       form)
+      (t
+       (insert-declaration-to-nth-body 4 form decl-specifier :documentation t))))
 
 
-  (defun expand-add-declaration-1 (form decl-specifier)
+  (defun expand-add-declaration (decl-specifier form)
     "Insert DECL-SPECIFIER into FORM.
 If expansion successed, returns (values <expansion> t).
 If failed, returns (values <original-form> nil)."
-    (try-macroexpand
-     (if (consp form)
-         (expand-add-declaration-1* (first form) form decl-specifier))
-     form)))
+    (macroexpand-convention (form)
+      (if (consp form)
+          (expand-add-declaration-using-head (first form) decl-specifier form)
+          form))))
 
 
 (defmacro add-declaration (decl-specifier &body body &environment env)
@@ -133,7 +141,7 @@ If failed, returns (values <original-form> nil)."
 If BODY is a form accepts declarations, adds a DECL-SPECIFIER into it.
 If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
   (apply-at-macro `(add-declaration ,decl-specifier)
-                  (lambda (form) (expand-add-declaration-1 form decl-specifier))
+                  (lambda (form) (expand-add-declaration decl-specifier form))
                   body env
                   :if-no-expansion
                   (lambda (form) `(locally (declare ,decl-specifier)
