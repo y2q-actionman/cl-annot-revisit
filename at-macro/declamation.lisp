@@ -75,7 +75,7 @@ To distinguish a macro form from a list of names, I try to `macroexpand-1' to th
         (let* ((names (ensure-list-with names-or-form name-p-function))
                (decl-specifier `(,@decl-head ,@names)))
           (if body
-              `(cl-annot-revisit:add-declaration ,decl-specifier ,@body) ; Use it as a local declaration.
+              `(add-declaration ,decl-specifier ,@body) ; Use it as a local declaration.
               `(progn (declaim ,decl-specifier)
                       '(declare ,decl-specifier))))
         ;; Like '(cl-annot-revist:inline (defun func nil) ...)'

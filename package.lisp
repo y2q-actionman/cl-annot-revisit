@@ -15,7 +15,6 @@
    #:eval-when-load
    #:eval-when-execute
    #:eval-always
-   #:add-declaration
    #:ignore
    #:ignorable
    #:dynamic-extent

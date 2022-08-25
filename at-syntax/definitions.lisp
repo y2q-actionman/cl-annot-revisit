@@ -16,7 +16,6 @@
 (define-at-syntax cl-annot-revisit:eval-when-execute 1)
 (define-at-syntax cl-annot-revisit:eval-always 1)
 
-(define-at-syntax cl-annot-revisit:add-declaration 1)
 (define-at-syntax cl-annot-revisit:ignore 1 :inline t)
 (define-at-syntax cl-annot-revisit:ignorable 1 :inline t)
 (define-at-syntax cl-annot-revisit:dynamic-extent 1 :inline t)

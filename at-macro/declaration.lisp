@@ -128,7 +128,7 @@ If failed, returns (values <original-form> nil)."
      form)))
 
 
-(defmacro cl-annot-revisit:add-declaration (decl-specifier &body body &environment env)
+(defmacro add-declaration (decl-specifier &body body &environment env)
   "Used by at-macros of declarations for processing recursive expansion.
 If BODY is a form accepts declarations, adds a DECL-SPECIFIER into it.
 If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
@@ -152,7 +152,7 @@ If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
     (let* ((names (ensure-list-with names #'ignore-name-p))
            (decl-specifier `(,declaration-name ,@names)))
       (if body
-          `(cl-annot-revisit:add-declaration ,decl-specifier ,@body)
+          `(add-declaration ,decl-specifier ,@body)
           `'(declare ,decl-specifier)))))
 
 (defmacro cl-annot-revisit:ignore (names &body body)
