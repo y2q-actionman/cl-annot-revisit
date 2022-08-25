@@ -9,12 +9,18 @@
                 ,form)
         form))
   
+  (defun warn-around-defsetf-like (operator form)
+    (when *at-macro-verbose*
+      (warn 'at-macro-style-warning :form form
+            :message (format nil "Exporting names in ~A should be placed around its non-setf definition."
+                             operator))))
+
   (defgeneric expand-export-form-using-head (form-head form)
     (:documentation "Called by `expand-export-form' to compute a result.
 If FORM can be expanded, returns its expansion. If not, returns FORM.")
     (:method (form-head form)
       "General case. If FORM found by `find-name-to-be-defined',
-returns the expansion of FORM. If not, returns nil."
+returns the expansion of FORM. If not, returns FORM."
       (if-let ((name (find-name-to-be-defined form)))
         (cond ((listp name)
                (unless (and (function-definition-operator-p form-head)
@@ -24,26 +30,17 @@ returns the expansion of FORM. If not, returns nil."
                (add-export (list (second name)) form))
               (t
                (add-export (list name) form)))
-        form)))
-
-  (defun warn-around-defsetf-like (operator form)
-    (when *at-macro-verbose*
-      (warn 'at-macro-style-warning :form form
-            :message (format nil "Exporting names in ~A should be placed around its non-setf definition."
-                             operator))))
-
-  (defmethod expand-export-form-using-head :before ((form-head (eql 'cl:defsetf)) form)
-    (warn-around-defsetf-like form-head form))
-
-  (defmethod expand-export-form-using-head :before ((form-head (eql 'cl:define-setf-expander)) form)
-    (warn-around-defsetf-like form-head form))
-
-  (defmethod expand-export-form-using-head ((form-head (eql 'cl:defpackage)) form)
-    "A special handling for `defpackage'. It does not define a name as a symbol."
-    (when *at-macro-verbose*
-      (warn 'at-macro-style-warning
-            :form form :message "cl-annot-revisit:export does not works on DEFPACKAGE."))
-    form)
+        form))
+    (:method :before ((form-head (eql 'cl:defsetf)) form)
+      (warn-around-defsetf-like form-head form))
+    (:method :before ((form-head (eql 'cl:define-setf-expander)) form)
+      (warn-around-defsetf-like form-head form))
+    (:method ((form-head (eql 'cl:defpackage)) form)
+      "A special handling for `defpackage'. It does not define a name as a symbol."
+      (when *at-macro-verbose*
+        (warn 'at-macro-style-warning
+              :form form :message "cl-annot-revisit:export does not works on DEFPACKAGE."))
+      form))
 
   (defun expand-export-form (form)
     "Called by `cl-annot-revisit:export' to expand known ones.
