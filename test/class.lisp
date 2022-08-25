@@ -11,6 +11,7 @@
     (macroexpand-1 '(cl-annot-revisit:metaclass bar
                      (defclass foo ()
                        ()
+                       (:documentation "doc")
                        (:metaclass baz))))))
 
 (test test-@export-slots

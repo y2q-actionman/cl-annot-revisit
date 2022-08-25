@@ -5,26 +5,26 @@
   (defun pick-defclass-options (defclass-form)
     (nthcdr 4 defclass-form))
   
-  (defgeneric expand-metaclass-1* (form-op form metaclass)
-    (:method (form-op form metaclass)
-      (declare (ignore form-op form metaclass))
-      nil)
-    (:method ((form-op (eql 'defclass)) form metaclass)
+  (defgeneric expand-metaclass-using-head (operator metaclass form)
+    (:method (operator metaclass form)
+      (declare (ignore operator metaclass))
+      form)
+    (:method ((operator (eql 'cl:defclass)) metaclass form)
       (let ((class-options (pick-defclass-options form)))
         (when (assoc :metaclass class-options)
           (error 'at-macro-error :form form
-                 :message "A metaclass already exists."))
+                 :message ":metaclass option already exists."))
         `(,@form (:metaclass ,metaclass)))))
 
-  (defun expand-metaclass-1 (form metaclass)
-    (try-macroexpand
+  (defun expand-metaclass (metaclass form)
+    (macroexpand-convention (form)
      (if (consp form)
-         (expand-metaclass-1* (first form) form metaclass))
-     form)))
+         (expand-metaclass-using-head (first form) metaclass form)
+         form))))
 
 (defmacro cl-annot-revisit:metaclass (class-name &body forms &environment env)
   (apply-at-macro `(cl-annot-revisit:metaclass ,class-name)
-                  (lambda (form) (expand-metaclass-1 form class-name))
+                  (lambda (form) (expand-metaclass class-name form))
                   forms env))
 
 ;;; `export-slots'

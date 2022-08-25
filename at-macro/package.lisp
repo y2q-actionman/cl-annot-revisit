@@ -31,8 +31,8 @@
    #:expand-export-form-using-head
    #:expand-export-form
    ;; defclass.lisp
-   #:expand-metaclass-1*
-   #:expand-metaclass-1
+   #:expand-metaclass-using-head
+   #:expand-metaclass
    #:expand-export-slots-1*
    #:expand-export-slots-1
    #:*slot-accessor-option-names*
