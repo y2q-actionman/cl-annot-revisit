@@ -32,27 +32,27 @@
   (defun pick-defclass-slots (defclass-form)
     (mapcar #'ensure-list (nth 3 defclass-form)))
   
-  (defgeneric expand-export-slots-1* (form-op form)
-    (:method (form-op form)
-      (declare (ignore form-op form))
-      nil)
-    (:method ((form-op (eql 'defclass)) form)
+  (defgeneric expand-export-slots-using-head (operator form)
+    (:method (operator form)
+      (declare (ignore operator))
+      form)
+    (:method ((operator (eql 'defclass)) form)
       (loop with slot-specifiers = (pick-defclass-slots form)
          for (slot-name) in slot-specifiers
          collect slot-name into names
          finally (return
                    (add-export names form))))
-    (:method ((form-op (eql 'define-condition)) form)
-      (expand-export-slots-1* 'defclass form)))
+    (:method ((operator (eql 'define-condition)) form)
+      (expand-export-slots-using-head 'defclass form)))
 
-  (defun expand-export-slots-1 (form)
-    (try-macroexpand
+  (defun expand-export-slots (form)
+    (macroexpand-convention (form)
      (if (consp form)
-         (expand-export-slots-1* (first form) form))
-     form)))
+         (expand-export-slots-using-head (first form) form)
+         form))))
 
 (defmacro cl-annot-revisit:export-slots (&body forms &environment env)
-  (apply-at-macro '(cl-annot-revisit:export-slots) #'expand-export-slots-1 forms env))
+  (apply-at-macro '(cl-annot-revisit:export-slots) #'expand-export-slots forms env))
 
 ;;; `export-accessors'
 (eval-when (:compile-toplevel :load-toplevel :execute)

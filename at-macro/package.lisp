@@ -33,8 +33,8 @@
    ;; defclass.lisp
    #:expand-metaclass-using-head
    #:expand-metaclass
-   #:expand-export-slots-1*
-   #:expand-export-slots-1
+   #:expand-export-slots-using-head
+   #:expand-export-slots
    #:*slot-accessor-option-names*
    #:expand-export-accessors-1*
    #:expand-export-accessors-1
