@@ -1,7 +1,7 @@
 (in-package #:cl-annot-revisit-test)
 
 (test test-ensure-list-with
-  (with-interpackage-falias (ensure-list-with) cl-annot-revisit/at-macro
+  (with-function-aliasing ((ensure-list-with cl-annot-revisit/at-macro::ensure-list-with)) 
     (let ((test (complement #'listp)))
       (is (equal (ensure-list-with nil test)
                  nil))
@@ -23,7 +23,7 @@
                  '(bar (foo 1 2 3)))))))
 
 (test test-split-list-at
-  (with-interpackage-falias (split-list-at) cl-annot-revisit/at-macro
+  (with-function-aliasing ((split-list-at cl-annot-revisit/at-macro::split-list-at))
     (is (multiple-value-bind (head tail) (split-list-at 0 '(0 1 2))
           (equal head nil)
           (equal tail '(0 1 2))))
@@ -46,7 +46,8 @@
           (equal head nil)
           (equal tail nil)))))
 
-(with-interpackage-falias (apply-at-macro-to-special-form) cl-annot-revisit/at-macro
+(with-function-aliasing ((apply-at-macro-to-special-form
+                          cl-annot-revisit/at-macro::apply-at-macro-to-special-form)) 
   (test expand-recursive-1-progn
     (is (equal (apply-at-macro-to-special-form
                 '(cl-annot-revisit:export)
