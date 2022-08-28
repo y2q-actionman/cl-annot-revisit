@@ -60,14 +60,3 @@ And, adding a docstring
 # License 
 
 WTFPL
-
-
-<!-- # Memo -->
-
-<!-- - 無限引数 annotation を作れば、ファイル全体に作用できる(ひどい) -->
-<!-- - inline expansion なんて、 macro でサポートする必要ない。勝手に `#.` 置けばいいじゃない。 -->
-<!--   at-syntax ではサポートしてもよいが。 -->
-
-<!-- - @required 系は https://lisp-journey.gitlab.io/blog/how-to-check-slots-types-at-make-instance/ -->
-
-<!-- - @ reader macro と @ normal macro は共存できない。自分でリーダいじってもらわないと。 -->
