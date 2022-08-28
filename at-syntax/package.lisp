@@ -7,5 +7,4 @@
                 #:*at-macro-verbose*
                 #:find-at-syntax-arity)
   (:export
-    #:define-at-syntax
     #:find-at-syntax-arity))

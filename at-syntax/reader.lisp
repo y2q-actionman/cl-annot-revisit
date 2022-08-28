@@ -3,9 +3,9 @@
 (defgeneric find-at-syntax-arity (operator)
   (:documentation "Returns at-syntax arity of OPERATOR. If this returns NIL, OPERATOR is considered not for @-syntax.")
   (:method (operator)
-    "Default is NIL, means OPERATOR is not for @-syntax."
+    "Default is 1, means OPERATOR takes one argument for '@' syntax."
     (declare (ignore operator))
-    nil))
+    1))
 
 (defgeneric find-at-syntax-inline-p (operator)
   (:documentation "If this returns T, the macro named OPERATOR will be `macroexpand'-ed at read-time. This function is not exported by design.")

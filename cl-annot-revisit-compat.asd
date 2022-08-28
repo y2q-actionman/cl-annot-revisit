@@ -4,4 +4,6 @@
   :author "YOKOTA Yuki <y2q.actionman@gmail.com>"
   :depends-on (:cl-annot-revisit)
   :pathname #.(make-pathname :directory '(:relative "compat"))
-  :components ((:file "compat")))
+  :serial t
+  :components ((:file "compat")
+               (:file "definitions")))
