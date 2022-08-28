@@ -45,7 +45,8 @@ its first argument is a function name to be defined.")
     (:method ((form-head symbol) form)
       "Called if FORM-HEAD is symbol."
       (if (or (member form-head +standard-definiton-form-list+)
-              (variable-definition-operator-p form-head) ; Calls it because defmethod may exist.
+              ;; Calls them because user-defined defmethods may exist.
+              (variable-definition-operator-p form-head)
               (function-definition-operator-p form-head))
           (second form))))
   
@@ -100,7 +101,8 @@ returns the name to be defined. If not, returns nil."
     (cond
       ((null forms)
        (values nil nil))
-      ((not (length= 1 forms))            ; recursive expansion
+      ((not (length= 1 forms))          ; If the length is more than 1
+       ;; recursive expansion
        (values
         `(progn ,@(apply-at-macro-to-all-forms at-macro-form forms))
         t))
