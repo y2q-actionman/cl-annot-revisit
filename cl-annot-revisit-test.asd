@@ -3,7 +3,7 @@
   :license "WTFPL"
   :author "YOKOTA Yuki <y2q.actionman@gmail.com>"
   :pathname #.(make-pathname :directory '(:relative "test"))
-  :depends-on (#:cl-annot-revisit #:1am)
+  :depends-on (#:cl-annot-revisit #:cl-annot-revisit-compat #:1am)
   :components ((:file "package")
                (:file "util" :depends-on ("package"))
                (:file "util-test" :depends-on ("util"))
@@ -13,7 +13,9 @@
                (:file "export" :depends-on ("util"))
                (:file "documentation" :depends-on ("util"))
                (:file "class" :depends-on ("util"))
-               (:file "slot" :depends-on ("util")))
+               (:file "slot" :depends-on ("util"))
+               (:file "reader" :depends-on ("util"))
+               (:file "compat" :depends-on ("util")))
   :perform (prepare-op :before (o c)
              (set (find-symbol* '#:*tests* '#:1am) '()))
   :perform (test-op (o s)
