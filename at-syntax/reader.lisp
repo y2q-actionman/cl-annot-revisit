@@ -1,14 +1,20 @@
 (in-package #:cl-annot-revisit/at-syntax)
 
 (defgeneric find-at-syntax-arity (operator)
-  (:documentation "Returns at-syntax arity of OPERATOR. If this returns NIL, OPERATOR is considered not for @-syntax.")
+  (:documentation "Returns at-syntax arity of OPERATOR. If this
+  returns NIL, OPERATOR is considered as not for @-syntax.")
   (:method (operator)
     "Default is 1, means OPERATOR takes one argument for '@' syntax."
     (declare (ignore operator))
     1))
 
-(defgeneric find-at-syntax-inline-p (operator)
-  (:documentation "If this returns T, the macro named OPERATOR will be `macroexpand'-ed at read-time. This function is not exported by design.")
+(defgeneric expand-at-read-time-p (operator)
+  (:documentation "If this returns T, the macro named OPERATOR will be
+  `macroexpand'ed at read-time.
+
+  This feature is for supporting ':inline' feature of the original
+  cl-annot, but not needed conceptually because you can use '#.'
+  anytime.  So, this function is not exported by design.")
   (:method (operator)
     (declare (ignore operator))
     nil))
@@ -57,9 +63,9 @@
                         collect (read stream t :eof t))))
            (at-macro-form `(,operator ,@args)))
       ;; If the at-macro was requested read-time expansion by
-      ;; `find-at-syntax-inline-p', the form is expaneded at read
+      ;; `expand-at-read-time-p', the form is expaneded at read
       ;; time.
-      (if (find-at-syntax-inline-p operator)
+      (if (expand-at-read-time-p operator)
           (macroexpand at-macro-form)
           at-macro-form))))
 

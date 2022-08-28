@@ -24,7 +24,7 @@
             (get symbol (find-cl-annot-symbol "ANNOTATION-ARITY")))
         (call-next-method)))
 
-  (defmethod cl-annot-revisit/at-syntax::find-at-syntax-inline-p :around ((symbol symbol))
+  (defmethod cl-annot-revisit/at-syntax::expand-at-read-time-p :around ((symbol symbol))
     (or (if *cl-annot-compatibility*
             (get symbol (find-cl-annot-symbol "ANNOTATION-INLINE-P")))
         (call-next-method)))
@@ -61,7 +61,7 @@
            (declare (ignorable _))
            ,arity)
          ,@(if inline-supplied-p
-               `((defmethod cl-annot-revisit/at-syntax::find-at-syntax-inline-p ((_ (eql ',name)))
+               `((defmethod cl-annot-revisit/at-syntax::expand-at-read-time-p ((_ (eql ',name)))
                    (declare (ignorable _))
                    ,inline))))
        ,@(if alias-form
