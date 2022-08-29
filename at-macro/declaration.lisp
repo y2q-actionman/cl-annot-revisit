@@ -32,7 +32,7 @@
     :test 'equal)
 
   (defgeneric operator-accept-docstring-in-body-p (symbol)
-    (:documentation "Returns T if SYMBOL naming an operator accepts docstring in its body.")
+    (:documentation "Returns T if the operator named by SYMBOL accepts docstring in its body.")
     (:method (_)
       (declare (ignore _))
       nil)
@@ -60,7 +60,6 @@
     (:documentation "Called by `expand-add-declaration' to insert DECL-SPECIFIER into FORM.
 If FORM can be expanded, returns the expansion. If not, returns FORM.")
     (:method (operator decl-specifier form)
-      "General case."
       (if-let ((body-location (operator-body-location operator)))
         (insert-declaration-to-nth-body body-location form decl-specifier
                                         :documentation (operator-accept-docstring-in-body-p operator))
