@@ -49,12 +49,13 @@
       (split-slot-specifier slot-specifier)
     (unless (get-properties options '(:initarg))
       (setf options (list* :initarg (make-keyword name) options)))
-    (if (get-properties options '(:initform))
-        (error 'at-required-precondition-error :slot-name name)
-        (setf options
-              (list* :initform
-                     `(cerror "Enter a value."
-                              'at-required-runtime-error
-                              :slot-name ',name :initarg ',(getf options :initarg))
-                     options)))
+    (when (get-properties options '(:initform))
+      (error 'at-required-precondition-error :slot-name name)) ; FIXME: change to style-warning?
+    (setf options
+          (list* :initform
+                 ;; TODO: Utilize `use-value' restart.
+                 `(cerror "Enter a value."
+                          'at-required-runtime-error
+                          :slot-name ',name :initarg ',(getf options :initarg))
+                 options))
     `'(,name ,@options)))
