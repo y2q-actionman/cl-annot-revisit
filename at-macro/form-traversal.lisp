@@ -68,7 +68,9 @@ returns the name to be defined. If not, returns nil."
   (defun apply-at-macro-to-special-form (at-macro-form form)
     "If form is a special form (one of `progn', `eval-when', or
 `locally'), expand FORM into AT-MACRO-FORM recursively."
-    (check-type form cons)
+    (unless (consp form)
+      (return-from apply-at-macro-to-special-form
+        (values form nil)))
     (macroexpand-convention (form)
       (destructuring-case form
         (((progn
