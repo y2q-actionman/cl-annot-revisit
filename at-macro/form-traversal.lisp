@@ -61,32 +61,64 @@ returns the name to be defined. If not, returns nil."
       (otherwise nil)))
 
 
-  (defun apply-at-macro-to-all-forms (at-macro-form forms)
-    (values
-     (loop for form in forms
-           collect `(,@at-macro-form ,form))
-     t))                                ; `macroexpand' convention.
+  (defun apply-at-macro-to-multiple-forms (at-macro-form forms) ; TODO: rename
+    (loop for form in forms
+          collect `(,@at-macro-form ,form)))
 
   (defun apply-at-macro-to-special-form (at-macro-form form)
     "If form is a special form (one of `progn', `eval-when', or
 `locally'), expand FORM into AT-MACRO-FORM recursively."
+    (check-type form cons)
     (macroexpand-convention (form)
-      (if (not (consp form))
-          form
-          (destructuring-case form
-            ((progn &body body)
-             `(progn ,@(apply-at-macro-to-all-forms at-macro-form body)))
-            ((eval-when (&rest eval-when-situations) &body body)
-             `(eval-when (,@eval-when-situations)
-                ,@(apply-at-macro-to-all-forms at-macro-form body)))
-            ((locally &body body)
-             (multiple-value-bind (remaining-forms declarations)
-                 (parse-body body)
-               `(locally ,@declarations
-                  ,@(apply-at-macro-to-all-forms at-macro-form remaining-forms))))
-            ((otherwise &rest _)
-             (declare (ignore _))
-             form))))))
+      (destructuring-case form
+        (((progn
+            catch multiple-value-call multiple-value-prog1 unwind-protect ; evaluates the first arg and body.
+            progv)              ; `progv' evaluates two args and body.
+          &body body)
+         `(,(first form) ,@(apply-at-macro-to-multiple-forms at-macro-form body)))
+        (((block eval-when) arg1 &body body) ; Do not evaluate the first value.
+         `(,(first form) ,arg1 ,@(apply-at-macro-to-multiple-forms at-macro-form body)))
+
+        ;; Takes declarations and forms.
+        ((locally &body body)
+         (multiple-value-bind (body declarations)
+             (parse-body body)
+           `(locally ,@declarations
+              ,@(apply-at-macro-to-multiple-forms at-macro-form body))))
+        (((flet labals macrolet let let* symbol-macrolet) bindings &body body)
+         (multiple-value-bind (body declarations)
+             (parse-body body)
+           `(,(first form) ,bindings
+             ,@declarations
+             ,@(apply-at-macro-to-multiple-forms at-macro-form body))))
+        
+        ;; Takes fixed length forms.
+        (((go function quote) _)
+         (declare (ignore _))
+         form)
+        (((return-from the) arg1 &optional arg2) ; `the' requires two args, but I merged it to this path.
+         `(,(first form) ,arg1 (,@at-macro-form ,arg2)))
+        ((load-time-value arg1 &optional read-only-p)
+         `(load-time-value (,@at-macro-form ,arg1) ,read-only-p))
+        ((throw tag result)
+         `(throw (,@at-macro-form ,tag) ; `throw' evaluates tag.
+            (,@at-macro-form ,result)))
+
+        ((if test-form then-form &optional else-form)
+         ;; This is very weird... Does anyone want this?
+         `(if (,@at-macro-form ,test-form)
+              (,@at-macro-form ,then-form)
+              (,@at-macro-form ,else-form)))
+
+        ((setq &rest args)
+         (error "FIXME"))
+        
+        ((tagbody &rest args)
+         (error "FIXME"))
+        
+        ((otherwise &rest _)            ; Not special forms
+         (declare (ignore _))
+         form)))))
 
 ;;; NOTE: At the top level, Common Lisp specially treats `macrolet',
 ;;; `symbol-macrolet', and *ALL* macro forms. But I need a real code-walker
@@ -107,6 +139,7 @@ returns the name to be defined. If not, returns nil."
          (mv-cond-let2 (expansion expanded-p)
            ((funcall expander-function form)) ; try known expansions.
            ((apply-at-macro-to-special-form at-macro-form form)) ; try recursive expansion.
+           ;; TODO: try lambda-form
            ((macroexpand-1 form env)      ; try `macroexpand-1'.
             (values `(,@at-macro-form ,expansion) t))
            (t                       ; nothing to be expanded.

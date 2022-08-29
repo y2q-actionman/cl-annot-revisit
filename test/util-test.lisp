@@ -80,6 +80,6 @@
   (test expand-recursive-1-symbol-other
     (is (equal (apply-at-macro-to-special-form
                 '(cl-annot-revisit:export)
-                '#1=(let ((x 100))
+                '#1=(foo ((x 100))
                       x y (+ x y)))
                '#1#))))
