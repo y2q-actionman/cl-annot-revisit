@@ -99,11 +99,9 @@ returns the name to be defined. If not, returns nil."
     (cond
       ((null forms)
        (values nil nil))
-      ((not (length= 1 forms))          ; If the length is more than 1
-       ;; recursive expansion
-       (values
-        `(progn ,@(apply-at-macro-to-all-forms at-macro-form forms))
-        t))
+      ((not (length= 1 forms)) ; If the length is more than 1.
+       ;; Wraps the contents with `progn'. It will be expanded after.
+       (values `(,@at-macro-form (progn ,@forms)) t))
       (t
        (let ((form (first forms)))
          (mv-cond-let2 (expansion expanded-p)
