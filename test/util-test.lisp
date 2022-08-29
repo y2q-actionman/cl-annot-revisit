@@ -46,40 +46,64 @@
           (equal head nil)
           (equal tail nil)))))
 
-(with-function-aliasing ((apply-at-macro-to-special-form
-                          cl-annot-revisit/at-macro::apply-at-macro-to-special-form)) 
+(with-function-aliasing ((apply-at-macro-to-special-toplevel-form
+                          cl-annot-revisit/at-macro::apply-at-macro-to-special-toplevel-form)) 
   (test expand-recursive-1-progn
-    (is (equal (apply-at-macro-to-special-form
-                '(cl-annot-revisit:export)
+    (is (equal (apply-at-macro-to-special-toplevel-form
+                '(test-operator)
                 '(progn x y (+ x y)))
                '(PROGN
-                 (cl-annot-revisit:EXPORT X)
-                 (cl-annot-revisit:EXPORT Y)
-                 (cl-annot-revisit:EXPORT (+ X Y))))))
+                 (test-operator X)
+                 (test-operator Y)
+                 (test-operator (+ X Y))))))
 
   (test expand-recursive-1-eval-when
-    (is (equal (apply-at-macro-to-special-form
-                '(cl-annot-revisit:export)
+    (is (equal (apply-at-macro-to-special-toplevel-form
+                '(test-operator)
                 '(eval-when (:execute)
                   x y (+ x y)))
                '(EVAL-WHEN (:EXECUTE)
-                 (cl-annot-revisit:EXPORT X)
-                 (cl-annot-revisit:EXPORT Y)
-                 (cl-annot-revisit:EXPORT (+ X Y))))))
+                 (test-operator X)
+                 (test-operator Y)
+                 (test-operator (+ X Y))))))
 
   (test expand-recursive-1-locally
-    (is (equal (apply-at-macro-to-special-form
-                '(cl-annot-revisit:export)
+    (is (equal (apply-at-macro-to-special-toplevel-form
+                '(test-operator)
                 '(locally (declare (type fixnum x))
                   x y (+ x y)))
                '(LOCALLY (DECLARE (TYPE FIXNUM X))
-                 (cl-annot-revisit:EXPORT X)
-                 (cl-annot-revisit:EXPORT Y)
-                 (cl-annot-revisit:EXPORT (+ X Y))))))
+                 (test-operator X)
+                 (test-operator Y)
+                 (test-operator (+ X Y))))))
+
+  (test expand-recursive-1-macrolet
+    (is (equal (apply-at-macro-to-special-toplevel-form
+                '(test-operator)
+                '(macrolet ((hoge (x) x))
+                  (declare (type fixnum x))
+                  x y (+ x y)))
+               '(macrolet ((hoge (x) x))
+                 (declare (type fixnum x))
+                 (test-operator X)
+                 (test-operator Y)
+                 (test-operator (+ X Y))))))
+
+  (test expand-recursive-1-symbol-macrolet
+    (is (equal (apply-at-macro-to-special-toplevel-form
+                '(test-operator)
+                '(symbol-macrolet ((hoge (x) x))
+                  (declare (type fixnum x))
+                  x y (+ x y)))
+               '(symbol-macrolet ((hoge (x) x))
+                 (declare (type fixnum x))
+                 (test-operator X)
+                 (test-operator Y)
+                 (test-operator (+ X Y))))))
 
   (test expand-recursive-1-symbol-other
-    (is (equal (apply-at-macro-to-special-form
-                '(cl-annot-revisit:export)
-                '#1=(foo ((x 100))
+    (is (equal (apply-at-macro-to-special-toplevel-form
+                '(test-operator)
+                '#1=(tagbody ((x 100))
                       x y (+ x y)))
                '#1#))))
