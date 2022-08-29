@@ -39,18 +39,6 @@
     (:method ((symbol symbol))
       (member symbol +standard-operators-accept-docstring-in-body+)))
 
-  (define-constant +standard-operators-take-local-declaration+
-      '(cl:flet cl:labels cl:macrolet cl:handler-case cl:restart-case)
-    :test 'equal)
-
-  (defgeneric operator-take-local-declaration-p (symbol)
-    (:documentation "Returns T if SYMBOL naming an operator may take local declarations.")
-    (:method (_)
-      (declare (ignore _))
-      nil)
-    (:method ((symbol symbol))
-      (member symbol +standard-operators-take-local-declaration+)))
-
   
   (defun insert-declaration-to-body (form-body decl-specifier &key documentation whole)
     (multiple-value-bind (body decls doc)
@@ -73,11 +61,6 @@
 If FORM can be expanded, returns the expansion. If not, returns FORM.")
     (:method (operator decl-specifier form)
       "General case."
-      (when (and (operator-take-local-declaration-p operator)
-                 *at-macro-verbose*)
-        (warn 'at-macro-style-warning :form form
-              :message (format nil "Adding declarations into ~A form does not works for local declarations."
-                               operator)))
       (if-let ((body-location (operator-body-location operator)))
         (insert-declaration-to-nth-body body-location form decl-specifier
                                         :documentation (operator-accept-docstring-in-body-p operator))
