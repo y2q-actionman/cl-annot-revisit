@@ -73,21 +73,19 @@ returns the name to be defined. If not, returns nil."
     (macroexpand-convention (form)
       (if (not (consp form))
           form
-          (case (first form)
-            ((progn)
-             `(progn
-                ,@(apply-at-macro-to-all-forms at-macro-form (rest form))))
-            ((eval-when)
-             (let ((eval-when-situations (second form))
-                   (eval-when-body (nthcdr 2 form)))
-               `(eval-when (,@eval-when-situations)
-                  ,@(apply-at-macro-to-all-forms at-macro-form eval-when-body))))
-            ((locally)
+          (destructuring-case form
+            ((progn &body body)
+             `(progn ,@(apply-at-macro-to-all-forms at-macro-form body)))
+            ((eval-when (&rest eval-when-situations) &body body)
+             `(eval-when (,@eval-when-situations)
+                ,@(apply-at-macro-to-all-forms at-macro-form body)))
+            ((locally &body body)
              (multiple-value-bind (remaining-forms declarations)
-                 (parse-body (rest form))
+                 (parse-body body)
                `(locally ,@declarations
                   ,@(apply-at-macro-to-all-forms at-macro-form remaining-forms))))
-            (otherwise
+            ((otherwise &rest _)
+             (declare (ignore _))
              form))))))
 
 ;;; NOTE: At the top level, Common Lisp specially treats `macrolet',
