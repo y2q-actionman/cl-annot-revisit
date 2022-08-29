@@ -9,12 +9,6 @@
                 ,form)
         form))
   
-  (defun warn-around-defsetf-like (operator form)
-    (when *at-macro-verbose*
-      (warn 'at-macro-style-warning :form form
-            :message (format nil "Exporting names in ~A should be placed around its non-setf definition."
-                             operator))))
-
   (defgeneric expand-export-form-using-head (form-head form)
     (:documentation "Called by `expand-export-form' to compute a result.
 If FORM can be expanded, returns its expansion. If not, returns FORM.")
@@ -31,10 +25,6 @@ returns the expansion of FORM. If not, returns FORM."
               (t
                (add-export (list name) form)))
         form))
-    (:method :before ((form-head (eql 'cl:defsetf)) form)
-      (warn-around-defsetf-like form-head form))
-    (:method :before ((form-head (eql 'cl:define-setf-expander)) form)
-      (warn-around-defsetf-like form-head form))
     (:method ((form-head (eql 'cl:defpackage)) form)
       "A special handling for `defpackage'. It does not define a name as a symbol."
       (when *at-macro-verbose*

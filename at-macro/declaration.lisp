@@ -65,17 +65,18 @@ If FORM can be expanded, returns the expansion. If not, returns FORM.")
                                         :documentation (operator-accept-docstring-in-body-p operator))
         form))
     (:method ((operator (eql 'defgeneric)) decl-specifier form)
-      (unless (starts-with decl-specifier 'optimize)
-        (error 'at-macro-error :form
-               :message (format nil "`defgeneric' accepts only `optimize' declarations.")))
-      (destructuring-bind (op function-name gf-lambda-list &rest option)
-          form
-        (when (and (assoc :method option)
-                   *at-macro-verbose*)
-          (warn 'at-macro-style-warning :form form
-                :message (format nil "Adding declarations into ~A form does not works for methods."
-                                 operator)))
-        `(,op ,function-name ,gf-lambda-list (declare ,decl-specifier) ,@option)))
+      "For `defgeneric'. Note: This does not add declarations into methods defined in this form."
+      (cond
+        ((not (starts-with decl-specifier 'optimize))
+         (when *at-macro-verbose*
+           (warn 'at-macro-style-warning
+                 :message (format nil "`defgeneric' accepts only `optimize' declarations.")
+                 :form form))
+         form)
+        (t
+         (destructuring-bind (op function-name gf-lambda-list &rest option)
+             form
+           `(,op ,function-name ,gf-lambda-list (declare ,decl-specifier) ,@option)))))
     (:method ((operator (eql 'define-method-combination)) decl-specifier form)
       (cond
         ((<= (length form) 3)

@@ -29,18 +29,6 @@
         (otherwise
          nil))))
   
-  (defun warn-around-defclass (operator form)
-    (when *at-macro-verbose*
-      (warn 'at-macro-style-warning :form form
-            :message (format nil "Adding documentation into ~A form does not works for slots."
-                             operator))))
-  
-  (defun warn-around-local-form (operator form)
-    (when *at-macro-verbose*
-      (warn 'at-macro-style-warning :form form
-            :message (format nil "Adding declarations into ~A form doesn't work for local docstrings."
-                             operator))))
-  
   (defgeneric expand-documentation-using-head (operator docstring form)
     (:documentation "Called by `expand-documentation' to insert DOCSTRING into FORM.
 If FORM can be expanded, returns its expansion. If not, returns FORM.")
@@ -53,21 +41,6 @@ If FORM can be expanded, returns its expansion. If not, returns FORM.")
              (setf (documentation ,obj ',doc-type) ,docstring)
              ,obj))
         form))
-    (:method :before ((operator (eql 'defclass)) docstring form)
-      (declare (ignore docstring))
-      (warn-around-defclass operator form))
-    (:method :before ((operator (eql 'define-condition)) docstring form)
-      (declare (ignore docstring))
-      (warn-around-defclass operator form))
-    (:method :before ((operator (eql 'flet)) docstring form)
-      (declare (ignore docstring))
-      (warn-around-local-form operator form))
-    (:method :before ((operator (eql 'labels)) docstring form)
-      (declare (ignore docstring))
-      (warn-around-local-form operator form))
-    (:method :before ((operator (eql 'macrolet)) docstring form)
-      (declare (ignore docstring))
-      (warn-around-local-form operator form))
     (:method ((operator (eql 'lambda)) docstring form)
       "Special handling for `lambda', adds docstring to an anonymous function."
       (destructuring-bind (op lambda-list &rest body0) form
