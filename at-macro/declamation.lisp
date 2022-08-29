@@ -71,7 +71,7 @@ Not like:
     (declare (inline defun foo nil))
     t)
 
-To distinguish a macro form from a list of names, I try to `macroexpand-1' to the form.
+To distinguish a macro form from a list of names, I try `macroexpand-1' to the form.
 |#
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
