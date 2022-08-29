@@ -25,7 +25,7 @@
          t)
         ((cl:defstruct)            ; `defstruct' is specially treated.
          '(cl:structure cl:type))
-        ;; There is no docstring for `define-symbol-macro'.
+        ;; There is no docstring for `define-symbol-macro'. (cl-annot's comment is wrong.)
         (otherwise
          nil))))
   
