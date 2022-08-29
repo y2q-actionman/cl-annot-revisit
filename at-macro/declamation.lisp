@@ -1,20 +1,20 @@
 (in-package #:cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defgeneric declaration-target-operator-p (declaration-name operator-name)
-    (:documentation "Returns true when DECLARATION-NAME is usable for OPERATOR-NAME.")
-    (:method ((declaration-name (eql 'cl:special)) operator-name)
-      (variable-definition-operator-p operator-name))
-    (:method ((declaration-name (eql 'cl:type)) operator-name)
-      (variable-definition-operator-p operator-name))
-    (:method ((declaration-name (eql 'cl:ftype)) operator-name)
-      (function-definition-operator-p operator-name))
-    (:method ((declaration-name (eql 'cl:inline)) operator-name)
-      (function-definition-operator-p operator-name))
-    (:method ((declaration-name (eql 'cl:notinline)) operator-name)
-      (function-definition-operator-p operator-name))
-    (:method (declaration-name operator-name)
-      (declare (ignore declaration-name operator-name))
+  (defgeneric declaration-target-operator-p (declaration-name operator)
+    (:documentation "Returns true when DECLARATION-NAME is usable for OPERATOR.")
+    (:method ((declaration-name (eql 'cl:special)) operator)
+      (variable-definition-operator-p operator))
+    (:method ((declaration-name (eql 'cl:type)) operator)
+      (variable-definition-operator-p operator))
+    (:method ((declaration-name (eql 'cl:ftype)) operator)
+      (function-definition-operator-p operator))
+    (:method ((declaration-name (eql 'cl:inline)) operator)
+      (function-definition-operator-p operator))
+    (:method ((declaration-name (eql 'cl:notinline)) operator)
+      (function-definition-operator-p operator))
+    (:method (declaration-name operator)
+      (declare (ignore declaration-name operator))
       nil))
 
   (defun add-declaim-to-definiton-form (form decl-specifier)
@@ -86,6 +86,7 @@ To distinguish a macro form from a list of names, I try `macroexpand-1' to the f
                (decl-specifier `(,@decl-head ,@names)))
           (if body
               `(add-declaration ,decl-specifier ,@body) ; Use it as a local declaration.
+              ;; This weird expansion is for use at top-level and in '#.' also.
               `(progn (declaim ,decl-specifier)
                       '(declare ,decl-specifier))))
         ;; Like '(cl-annot-revisit:inline (defun func nil) ...)'
@@ -103,6 +104,7 @@ If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), to emb
                          #'symbolp env))
 
 (defmacro cl-annot-revisit:type (typespec &optional vars-or-form &body body &environment env)
+  ;; TODO: if typespec lacks variables, should I use `cl:the' form?
   (expand-at-declamation `(cl:type ,typespec) vars-or-form body
                          #'symbolp env))
 

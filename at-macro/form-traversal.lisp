@@ -5,27 +5,27 @@
       '(cl:defconstant cl:defparameter cl:defvar)
     :test 'equal)
   
-  (defgeneric variable-definition-operator-p (symbol)
-    (:documentation "Returns T if SYMBOL naming a definition form and
+  (defgeneric variable-definition-operator-p (operator)
+    (:documentation "Returns T if OPERATOR naming a definition form and
 its first argument is a variable name to be defined.")
     (:method (_)
       (declare (ignore _))
       nil)
-    (:method ((symbol symbol))
-      (member symbol +standard-variable-definiton-form-list+)))
+    (:method ((operator symbol))
+      (member operator +standard-variable-definiton-form-list+)))
 
   (define-constant +standard-function-definiton-form-list+
       '(cl:defgeneric cl:define-compiler-macro cl:defmethod cl:defun)
     :test 'equal)
 
-  (defgeneric function-definition-operator-p (symbol)
-    (:documentation "Returns T if SYMBOL naming a definition form and
+  (defgeneric function-definition-operator-p (operator)
+    (:documentation "Returns T if OPERATOR naming a definition form and
 its first argument is a function name to be defined.")
     (:method (_)
       (declare (ignore _))
       nil)
-    (:method ((symbol symbol))
-      (member symbol +standard-function-definiton-form-list+)))
+    (:method ((operator symbol))
+      (member operator +standard-function-definiton-form-list+)))
 
   (define-constant +standard-definiton-form-list+
       (append '(cl:defclass cl:define-condition cl:define-method-combination
@@ -38,9 +38,8 @@ its first argument is a function name to be defined.")
   (defgeneric find-name-to-be-defined-using-head (form-head form)
     (:documentation "Called by `find-name-to-be-defined' to compute a result.")
     (:method ((form-head list) form)
-      "Handling the lambda forms. It returns nil."
+      "Handles lambda forms. It returns nil."
       (declare (ignorable form-head form))
-      (assert (starts-with 'lambda form-head))
       nil)
     (:method ((form-head symbol) form)
       "Called if FORM-HEAD is symbol."

@@ -1,15 +1,14 @@
 (in-package #:cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defgeneric operator-body-location (symbol)
-    (:documentation "When SYMBOL naming an operator which can be
-    treated by our at-macros for declaration, returns an integer where
-    its body locates.")
+  (defgeneric operator-body-location (operator)
+    (:documentation "When OPERATOR can be treated by our at-macros for
+    declaration, returns an integer where its body locates.")
     (:method (_)
       (declare (ignore _))
       nil)
-    (:method ((symbol symbol))
-      (case symbol
+    (:method ((operator symbol))
+      (case operator
         ((cl:locally)
          1)
         ((cl:do-all-symbols cl:do-external-symbols cl:do-symbols cl:dolist
@@ -31,13 +30,13 @@
         cl:deftype cl:defun cl:lambda)
     :test 'equal)
 
-  (defgeneric operator-accept-docstring-in-body-p (symbol)
-    (:documentation "Returns T if the operator named by SYMBOL accepts docstring in its body.")
+  (defgeneric operator-accept-docstring-in-body-p (operator)
+    (:documentation "Returns T if OPERATOR accepts docstring in its body.")
     (:method (_)
       (declare (ignore _))
       nil)
-    (:method ((symbol symbol))
-      (member symbol +standard-operators-accept-docstring-in-body+)))
+    (:method ((operator symbol))
+      (member operator +standard-operators-accept-docstring-in-body+)))
 
   
   (defun insert-declaration-to-body (form-body decl-specifier &key documentation whole)

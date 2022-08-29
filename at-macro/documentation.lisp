@@ -1,13 +1,13 @@
 (in-package #:cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defgeneric operator-doc-type (symbol)
-    (:documentation "Returns the doc-type (in `cl:documentation') of SYMBOL.")
+  (defgeneric operator-doc-type (operator)
+    (:documentation "Returns the doc-type (in `cl:documentation') of OPERATOR.")
     (:method (_)
       (declare (ignore _))
       nil)
-    (:method ((symbol symbol))
-      (case symbol
+    (:method ((operator symbol))
+      (case operator
         ((cl:defclass cl:define-condition cl:deftype)
          'cl:type)
         ((cl:defconstant cl:defparameter cl:defvar)
@@ -33,9 +33,9 @@
     (:documentation "Called by `expand-documentation' to insert DOCSTRING into FORM.
 If FORM can be expanded, returns its expansion. If not, returns FORM.")
     (:method (operator docstring form)
-      "General case."
       (if-let ((doc-type (operator-doc-type operator)))
-        ;; Using the result of FORM is simple, but may prevent compilation as a top-level form.
+        ;; Using the result of FORM (like below) is simple, but may
+        ;; prevent compilation as a top-level form.
         (with-gensyms (obj)
           `(let ((,obj ,form))
              (setf (documentation ,obj ',doc-type) ,docstring)
