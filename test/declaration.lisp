@@ -1,6 +1,6 @@
 (in-package #:cl-annot-revisit-test)
 
-(test test-decl-ignore
+(test test-decl-ignore-inline
   (is (equal
        '(let ((x 100)) #.(cl-annot-revisit:ignore x) 99)
        '(let ((x 100)) (declare (ignore x)) 99)))
@@ -16,6 +16,87 @@
        '(locally
          (declare (ignore x y z))
          (+ x y z)))))
+
+(test test-decl-ignore-nil
+  (is (equal
+       '(let ((x 100)) #.(cl-annot-revisit:ignore ()) 99)
+       '(let ((x 100)) (declare (ignore)) 99)))
+  (is (equal
+       (macroexpand
+        '(cl-annot-revisit:ignore ()
+          (+ x y z)))
+       '(locally
+         (declare (ignore))
+         (+ x y z)))))
+
+(test test-decl-ignore-function-name
+  (is (equal
+       '(let ((x 100)) #.(cl-annot-revisit:ignore (function foo)) 99)
+       '(let ((x 100)) (declare (ignore (function foo))) 99)))
+  (is (equal
+       (macroexpand
+        '(cl-annot-revisit:ignore (function foo)
+          (+ x y z)))
+       '#1=(locally
+               (declare (ignore (function foo)))
+             (+ x y z))))
+  (is (equal
+       (macroexpand
+        '(cl-annot-revisit:ignore ((function foo))
+          (+ x y z)))
+       '#1#))
+  (is (equal
+       (macroexpand
+        '(cl-annot-revisit:ignore ((function foo) bar (function baz))
+          (+ x y z)))
+       '(locally
+         (declare (ignore (function foo) bar (function baz)))
+         (+ x y z)))))
+
+;;; TODO: in declaration.lisp
+;;; - operator-body-location
+;;; - operator-accept-docstring-in-body-p
+
+
+;;; ignorable
+
+(test test-decl-ignorable-inline
+  (is (equal
+       '(let ((x 100)) #.(cl-annot-revisit:ignorable x) 99)
+       '(let ((x 100)) (declare (ignorable x)) 99)))
+  (is (equal
+       '(let ((x 1)) #.(cl-annot-revisit:ignorable (x x x)) 0)
+       '(let ((x 1)) (declare (ignorable x x x)) 0))))
+
+(test test-decl-ignorable-toplevel
+  (is (equal
+       (macroexpand
+        '(cl-annot-revisit:ignorable (x y z)
+          (+ x y z)))
+       '(locally
+         (declare (ignorable x y z))
+         (+ x y z)))))
+
+;;; dynamic-extent
+
+(test test-decl-dynamic-extent-inline
+  (is (equal
+       '(let ((x 100)) #.(cl-annot-revisit:dynamic-extent x) 99)
+       '(let ((x 100)) (declare (dynamic-extent x)) 99)))
+  (is (equal
+       '(let ((x 1)) #.(cl-annot-revisit:dynamic-extent (x x x)) 0)
+       '(let ((x 1)) (declare (dynamic-extent x x x)) 0))))
+
+(test test-decl-dynamic-extent-toplevel
+  (is (equal
+       (macroexpand
+        '(cl-annot-revisit:dynamic-extent (x y z)
+          (+ x y z)))
+       '(locally
+         (declare (dynamic-extent x y z))
+         (+ x y z)))))
+
+;;; These tests are for testing `add-declaration' and `apply-at-macro'.
 
 (defun equal-ignoring-locally (form1 form2)
   "Allegro inserts (let () ...) instead of (locally ...) for every
@@ -108,7 +189,3 @@
           (locally (declare (ignore a b c))
             (declare (dynamic-extent))
             #4#)))))
-
-;;; TODO: in declaration.lisp
-;;; - operator-body-location
-;;; - operator-accept-docstring-in-body-p

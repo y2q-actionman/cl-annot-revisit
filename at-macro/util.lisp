@@ -13,9 +13,9 @@ This is only for developing at-macro codes. Used at nowhere."
   (defun ensure-list-with (obj test)
     "Do like `ensure-list', except this function returns (list OBJ)
 when (funcall TEST OBJ) results true."
-    (if (funcall test obj)
-        (list obj)
-        (ensure-list obj)))
+    (cond ((null obj) nil)
+          ((funcall test obj) (list obj))
+          (t (ensure-list obj))))
 
   (defun split-list-at (n list)
     "Return first N elements and rests of LIST."

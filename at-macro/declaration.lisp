@@ -150,24 +150,24 @@ If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
       (cons (starts-with 'function x))
       (otherwise nil)))
 
-  (defun expand-at-declaration (declaration-name names body)
-    (let* ((names (ensure-list-with names #'ignore-name-p))
+  (defun expand-at-declaration (declaration-name name-or-names body)
+    (let* ((names (ensure-list-with name-or-names #'ignore-name-p))
            (decl-specifier `(,declaration-name ,@names)))
       (if body
           `(add-declaration ,decl-specifier ,@body)
           `'(declare ,decl-specifier)))))
 
-(defmacro cl-annot-revisit:ignore (names &body body)
+(defmacro cl-annot-revisit:ignore (name-or-names &body body)
   "Adds `cl:ignore' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (ignore ...)), to embed it as a declaration using '#.'"
-  (expand-at-declaration 'cl:ignore names body))
+  (expand-at-declaration 'cl:ignore name-or-names body))
 
-(defmacro cl-annot-revisit:ignorable (names &body body)
+(defmacro cl-annot-revisit:ignorable (name-or-names &body body)
   "Adds `ignorable' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (ignorable ...)), to embed it as a declaration using '#.'"
-  (expand-at-declaration 'cl:ignorable names body))
+  (expand-at-declaration 'cl:ignorable name-or-names body))
 
-(defmacro cl-annot-revisit:dynamic-extent (names &body body)
+(defmacro cl-annot-revisit:dynamic-extent (name-or-names &body body)
   "Adds `dynamic-extent' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (dynamic-extent ...)), to embed it as a declaration using '#.'"
-  (expand-at-declaration 'cl:dynamic-extent names body))
+  (expand-at-declaration 'cl:dynamic-extent name-or-names body))
