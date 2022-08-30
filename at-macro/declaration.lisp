@@ -106,7 +106,7 @@ If FORM can be expanded, returns the expansion. If not, returns FORM.")
            `(,op ,function-name ,gf-lambda-list (declare ,decl-specifier) ,@option)))))
     (:method ((operator (eql 'define-method-combination)) decl-specifier form)
       (cond
-        ((or (length= 2 form)           ; shortest form.
+        ((or (<= (length form) 2)       ; shortest form.
              (keywordp (third form)))   ; has a short-form option.
          (when *at-macro-verbose*
            (warn 'at-macro-style-warning

@@ -32,6 +32,7 @@
        '(let ((x 100)) #.(cl-annot-revisit:ignore (function foo)) 99)
        '(let ((x 100)) (declare (ignore (function foo))) 99)))
   (is (equal-after-macroexpand
+       ;; This pattern does not works in the original cl-annot.
        '(cl-annot-revisit:ignore (function foo)
          (+ x y z))
        '#1=(locally
