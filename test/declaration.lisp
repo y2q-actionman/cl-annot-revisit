@@ -1,5 +1,37 @@
 (in-package #:cl-annot-revisit-test)
 
+(defun equal-ignoring-locally (form1 form2)
+  "Allegro inserts (let () ...) instead of (locally ...) for every
+  expansion by `macroexpand-all'. This function compares FORM1 and
+  FORM2 considering it"
+  (flet ((equal-rest-forms (form1 form2)
+           (declare (type list form1 form2))
+           (loop for i-cons on form1
+                 for j-cons on form2
+                 always (equal-ignoring-locally (car i-cons) (car j-cons))
+                 finally (return (and (null (cdr i-cons))
+                                      (null (cdr j-cons)))))))
+    (cond
+      ((not (and (consp form1)
+                 (consp form2)))
+       (equal-ignoring-gensym form1 form2))
+      ((and (starts-with 'locally form1)
+            (starts-with-subseq '(let ()) form2))
+       (equal-rest-forms (cdr form1) (cddr form2)))
+      ((and (starts-with-subseq '(let ()) form1)
+            (starts-with 'locally form2))
+       (equal-rest-forms (cddr form1) (cdr form2)))
+      (t
+       (equal-rest-forms form1 form2)))))
+
+(defun equal-after-macroexpand-all (macro-form expected-expansion)
+  (let ((expansion1 (macroexpand-all macro-form))
+        (expansion2 (macroexpand-all expected-expansion)))
+    #+allegro
+    (equal-ignoring-locally expansion1 expansion2)
+    #-(or allegro)
+    (equal expansion1 expansion2)))
+
 (test test-decl-ignore-inline
   (is (equal
        '(let ((x 100)) #.(cl-annot-revisit:ignore x) 99)
@@ -53,8 +85,62 @@
          (declare (ignore (function foo) bar (function baz)))
          (+ x y z)))))
 
+(test test-decl-ignore-locally
+  (is (equal
+       (macroexpand
+        '(cl-annot-revisit:ignore (foo)
+          (locally (+ x y z))))
+       '(locally
+         (declare (ignore foo))
+         (+ x y z))))
+  (is (equal
+       (macroexpand
+        '(cl-annot-revisit:ignore (foo)
+          (locally (declare (dynamic-extent)) (+ x y z))))
+       '(locally
+         (declare (ignore foo))
+         (declare (dynamic-extent))
+         (+ x y z)))))
+
+(test test-decl-ignore-body-2
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:ignore (foo)
+          (do-external-symbols (x)
+            (incf *counter*)))
+       '(do-external-symbols (x)
+         (declare (ignore foo))
+         (incf *counter*))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:ignore (foo)
+         (with-input-from-string (x "hoge")
+           (declare (ignore bar))
+           (read x)))
+       '(with-input-from-string (x "hoge")
+         (declare (ignore foo))
+         (declare (ignore bar))
+         (read x)))))
+
+(test test-decl-ignore-body-3
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:ignore (foo)
+         (do (x)
+             ((null x))
+           (incf *counter*)))
+       '(do (x)
+         ((null x))
+         (declare (ignore foo))
+         (incf *counter*))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:ignore (foo)
+         (multiple-value-bind (x y z) (values 1 2 3)
+           (declare (ignorable x y z))
+           (+ x y z)))
+       '(multiple-value-bind (x y z) (values 1 2 3)
+         (declare (ignore foo))
+         (declare (ignorable x y z))
+         (+ x y z)))))
+
 ;;; TODO: in declaration.lisp
-;;; - operator-body-location
 ;;; - operator-accept-docstring-in-body-p
 
 
@@ -97,37 +183,6 @@
          (+ x y z)))))
 
 ;;; These tests are for testing `add-declaration' and `apply-at-macro'.
-
-(defun equal-ignoring-locally (form1 form2)
-  "Allegro inserts (let () ...) instead of (locally ...) for every
-  expansion by `macroexpand-all'. This function compares FORM1 and
-  FORM2 considering it"
-  (flet ((equal-rest-forms (form1 form2)
-           (declare (type list form1 form2))
-           (loop for i-cons on form1
-                 for j-cons on form2
-                 always (equal-ignoring-locally (car i-cons) (car j-cons))
-                 finally (return (and (null (cdr i-cons))
-                                      (null (cdr j-cons)))))))
-    (cond
-      ((not (and (consp form1)
-                 (consp form2)))
-       (equal form1 form2))
-      ((and (starts-with 'locally form1)
-            (starts-with-subseq '(let ()) form2))
-       (equal-rest-forms (cdr form1) (cddr form2)))
-      ((and (starts-with-subseq '(let ()) form1)
-            (starts-with 'locally form2))
-       (equal-rest-forms (cddr form1) (cdr form2)))
-      (t
-       (equal-rest-forms form1 form2)))))
-
-(defun equal-after-macroexpand-all (macro-form expected-expansion)
-  (let ((expansion (macroexpand-all macro-form)))
-    #+allegro
-    (equal-ignoring-locally expansion expected-expansion)
-    #-(or allegro)
-    (equal expansion expected-expansion)))
 
 (test test-decl-special-form
   ;; progn
