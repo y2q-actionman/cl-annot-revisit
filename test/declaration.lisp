@@ -140,8 +140,35 @@
          (declare (ignorable x y z))
          (+ x y z)))))
 
-;;; TODO: in declaration.lisp
-;;; - operator-accept-docstring-in-body-p
+(test test-decl-ignore-docstring
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:ignore (foo)
+         (defun func (x)
+           x))
+       '(defun func (x)
+         (declare (ignore foo))
+         x)))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:ignore (foo)
+         (defun func (x)))
+       '(defun func (x)
+         (declare (ignore foo)))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:ignore (foo)
+         (defun func ()
+           "Hello, World!"))
+       '(defun func (x)
+         (declare (ignore foo))
+         "Hello, World!")))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:ignore (foo)
+         (defun func ()
+           "This is docstring"
+           "Hello, World!"))
+       '(defun func ()
+         (declare (ignore foo))
+         "This is docstring"
+         "Hello, World!"))))
 
 
 ;;; ignorable
