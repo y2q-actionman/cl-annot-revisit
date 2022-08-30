@@ -170,6 +170,22 @@
          "This is docstring"
          "Hello, World!"))))
 
+(test test-decl-ignore-defgeneric
+  (signals at-macro-style-warning
+    (let ((*at-macro-verbose* t))
+      (macroexpand
+       '(cl-annot-revisit:ignore (x)
+         (defgeneric foo (&rest args))))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:ignore (x)
+         (defgeneric foo (&rest args)))
+       '(locally (declare (ignore foo))
+         (defgeneric foo (&rest args)))))
+  ;; TODO: `optimize'
+  )
+
+;;; TODO: define-method-combination, defmethod, defsetf
+
 
 ;;; ignorable
 
