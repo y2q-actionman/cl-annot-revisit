@@ -174,13 +174,12 @@
   (signals at-macro-style-warning
     (let ((*at-macro-verbose* t))
       (macroexpand
-       '(cl-annot-revisit:ignore (x)
-         (defgeneric foo (&rest args))))))
+       '#2=(cl-annot-revisit:ignore (x)
+             #1=(defgeneric foo (&rest args))))))
   (is (equal-after-macroexpand-all
-       '(cl-annot-revisit:ignore (x)
-         (defgeneric foo (&rest args)))
+       '#2#
        '(locally (declare (ignore foo))
-         (defgeneric foo (&rest args)))))
+         #1#)))
   ;; TODO: `optimize'
   )
 
