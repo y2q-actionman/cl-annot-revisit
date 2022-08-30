@@ -1,37 +1,5 @@
 (in-package #:cl-annot-revisit-test)
 
-(defun equal-ignoring-locally (form1 form2)
-  "Allegro inserts (let () ...) instead of (locally ...) for every
-  expansion by `macroexpand-all'. This function compares FORM1 and
-  FORM2 considering it"
-  (flet ((equal-rest-forms (form1 form2)
-           (declare (type list form1 form2))
-           (loop for i-cons on form1
-                 for j-cons on form2
-                 always (equal-ignoring-locally (car i-cons) (car j-cons))
-                 finally (return (and (null (cdr i-cons))
-                                      (null (cdr j-cons)))))))
-    (cond
-      ((not (and (consp form1)
-                 (consp form2)))
-       (equal-ignoring-gensym form1 form2))
-      ((and (starts-with 'locally form1)
-            (starts-with-subseq '(let ()) form2))
-       (equal-rest-forms (cdr form1) (cddr form2)))
-      ((and (starts-with-subseq '(let ()) form1)
-            (starts-with 'locally form2))
-       (equal-rest-forms (cddr form1) (cdr form2)))
-      (t
-       (equal-rest-forms form1 form2)))))
-
-(defun equal-after-macroexpand-all (macro-form expected-expansion)
-  (let ((expansion1 (macroexpand-all macro-form))
-        (expansion2 (macroexpand-all expected-expansion)))
-    #+allegro
-    (equal-ignoring-locally expansion1 expansion2)
-    #-(or allegro)
-    (equal expansion1 expansion2)))
-
 (test test-decl-ignore-inline
   (is (equal
        '(let ((x 100)) #.(cl-annot-revisit:ignore x) 99)
@@ -41,10 +9,9 @@
        '(let ((x 1)) (declare (ignore x x x)) 0))))
 
 (test test-decl-ignore-toplevel
-  (is (equal
-       (macroexpand
-        '(cl-annot-revisit:ignore (x y z)
-          (+ x y z)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore (x y z)
+         (+ x y z))
        '(locally
          (declare (ignore x y z))
          (+ x y z)))))
@@ -53,10 +20,9 @@
   (is (equal
        '(let ((x 100)) #.(cl-annot-revisit:ignore ()) 99)
        '(let ((x 100)) (declare (ignore)) 99)))
-  (is (equal
-       (macroexpand
-        '(cl-annot-revisit:ignore ()
-          (+ x y z)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore ()
+         (+ x y z))
        '(locally
          (declare (ignore))
          (+ x y z)))))
@@ -65,52 +31,47 @@
   (is (equal
        '(let ((x 100)) #.(cl-annot-revisit:ignore (function foo)) 99)
        '(let ((x 100)) (declare (ignore (function foo))) 99)))
-  (is (equal
-       (macroexpand
-        '(cl-annot-revisit:ignore (function foo)
-          (+ x y z)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore (function foo)
+         (+ x y z))
        '#1=(locally
                (declare (ignore (function foo)))
              (+ x y z))))
-  (is (equal
-       (macroexpand
-        '(cl-annot-revisit:ignore ((function foo))
-          (+ x y z)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore ((function foo))
+         (+ x y z))
        '#1#))
-  (is (equal
-       (macroexpand
-        '(cl-annot-revisit:ignore ((function foo) bar (function baz))
-          (+ x y z)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore ((function foo) bar (function baz))
+         (+ x y z))
        '(locally
          (declare (ignore (function foo) bar (function baz)))
          (+ x y z)))))
 
 (test test-decl-ignore-locally
-  (is (equal
-       (macroexpand
-        '(cl-annot-revisit:ignore (foo)
-          (locally (+ x y z))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore (foo)
+         (locally (+ x y z)))
        '(locally
          (declare (ignore foo))
          (+ x y z))))
-  (is (equal
-       (macroexpand
-        '(cl-annot-revisit:ignore (foo)
-          (locally (declare (dynamic-extent)) (+ x y z))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore (foo)
+         (locally (declare (dynamic-extent)) (+ x y z)))
        '(locally
          (declare (ignore foo))
          (declare (dynamic-extent))
          (+ x y z)))))
 
 (test test-decl-ignore-body-2
-  (is (equal-after-macroexpand-all
+  (is (equal-after-macroexpand
        '(cl-annot-revisit:ignore (foo)
-          (do-external-symbols (x)
-            (incf *counter*)))
+         (do-external-symbols (x)
+           (incf *counter*)))
        '(do-external-symbols (x)
          (declare (ignore foo))
          (incf *counter*))))
-  (is (equal-after-macroexpand-all
+  (is (equal-after-macroexpand
        '(cl-annot-revisit:ignore (foo)
          (with-input-from-string (x "hoge")
            (declare (ignore bar))
@@ -121,7 +82,7 @@
          (read x)))))
 
 (test test-decl-ignore-body-3
-  (is (equal-after-macroexpand-all
+  (is (equal-after-macroexpand
        '(cl-annot-revisit:ignore (foo)
          (do (x)
              ((null x))
@@ -130,7 +91,7 @@
          ((null x))
          (declare (ignore foo))
          (incf *counter*))))
-  (is (equal-after-macroexpand-all
+  (is (equal-after-macroexpand
        '(cl-annot-revisit:ignore (foo)
          (multiple-value-bind (x y z) (values 1 2 3)
            (declare (ignorable x y z))
@@ -141,26 +102,26 @@
          (+ x y z)))))
 
 (test test-decl-ignore-docstring
-  (is (equal-after-macroexpand-all
+  (is (equal-after-macroexpand
        '(cl-annot-revisit:ignore (foo)
          (defun func (x)
            x))
        '(defun func (x)
          (declare (ignore foo))
          x)))
-  (is (equal-after-macroexpand-all
+  (is (equal-after-macroexpand
        '(cl-annot-revisit:ignore (foo)
          (defun func (x)))
        '(defun func (x)
          (declare (ignore foo)))))
-  (is (equal-after-macroexpand-all
+  (is (equal-after-macroexpand
        '(cl-annot-revisit:ignore (foo)
          (defun func ()
            "Hello, World!"))
-       '(defun func (x)
+       '(defun func ()
          (declare (ignore foo))
          "Hello, World!")))
-  (is (equal-after-macroexpand-all
+  (is (equal-after-macroexpand
        '(cl-annot-revisit:ignore (foo)
          (defun func ()
            "This is docstring"
@@ -176,9 +137,9 @@
       (macroexpand
        '#2=(cl-annot-revisit:ignore (x)
              #1=(defgeneric foo (&rest args))))))
-  (is (equal-after-macroexpand-all
+  (is (equal-after-macroexpand
        '#2#
-       '(locally (declare (ignore foo))
+       '(locally (declare (ignore x))
          #1#)))
   ;; TODO: `optimize'
   )
@@ -197,10 +158,9 @@
        '(let ((x 1)) (declare (ignorable x x x)) 0))))
 
 (test test-decl-ignorable-toplevel
-  (is (equal
-       (macroexpand
-        '(cl-annot-revisit:ignorable (x y z)
-          (+ x y z)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignorable (x y z)
+         (+ x y z))
        '(locally
          (declare (ignorable x y z))
          (+ x y z)))))
@@ -216,10 +176,9 @@
        '(let ((x 1)) (declare (dynamic-extent x x x)) 0))))
 
 (test test-decl-dynamic-extent-toplevel
-  (is (equal
-       (macroexpand
-        '(cl-annot-revisit:dynamic-extent (x y z)
-          (+ x y z)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:dynamic-extent (x y z)
+         (+ x y z))
        '(locally
          (declare (dynamic-extent x y z))
          (+ x y z)))))

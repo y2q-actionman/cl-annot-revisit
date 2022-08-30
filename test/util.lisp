@@ -20,4 +20,40 @@
            (or (equal x y)
                (and (symbolp x) (null (symbol-package x))
                     (symbolp y) (null (symbol-package y))))))
-    (tree-equal x y) #'test-fn))
+    (tree-equal x y :test #'test-fn)))
+
+(defun equal-after-macroexpand (form1 form2)
+  (equal-ignoring-gensym (macroexpand form1)
+                         (macroexpand form2)))
+
+(defun equal-ignoring-locally (form1 form2)
+  "Allegro inserts (let () ...) instead of (locally ...) for every
+  expansion by `macroexpand-all'. This function compares FORM1 and
+  FORM2 considering it"
+  (flet ((equal-rest-forms (form1 form2)
+           (declare (type list form1 form2))
+           (loop for i-cons on form1
+                 for j-cons on form2
+                 always (equal-ignoring-locally (car i-cons) (car j-cons))
+                 finally (return (and (null (cdr i-cons))
+                                      (null (cdr j-cons)))))))
+    (cond
+      ((not (and (consp form1)
+                 (consp form2)))
+       (equal-ignoring-gensym form1 form2))
+      ((and (starts-with 'locally form1)
+            (starts-with-subseq '(let ()) form2))
+       (equal-rest-forms (cdr form1) (cddr form2)))
+      ((and (starts-with-subseq '(let ()) form1)
+            (starts-with 'locally form2))
+       (equal-rest-forms (cddr form1) (cdr form2)))
+      (t
+       (equal-rest-forms form1 form2)))))
+
+(defun equal-after-macroexpand-all (form1 form2)
+  (let ((expansion1 (macroexpand-all form1))
+        (expansion2 (macroexpand-all form2)))
+    #+allegro
+    (equal-ignoring-locally expansion1 expansion2)
+    #-(or allegro)
+    (equal expansion1 expansion2)))
