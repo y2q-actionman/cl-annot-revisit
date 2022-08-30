@@ -144,7 +144,30 @@
   ;; TODO: `optimize'
   )
 
-;;; TODO: define-method-combination, defmethod, defsetf
+(test test-decl-ignore-define-method-combination
+  (signals at-macro-style-warning
+    (let ((*at-macro-verbose* t))
+      (macroexpand
+       '(cl-annot-revisit:ignore (foo)
+         (define-method-combination or)))))
+  (signals at-macro-style-warning
+    (let ((*at-macro-verbose* t))
+      (macroexpand
+       '(cl-annot-revisit:ignore (foo)
+         (define-method-combination or :identity-with-one-argument t)))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore (foo)
+         (define-method-combination xxx (&optional (order :most-specific-first))
+          ((around (:around))
+           (primary (and) :order order :required t))
+          etc etc etc))
+       '(define-method-combination xxx (&optional (order :most-specific-first))
+          ((around (:around))
+           (primary (and) :order order :required t))
+         (declare (ignore foo))
+         etc etc etc))))
+
+;;; TODO: defmethod, defsetf
 
 
 ;;; ignorable

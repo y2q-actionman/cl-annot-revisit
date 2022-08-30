@@ -78,7 +78,8 @@ If FORM can be expanded, returns the expansion. If not, returns FORM.")
            `(,op ,function-name ,gf-lambda-list (declare ,decl-specifier) ,@option)))))
     (:method ((operator (eql 'define-method-combination)) decl-specifier form)
       (cond
-        ((<= (length form) 3)
+        ((or (length= 2 form)           ; shortest form.
+             (symbolp (third form)))    ; has a short-form option.
          (when *at-macro-verbose*
            (warn 'at-macro-style-warning
                  :message "The short-form of `define-method-combination' doesn't take declarations."
