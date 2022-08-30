@@ -206,8 +206,33 @@
          "hoo"
          100))))
 
-;;; TODO: defsetf
-
+(test test-decl-ignore-defsetf
+  (signals at-macro-style-warning
+    (let ((*at-macro-verbose* t))
+      (macroexpand
+       '(cl-annot-revisit:ignore (foo)
+         (defsetf access-fn update-fn)))))
+  (signals at-macro-style-warning
+    (let ((*at-macro-verbose* t))
+      (macroexpand
+       '(cl-annot-revisit:ignore (foo)
+         (defsetf access-fn update-fn "documentation")))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore (foo)
+         (defsetf access-fn (x y z) (store)
+           (progn)))
+       '(defsetf access-fn (x y z) (store)
+         (declare (ignore foo))
+         (progn))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore (foo)
+         (defsetf access-fn () (store)
+           "docstring"
+           "Hello, World!"))
+       '(defsetf access-fn () (store)
+         (declare (ignore foo))
+         "docstring"
+         "Hello, World!"))))
 
 ;;; ignorable
 
