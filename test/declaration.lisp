@@ -167,7 +167,46 @@
          (declare (ignore foo))
          etc etc etc))))
 
-;;; TODO: defmethod, defsetf
+(test test-decl-ignore-defmethod
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore (foo)
+         (defmethod foo ()))
+       '(defmethod foo ()
+         (declare (ignore foo)))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore (foo)
+         (defmethod foo ()
+           100))
+       '(defmethod foo ()
+         (declare (ignore foo))
+         100)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore (foo)
+         (defmethod foo :before ()
+           100))
+       '(defmethod foo :before ()
+         (declare (ignore foo))
+         100)))
+  (is (equal-after-macroexpand          ; multiple method-qualifiers.
+       '(cl-annot-revisit:ignore (foo)
+         (defmethod foo :before :after ()
+           100))
+       '(defmethod foo :before :after ()
+         (declare (ignore foo))
+         100)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore (foo)
+         (defmethod foo :before :after (x y z)
+           "hoo"
+           (declare (dynamic-extent))
+           100))
+       '(defmethod foo :before :after (x y z)
+         (declare (ignore foo))
+         (declare (dynamic-extent))
+         "hoo"
+         100))))
+
+;;; TODO: defsetf
 
 
 ;;; ignorable

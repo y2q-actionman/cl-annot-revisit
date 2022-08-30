@@ -54,6 +54,17 @@
         ,@(insert-declaration-to-body body decl-specifier
                                       :documentation documentation :whole form))))
 
+  (defun parse-defmethod-form (defmethod-form)
+    "Destructs FORM, starts with `defmethod' to 4 parts;
+ 1. its name, 2. List of method-qualifiers, 3. lambda list, 4. its body."
+    (destructuring-bind (_op name &rest rest) defmethod-form
+      (declare (ignore _op))
+      (let* ((method-qualifiers
+               (loop for i = (first rest)
+                     while (and (atom i) (not (null i)))
+                     collect (pop rest)))
+             (lambda-list (pop rest)))
+        (values name method-qualifiers lambda-list rest))))
 
   (defgeneric expand-add-declaration-using-head (operator decl-specifier form)
     (:documentation "Called by `expand-add-declaration' to insert DECL-SPECIFIER into FORM.
@@ -99,13 +110,11 @@ If FORM can be expanded, returns the expansion. If not, returns FORM.")
                    ,@(insert-declaration-to-body rest decl-specifier
                                                  :whole form :documentation t)))))))
     (:method ((operator (eql 'defmethod)) decl-specifier form)
-      (destructuring-bind (op name &rest rest) form
-        (let* ((method-qualifier (if (not (listp (first rest)))
-                                     (pop rest)))
-               (lambda-list (pop rest)))
-          `(,op ,name ,@(if method-qualifier `(,method-qualifier)) ,lambda-list
-                ,@(insert-declaration-to-body rest decl-specifier
-                                              :whole form :documentation t)))))
+      (multiple-value-bind (name method-qualifiers lambda-list body)
+          (parse-defmethod-form form)
+        `(,operator ,name ,@method-qualifiers ,lambda-list
+                    ,@(insert-declaration-to-body body decl-specifier
+                                                  :whole form :documentation t))))
     (:method ((operator (eql 'defsetf)) decl-specifier form)
       (cond
         ((or (<= (length form) 3)
