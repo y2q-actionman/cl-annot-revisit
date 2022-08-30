@@ -76,11 +76,12 @@ To distinguish a macro form from a list of names, I try `macroexpand-1' to the f
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun expand-at-declamation (decl-head names-or-form body name-p-function env)
-    (if (or (funcall name-p-function names-or-form) ; It is a name.
+    (if (or (null names-or-form)        ; '(cl-annot-revisit:inline () ...)
+            (funcall name-p-function names-or-form) ; It is a name.
             (and (consp names-or-form)  ; It is like a list of names,
                  (every name-p-function names-or-form)
                  (not                  ; AND not `macroexpand-1'-able.
-                  (nth-value 1 (macroexpand-1 names-or-form env)))))
+                  (nth-value 1 (macroexpand-1 names-or-form env))))) ; FIXME: should I see macro-functon? (Oh, should I see symbol-macro also??)
         ;; Like '(cl-annot-revisit:notinline (x y z) ...)'
         (let* ((names (ensure-list-with names-or-form name-p-function))
                (decl-specifier `(,@decl-head ,@names)))
