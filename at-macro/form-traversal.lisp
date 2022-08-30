@@ -100,6 +100,7 @@ returns the name to be defined. If not, returns nil."
 ;; TODO: rewrite.. ; rename to expand-at-macro-recursively ?
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun apply-at-macro (at-macro-form expander-function forms env)
+    (declare (ignorable env))
     (cond
       ((null forms)
        (values nil nil))
@@ -110,7 +111,11 @@ returns the name to be defined. If not, returns nil."
          (mv-cond-let2 (expansion expanded-p)
            ((funcall expander-function form)) ; try known expansions.
            ((apply-at-macro-to-special-toplevel-form at-macro-form form)) ; try recursive expansion.
-           ((macroexpand-1 form env)      ; try `macroexpand-1'.
-            (values `(,@at-macro-form ,expansion) t))
+           ;; Temporarily commented out. I occationally thought
+           ;; calling `macroexpand' destroys forms especially if they
+           ;; use `macrolet' for hooking.
+           ;; 
+           ;; ((macroexpand-1 form env)      ; try `macroexpand-1'.
+           ;;  (values `(,@at-macro-form ,expansion) t))
            (t                       ; nothing to be expanded.
             (values form nil))))))))

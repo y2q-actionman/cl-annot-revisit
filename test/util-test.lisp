@@ -148,6 +148,7 @@
                             (test-operator 3))
                           t))))
 
+  #+ ()
   (test apply-at-macro-macroexpand-1
     (is (mv-equal (apply-at-macro '(test-operator) (constantly nil)
                                   '((test-macro-1 () 1 2 3)) nil)
