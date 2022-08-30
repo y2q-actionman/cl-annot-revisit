@@ -17,33 +17,34 @@
          (declare (ignore x y z))
          (+ x y z)))))
 
-;;; TODO: I should compare '(locally ...)' with '(let () ...)' to T.
-(defun remove-let-nil (form)
-  "Allegro inserts weird (let () ...) for every expansion by
-  `macroexpand-all'.  I replace them to `locally' here."
-  (let (head)
+(defun equal-ignoring-locally (form1 form2)
+  "Allegro inserts (let () ...) instead of (locally ...) for every
+  expansion by `macroexpand-all'. This function compares FORM1 and
+  FORM2 considering it"
+  (flet ((equal-rest-forms (form1 form2)
+           (declare (type list form1 form2))
+           (loop for i-cons on form1
+                 for j-cons on form2
+                 always (equal-ignoring-locally (car i-cons) (car j-cons))
+                 finally (return (and (null (cdr i-cons))
+                                      (null (cdr j-cons)))))))
     (cond
-      ((starts-with-subseq '(let ()) form)
-       (setf head 'locally)
-       (pop form)
-       (pop form))
+      ((not (and (consp form1)
+                 (consp form2)))
+       (equal form1 form2))
+      ((and (starts-with 'locally form1)
+            (starts-with-subseq '(let ()) form2))
+       (equal-rest-forms (cdr form1) (cddr form2)))
+      ((and (starts-with-subseq '(let ()) form1)
+            (starts-with 'locally form2))
+       (equal-rest-forms (cddr form1) (cdr form2)))
       (t
-       (setf head (pop form))))
-    (loop for i in form
-          collect (typecase i
-                    (cons
-                     (remove-let-nil i))
-                    (otherwise
-                     i))
-            into rest
-          finally
-             (return `(,head ,@rest)))))
+       (equal-rest-forms form1 form2)))))
 
 (defun equal-after-macroexpand-all (macro-form expected-expansion)
   (let ((expansion (macroexpand-all macro-form)))
     #+allegro
-    (let ((expansion2 (remove-let-nil expansion)))
-      (equal expansion2 expected-expansion))
+    (equal-ignoring-locally expansion expected-expansion)
     #-(or allegro)
     (equal expansion expected-expansion)))
 
@@ -108,12 +109,6 @@
             (declare (dynamic-extent))
             #4#)))))
 
-
-;;; TODO: in form-traversal.lisp
-;;; - apply-at-macro
-
-
 ;;; TODO: in declaration.lisp
 ;;; - operator-body-location
 ;;; - operator-accept-docstring-in-body-p
-;;; - operator-take-local-declaration-p
