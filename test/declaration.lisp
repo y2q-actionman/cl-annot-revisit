@@ -1,5 +1,7 @@
 (in-package #:cl-annot-revisit-test)
 
+;;; `ignore'
+
 (test test-decl-ignore-inline
   (is (equal
        '(let ((x 100)) #.(cl-annot-revisit:ignore x) 99)
@@ -235,7 +237,25 @@
          "docstring"
          "Hello, World!"))))
 
-;;; ignorable
+(test test-decl-ignore-toplevel-multiforms
+  (is (equal-after-macroexpand-all 
+       '(cl-annot-revisit:ignore (x y z)
+         (+ x y z)
+         (defun hoge (x y z)
+           (+ 1 2 3))
+         (defmethod fuga ()
+           "aaa"))
+       '(progn
+         (locally (declare (ignore x y z))
+           (+ x y z))
+         (defun hoge (x y z)
+           (declare (ignore x y z))
+           (+ 1 2 3))
+         (defmethod fuga ()
+           (declare (ignore x y z))
+           "aaa")))))
+
+;;; `ignorable'
 
 (test test-decl-ignorable-inline
   (is (equal
@@ -253,7 +273,7 @@
          (declare (ignorable x y z))
          (+ x y z)))))
 
-;;; dynamic-extent
+;;; `dynamic-extent'
 
 (test test-decl-dynamic-extent-inline
   (is (equal

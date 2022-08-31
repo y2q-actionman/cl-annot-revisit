@@ -82,6 +82,7 @@ To distinguish a macro form from a list of names, I check the form is a macro-fo
                  (every name-p-function names-or-form)
                  (not (special-operator-p (first names-or-form)))
                  (not (macro-function (first names-or-form) env))))
+        ;; Treats as declaration.
         ;; Like '(cl-annot-revisit:notinline (x y z) ...)'
         (let* ((names (ensure-list-with names-or-form name-p-function))
                (decl-specifier `(,@decl-head ,@names)))
@@ -90,6 +91,7 @@ To distinguish a macro form from a list of names, I check the form is a macro-fo
               ;; This weird expansion is for use at top-level and in '#.' also.
               `(progn (declaim ,decl-specifier)
                       '(declare ,decl-specifier))))
+        ;; Treats as declamation.
         ;; Like '(cl-annot-revisit:inline (defun func nil) ...)'
         `(add-declamation
           ,decl-head
