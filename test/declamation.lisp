@@ -30,6 +30,27 @@
         '(cl-annot-revisit:special))
        :test 'equal)))
 
+(test test-decl-special-with-one-var    ; will add a declaration.
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:special x
+         (+ 1 2 3))
+       '(locally
+         (declare (special x))
+         (+ 1 2 3))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:special x
+         (defun hoge (x)
+           9999))
+       '(defun hoge (x)
+         (declare (special x))
+         9999)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:special x
+         #1=(defvar *hoge* 12345))
+       '(locally
+         (declare (special x))
+         #1#))))
+
 (test test-decl-special-with-vars       ; will add a declaration.
   (is (equal-after-macroexpand
        '(cl-annot-revisit:special (x y z)
@@ -91,6 +112,9 @@
 
 
 ;; (test test-decl-special-multiforms
+;;   )
+
+;; (test test-decl-special-ambiguous-multiforms
 ;;   )
 
 ;;; `inline'
