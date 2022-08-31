@@ -71,7 +71,7 @@ Not like:
     (declare (inline defun foo nil))
     t)
 
-To distinguish a macro form from a list of names, I try `macroexpand-1' to the form.
+To distinguish a macro form from a list of names, I check the form is a macro-form or not.
 |#
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -80,8 +80,8 @@ To distinguish a macro form from a list of names, I try `macroexpand-1' to the f
             (funcall name-p-function names-or-form) ; It is a name.
             (and (consp names-or-form)  ; It is like a list of names,
                  (every name-p-function names-or-form)
-                 (not                  ; AND not `macroexpand-1'-able.
-                  (nth-value 1 (macroexpand-1 names-or-form env))))) ; FIXME: should I see macro-functon? (Oh, should I see symbol-macro also??)
+                 (not (special-operator-p (first names-or-form)))
+                 (not (macro-function (first names-or-form) env))))
         ;; Like '(cl-annot-revisit:notinline (x y z) ...)'
         (let* ((names (ensure-list-with names-or-form name-p-function))
                (decl-specifier `(,@decl-head ,@names)))
