@@ -111,11 +111,101 @@
          #3#))))
 
 
-;; (test test-decl-special-multiforms
-;;   )
+(test test-decl-special-multiforms
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:special x
+         (defun foo (x))
+         (format t "Hello, World!")
+         (defvar *foo* 9999)
+         (defmethod bar ()
+           "docstring"
+           ""))
+       '#1=(progn
+             (defun foo (x)
+               (declare (special x)))
+             (locally
+                 (declare (special x))
+               (format t "Hello, World!"))
+             (locally
+                 (declare (special x))
+               (defvar *foo* 9999))
+             (defmethod bar ()
+               (declare (special x))
+               "docstring"
+               "")
+             )))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:special (x)
+         (defun foo (x))
+         (format t "Hello, World!")
+         (defvar *foo* 9999)
+         (defmethod bar ()
+           "docstring"
+           ""))
+       '#1#))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:special
+         (defun foo (x))
+         (format t "Hello, World!")
+         (defvar *foo* 9999)
+         (defmethod bar ()
+           "docstring"
+           ""))
+       '(progn
+         (defun foo (x))
+         (format t "Hello, World!")
+         (progn (declaim (special *foo*))
+                (defvar *foo* 9999))
+         (defmethod bar ()
+           "docstring"
+           "")))))
 
-;; (test test-decl-special-ambiguous-multiforms
-;;   )
+(test test-decl-special-ambiguous-multiforms
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:special (list a b c)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (defun foo (x) (declare (special list a b c)))
+         (locally (declare (special list a b c))
+            "Hello, World!")
+         (locally (declare (special list a b c))
+           (defvar *foo* 9999)))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:special (list 1 2 3)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (list 1 2 3)
+         (defun foo (x))
+         "Hello, World!"
+         (progn (declaim (special *foo*))
+                (defvar *foo* 9999)))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:special (define-method-combination hoge)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (define-method-combination hoge)
+         (defun foo (x))
+         "Hello, World!"
+         (progn (declaim (special *foo*))
+                (defvar *foo* 9999)))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:special (progn lambda-list-keywords)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (progn lambda-list-keywords)
+         (defun foo (x))
+         "Hello, World!"
+         (progn (declaim (special *foo*))
+                (defvar *foo* 9999))))))
+
 
 ;;; `inline'
 
