@@ -69,13 +69,16 @@ To distinguish a macro form from a list of names, I check the form is a macro-fo
 |#
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun declaration-argument-like-p (first-form name-p-function env)
+    (or (null first-form)       ; '(cl-annot-revisit:inline () ...)
+        (funcall name-p-function first-form) ; It is a name.
+        (and (consp first-form)      ; It is like a list of names,
+             (every name-p-function first-form)
+             (not (special-operator-p (first first-form)))
+             (not (macro-function (first first-form) env)))))
+  
   (defun expand-at-declamation (decl-head names-or-form body name-p-function env)
-    (if (or (null names-or-form)        ; '(cl-annot-revisit:inline () ...)
-            (funcall name-p-function names-or-form) ; It is a name.
-            (and (consp names-or-form)  ; It is like a list of names,
-                 (every name-p-function names-or-form)
-                 (not (special-operator-p (first names-or-form)))
-                 (not (macro-function (first names-or-form) env))))
+    (if (declaration-argument-like-p names-or-form name-p-function env)
         ;; Treats as declaration.
         ;; Like '(cl-annot-revisit:notinline (x y z) ...)'
         (let* ((names (ensure-list-with names-or-form name-p-function))
@@ -87,11 +90,8 @@ To distinguish a macro form from a list of names, I check the form is a macro-fo
                       '(declare ,decl-specifier))))
         ;; Treats as declamation.
         ;; Like '(cl-annot-revisit:inline (defun func nil) ...)'
-        `(add-declamation
-          ,decl-head
-          ;; I don't use the above `macroexpand-1' result,
-          ;; because other at-macros may want to see original forms.
-          ,names-or-form ,@body))))
+        `(add-declamation ,decl-head
+           ,names-or-form ,@body))))
 
 (defmacro cl-annot-revisit:special (&optional vars-or-form &body body &environment env)
   "Adds `special' declaration into BODY.
