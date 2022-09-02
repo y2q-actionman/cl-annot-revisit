@@ -110,7 +110,6 @@
          (declaim (special *hoge*))
          #3#))))
 
-
 (test test-decl-special-multiforms
   (is (equal-after-macroexpand-all
        '(cl-annot-revisit:special x
@@ -206,6 +205,67 @@
          (progn (declaim (special *foo*))
                 (defvar *foo* 9999))))))
 
+;;; `type'
+
+(test test-decl-type-inline
+  (is (equal
+       '(let ((x 100)) #.(cl-annot-revisit:type integer x) 99)
+       '(let ((x 100)) (declare (type integer x)) 99)))
+  (is (equal
+       '(let ((x 1)) #.(cl-annot-revisit:type (integer -1 +1) (x x x)) 0)
+       '(let ((x 1)) (declare (type (integer -1 +1) x x x)) 0)))
+  (is (equal
+       '(let ((x 1)) #.(cl-annot-revisit:type integer ()) 0)
+       '(let ((x 1)) (declare (type integer)) 0))))
+
+(test test-decl-type-no-body         ; will makes a `declaim' form.
+  (is (starts-with-subseq
+       '(progn (declaim (type fixnum x y z)))
+       (macroexpand
+        '(cl-annot-revisit:type fixnum (x y z)))
+       :test 'equal)))
+
+(test test-decl-type-with-one-var       ; will makes a `declaim' form.
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:type integer x
+         (+ 1 2 3))
+       '(locally
+         (declare (type integer x))
+         (+ 1 2 3))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:type (integer -1) x
+         (defun hoge (x)
+           9999))
+       '(defun hoge (x)
+         (declare (type (integer -1) x))
+         9999))))
+
+(test test-decl-type-multiforms
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:type (integer -1) x
+         (defun foo (x))
+         (format t "Hello, World!")
+         (defvar *foo* 9999))
+       '(progn
+         (defun foo (x)
+           (declare (type (integer -1) x)))
+         (locally
+             (declare (type (integer -1) x))
+           (format t "Hello, World!"))
+         (locally
+             (declare (type (integer -1) x))
+           (defvar *foo* 9999))
+         )))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:type (integer 9999)
+         (defun foo (x))
+         (format t "Hello, World!")
+         (defvar *foo* 9999))
+       '(progn
+         (defun foo (x))
+         (format t "Hello, World!")
+         (progn (declaim (type (integer 9999) *foo*))
+                (defvar *foo* 9999))))))
 
 ;;; `inline'
 

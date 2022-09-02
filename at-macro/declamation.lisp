@@ -28,13 +28,7 @@
       (let ((declaration-name (first decl-specifier)))
         (if (declaration-target-operator-p declaration-name operator)
             (add-declaim-to-definiton-form form decl-specifier)
-            form)))
-    (:method :before ((operator (eql 'cl:the)) decl-specifier form)
-      (declare (ignorable decl-specifier))
-      (when (and (eq 'cl:type (first decl-specifier)) 
-                 *at-macro-verbose*)
-        (warn 'at-macro-style-warning :form form
-              :message "`cl-annot-revisit:type' does not effect to `the' special form."))))
+            form))))
 
   ;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
   ;;   (cl-annot-revisit:inline (func-a) (declaim)) ; => (declaim (inline func-a))
@@ -100,14 +94,12 @@ To distinguish a macro form from a list of names, I check the form is a macro-fo
           ,names-or-form ,@body))))
 
 (defmacro cl-annot-revisit:special (&optional vars-or-form &body body &environment env)
-  ;; TODO: add 'VARS-OR-FORM' treating
   "Adds `special' declaration into BODY.
 If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), to embed it as a declaration using '#.'"
   (expand-at-declamation '(cl:special) vars-or-form body
                          #'symbolp env))
 
 (defmacro cl-annot-revisit:type (typespec &optional vars-or-form &body body &environment env)
-  ;; TODO: if typespec lacks variables, should I use `cl:the' form?
   (expand-at-declamation `(cl:type ,typespec) vars-or-form body
                          #'symbolp env))
 
