@@ -46,8 +46,9 @@
 
 ;;; Declaration and proclamation -- `type', `ftype', `inline', `notinline', `optimize', `special'
 
-#|
-This macro is ambiguous when the first value is a list of names.
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun declaration-argument-like-p (first-form name-p-function env)
+"Our macro for declamation is ambiguous when the first value is a list of names.
 Consider:
 
   (cl-annot-revisit:inline
@@ -65,11 +66,7 @@ Not like:
     (declare (inline defun foo nil))
     t)
 
-To distinguish a macro form from a list of names, I check the form is a macro-form or not.
-|#
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun declaration-argument-like-p (first-form name-p-function env)
+To distinguish a macro form from a list of names, I check the form is a macro-form or not."
     (or (null first-form)       ; '(cl-annot-revisit:inline () ...)
         (funcall name-p-function first-form) ; It is a name.
         (and (consp first-form)      ; It is like a list of names,

@@ -297,5 +297,4 @@
                t))))
 
 ;;; TODO
-;;; - Use special and type to test variable-definition-operator-p
 ;;; - Useftype, inline, notinline to test function-definition-operator-p
