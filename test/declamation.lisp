@@ -274,6 +274,87 @@
        (macroexpand '(cl-annot-revisit:inline #1=(defun hoge ())))
        '(progn (declaim (inline hoge)) #1#))))
 
+;;; `ftype'
+
+(test test-decl-ftype-ambiguous-multiforms
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:ftype #1=(function (t) t) (list a b c)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (defun foo (x)
+           (declare (ftype #1# list a b c)))
+         (locally (declare (ftype #1# list a b c))
+           "Hello, World!")
+         (locally (declare (ftype #1# list a b c))
+           (defvar *foo* 9999)))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:ftype #2=(function (t) null) (list 1 2 3)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (list 1 2 3)
+         (progn (declaim (ftype #2# foo))
+                (defun foo (x)))
+         "Hello, World!"
+         (defvar *foo* 9999))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:ftype #3=(function (t) null) (define-method-combination hoge)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (define-method-combination hoge)
+         (progn (declaim (ftype #3# foo))
+                (defun foo (x)))
+         "Hello, World!"
+         (defvar *foo* 9999))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:ftype (function) (setf baz)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (defun foo (x)
+           (declare #4=(ftype (function) (setf baz))))
+         (locally (declare #4#)
+           "Hello, World!")
+         (locally (declare #4#)
+           (defvar *foo* 9999))))))
+
+;;; combination
+
+(test test-decl-type-and-ftype
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:type integer
+         (cl-annot-revisit:ftype function
+             "Hello, World!"
+           (defun foo (x))
+           (defvar *foo* 9999)))
+       '(progn
+         "Hello, World!"
+         (progn (declaim (ftype function foo))
+                (defun foo (x)))
+         (progn (declaim (type integer *foo*))
+                (defvar *foo* 9999)))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:type integer (x)
+         (cl-annot-revisit:ftype function (func)
+             "Hello, World!"
+           (defun foo (x) -1)
+           (defvar *foo* 9999)))
+       '(progn
+         (locally #1=(declare (type integer x))
+                  #2=(declare (ftype function func))
+           "Hello, World!")
+         (defun foo (x)
+           #1# #2#
+           -1)
+         (locally #1# #2#
+           (defvar *foo* 9999))))))
+
 ;;; `declaration'
 
 (test test-decl-declararion

@@ -115,7 +115,15 @@ returns the name to be defined. If not, returns nil."
            ;; calling `macroexpand' destroys forms especially if they
            ;; use `macrolet' for hooking.
            ;; 
-           ;; ((macroexpand-1 form env)      ; try `macroexpand-1'.
-           ;;  (values `(,@at-macro-form ,expansion) t))
+           ;; TODO: review here..
+           ;; `macroexpand' our macro.
+           ;; 
+           ((and (consp form)
+                 (or (equal (symbol-package (first form))
+                            (find-package :cl-annot-revisit))
+                     (equal (symbol-package (first form))
+                            (find-package :cl-annot-revisit/at-macro)))
+                 (macroexpand-1 form env))      ; try `macroexpand-1'.
+            (values `(,@at-macro-form ,expansion) t))
            (t                       ; nothing to be expanded.
             (values form nil))))))))
