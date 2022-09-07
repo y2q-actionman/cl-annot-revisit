@@ -274,6 +274,199 @@
        (macroexpand '(cl-annot-revisit:inline #1=(defun hoge ())))
        '(progn (declaim (inline hoge)) #1#))))
 
+(test test-decl-inline-no-body          ; will makes a `declaim' form.
+  (is (starts-with-subseq
+       '(progn (declaim (inline hoge fuga piyo)))
+       (macroexpand
+        '(cl-annot-revisit:inline (hoge fuga piyo)))
+       :test 'equal))
+  (is (starts-with-subseq
+       '(progn (declaim (inline)))
+       (macroexpand
+        '(cl-annot-revisit:inline ()))
+       :test 'equal))
+  (is (starts-with-subseq
+       '(progn (declaim (inline)))
+       (macroexpand
+        '(cl-annot-revisit:inline))
+       :test 'equal)))
+
+(test test-decl-inline-with-one-var    ; will add a declaration.
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline hoge
+         (+ 1 2 3))
+       '(locally
+         (declare (inline hoge))
+         (+ 1 2 3))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline hoge
+         (defun hoge (x)
+           9999))
+       '(defun hoge (x)
+         (declare (inline hoge))
+         9999)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline hoge
+         #1=(defvar *hoge* 12345))
+       '(locally
+         (declare (inline hoge))
+         #1#))))
+
+(test test-decl-inline-with-vars       ; will add a declaration.
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline (hoge fuga piyo)
+         (+ 1 2 3))
+       '(locally
+         (declare (inline hoge fuga piyo))
+         (+ 1 2 3))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline (hoge)
+         (defun hoge (x)
+           9999))
+       '(defun hoge (x)
+         (declare (inline hoge))
+         9999)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline (hoge)
+         #1=(defvar *hoge* 12345))
+       '(locally
+         (declare (inline hoge))
+         #1#))))
+
+(test test-decl-inline-with-nil        ; will add an empty declaration.
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline ()
+         (+ 1 2 3))
+       '(locally
+         (declare (inline))
+         (+ 1 2 3))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline ()
+         (defun hoge (x)
+           9999))
+       '(defun hoge (x)
+         (declare (inline))
+         9999)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline ()
+         #1=(defvar *hoge* 12345))
+       '(locally
+         (declare (inline))
+         #1#))))
+
+(test test-decl-inline-without-vars ; will add a `declaim' form if some variable is defined.
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline 
+         #1=(+ 1 2 3))
+       '#1#))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline
+         #2=(defun hoge (x)
+              9999))
+       '(progn
+         (declaim (inline hoge))
+         #2#)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline
+         #3=(defvar *hoge* 12345))
+       '#3#)))
+
+(test test-decl-inline-multiforms
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:inline hoge
+         (defun foo (x))
+         (format t "Hello, World!")
+         (defvar *foo* 9999)
+         (defmethod bar ()
+           "docstring"
+           ""))
+       '#1=(progn
+             (defun foo (x)
+               (declare (inline hoge)))
+             (locally
+                 (declare (inline hoge))
+               (format t "Hello, World!"))
+             (locally
+                 (declare (inline hoge))
+               (defvar *foo* 9999))
+             (defmethod bar ()
+               (declare (inline hoge))
+               "docstring"
+               "")
+             )))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:inline (hoge)
+         (defun foo (x))
+         (format t "Hello, World!")
+         (defvar *foo* 9999)
+         (defmethod bar ()
+           "docstring"
+           ""))
+       '#1#))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:inline
+         (defun foo (x))
+         (format t "Hello, World!")
+         (defvar *foo* 9999)
+         (defmethod bar ()
+           "docstring"
+           ""))
+       '(progn
+         (progn (declaim (inline foo))
+                (defun foo (x)))
+         (format t "Hello, World!")
+         (defvar *foo* 9999)
+         (progn (declaim (inline bar))
+                (defmethod bar ()
+                  "docstring"
+                  ""))))))
+
+(test test-decl-inline-ambiguous-multiforms
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:inline (list a b c)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (defun foo (x) (declare (inline list a b c)))
+         (locally (declare (inline list a b c))
+            "Hello, World!")
+         (locally (declare (inline list a b c))
+           (defvar *foo* 9999)))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:inline (list 1 2 3)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (list 1 2 3)
+         (progn (declaim (inline foo))
+                (defun foo (x)))
+         "Hello, World!"
+         (defvar *foo* 9999))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:inline (define-method-combination hoge)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (define-method-combination hoge)
+         (progn (declaim (inline foo))
+                (defun foo (x)))
+         "Hello, World!"
+         (defvar *foo* 9999))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:inline (progn lambda-list-keywords)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (progn lambda-list-keywords)
+         (progn (declaim (inline foo))
+                (defun foo (x)))
+         "Hello, World!"
+         (defvar *foo* 9999)))))
+
 ;;; `ftype'
 
 (test test-decl-ftype-ambiguous-multiforms
