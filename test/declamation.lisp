@@ -467,6 +467,54 @@
          "Hello, World!"
          (defvar *foo* 9999)))))
 
+;;; `notinline'
+
+(test test-decl-notinline-ambiguous-multiforms
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:notinline (list a b c)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (defun foo (x) (declare (notinline list a b c)))
+         (locally (declare (notinline list a b c))
+            "Hello, World!")
+         (locally (declare (notinline list a b c))
+           (defvar *foo* 9999)))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:notinline (list 1 2 3)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (list 1 2 3)
+         (progn (declaim (notinline foo))
+                (defun foo (x)))
+         "Hello, World!"
+         (defvar *foo* 9999))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:notinline (define-method-combination hoge)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (define-method-combination hoge)
+         (progn (declaim (notinline foo))
+                (defun foo (x)))
+         "Hello, World!"
+         (defvar *foo* 9999))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:notinline (progn lambda-list-keywords)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (progn lambda-list-keywords)
+         (progn (declaim (notinline foo))
+                (defun foo (x)))
+         "Hello, World!"
+         (defvar *foo* 9999)))))
+
 ;;; `ftype'
 
 (test test-decl-ftype-ambiguous-multiforms
