@@ -312,6 +312,46 @@
          (declare (inline hoge))
          #1#))))
 
+(test test-function-definitions-operator-p
+  ;; applicable
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline hoge
+         (defun hoge (x) 100))
+       '(defun hoge (x)
+         (declare (inline hoge))
+         100)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline hoge
+         (defmethod hoge (x) 200))
+       '(defmethod hoge (x)
+         (declare (inline hoge))
+         200)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline hoge
+         (define-compiler-macro hoge (x)
+           9999))
+       '(define-compiler-macro hoge (x)
+         (declare (inline hoge))
+         9999)))
+  ;; not applicable
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline hoge
+         (defgeneric hoge (x))) ; `defgeneric' accepts only `optimize'.
+       '(locally (declare (inline hoge))
+         (defgeneric hoge (x)))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline hoge
+         (define-method-combination hoge))
+       '(locally (declare (inline hoge))
+         (define-method-combination hoge))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline hoge
+         (defsetf hoge (x y) (store)
+           9999))
+       '(defsetf hoge (x y) (store)
+         (declare (inline hoge))
+         9999))))
+
 (test test-decl-inline-with-vars       ; will add a declaration.
   (is (equal-after-macroexpand
        '(cl-annot-revisit:inline (hoge fuga piyo)
@@ -617,6 +657,3 @@
                ;; The result of `declaim' is implementation-dependent. This code add such a value.
                #.(@declaration hoge)
                t))))
-
-;;; TODO
-;;; - Useftype, inline, notinline to test function-definition-operator-p
