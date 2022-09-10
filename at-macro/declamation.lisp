@@ -22,7 +22,7 @@
       `(progn (declaim (,@decl-specifier ,name))
               ,form)))
 
-  (defgeneric expand-add-declamation-using-head (operator decl-specifier form)
+  (defgeneric expand-incompleted-declamation-using-head (operator decl-specifier form)
     (:documentation "Called by `expand-add-declamation' to expand FORM.")
     (:method (operator decl-specifier form)
       (let ((declaration-name (first decl-specifier)))
@@ -33,15 +33,15 @@
   ;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
   ;;   (cl-annot-revisit:inline (func-a) (declaim)) ; => (declaim (inline func-a))
   
-  (defun expand-add-declamation (decl-specifier form)
+  (defun expand-incompleted-declamation (decl-specifier form)
     (macroexpand-convention (form)
       (if (consp form)
-          (expand-add-declamation-using-head (first form) decl-specifier form)
+          (expand-incompleted-declamation-using-head (first form) decl-specifier form)
           form))))
 
-(defmacro add-declamation (decl-specifier &body body &environment env)
-  (apply-at-macro `(add-declamation ,decl-specifier)
-                  (alexandria:curry #'expand-add-declamation decl-specifier)
+(defmacro apply-incompleted-declamation (decl-specifier-head &body body &environment env)
+  (apply-at-macro `(apply-incompleted-declamation ,decl-specifier-head)
+                  (alexandria:curry #'expand-incompleted-declamation decl-specifier-head)
                   body env))
 
 ;;; Declaration and proclamation -- `type', `ftype', `inline', `notinline', `optimize', `special'
@@ -73,44 +73,53 @@ To distinguish a macro form from a list of names, I check the form is a macro-fo
              (every name-p-function first-form)
              (not (special-operator-p (first first-form)))
              (not (macro-function (first first-form) env)))))
-  
-  (defun expand-at-declamation (decl-head names-or-form body name-p-function env)
-    (if (declaration-argument-like-p names-or-form name-p-function env)
-        ;; Treats as declaration.
-        ;; Like '(cl-annot-revisit:notinline (x y z) ...)'
-        (let* ((names (ensure-list-with names-or-form name-p-function))
-               (decl-specifier `(,@decl-head ,@names)))
-          (if body
-              `(add-declaration ,decl-specifier ,@body) ; Use it as a local declaration.
-              ;; This weird expansion is for use at top-level and in '#.' also.
-              `(progn (declaim ,decl-specifier)
-                      '(declare ,decl-specifier))))
-        ;; Treats as declamation.
-        ;; Like '(cl-annot-revisit:inline (defun func nil) ...)'
-        `(add-declamation ,decl-head
-           ,names-or-form ,@body))))
+
+  (defun complete-declaration-specifier (declaration-head first-form name-p-function env)
+    (if (declaration-argument-like-p first-form name-p-function env)
+        (let ((names (ensure-list-with first-form name-p-function)))
+          (values `(,@declaration-head ,@names) t)) ; completed
+        (values declaration-head nil)))             ; not completed
+
+  (defun expand-to-declaim-form (declaration-specifier)
+    ;; This weird expansion is for use at top-level and in '#.' also.
+    `(progn (declaim ,declaration-specifier)
+            '(declare ,declaration-specifier)))
+
+  (defun %expand-ambiguous-declamation (decl-head names-or-form body name-p-function env)
+    (multiple-value-bind (decl-specifier completed?)
+        (complete-declaration-specifier decl-head names-or-form name-p-function env)
+      (cond
+        ((not completed?)
+         ;; Like '(cl-annot-revisit:inline (defun func nil) ...)'
+         `(apply-incompleted-declamation ,decl-head
+            ,names-or-form ,@body))
+        ((not body)
+         (expand-to-declaim-form decl-specifier))
+        (t
+         ;; Like '(cl-annot-revisit:notinline (x y z) ...)'
+         `(add-declaration ,decl-specifier ,@body))))))
 
 (defmacro cl-annot-revisit:special (&optional vars-or-form &body body &environment env)
   "Adds `special' declaration into BODY.
 If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), to embed it as a declaration using '#.'"
-  (expand-at-declamation '(cl:special) vars-or-form body
-                         #'symbolp env))
+  (%expand-ambiguous-declamation '(cl:special) vars-or-form body
+                                 #'symbolp env))
 
 (defmacro cl-annot-revisit:type (typespec &optional vars-or-form &body body &environment env)
-  (expand-at-declamation `(cl:type ,typespec) vars-or-form body
-                         #'symbolp env))
+  (%expand-ambiguous-declamation `(cl:type ,typespec) vars-or-form body
+                                 #'symbolp env))
 
 (defmacro cl-annot-revisit:ftype (typespec &optional function-names-or-form &body body &environment env)
-  (expand-at-declamation `(cl:ftype ,typespec) function-names-or-form body
-                         #'function-name-p env))
+  (%expand-ambiguous-declamation `(cl:ftype ,typespec) function-names-or-form body
+                                 #'function-name-p env))
 
 (defmacro cl-annot-revisit:inline (&optional function-names-or-form &body body &environment env)
-  (expand-at-declamation '(cl:inline) function-names-or-form body
-                         #'function-name-p env))
+  (%expand-ambiguous-declamation '(cl:inline) function-names-or-form body
+                                 #'function-name-p env))
 
 (defmacro cl-annot-revisit:notinline (&optional function-names-or-form &body body &environment env)
-  (expand-at-declamation '(cl:notinline) function-names-or-form body
-                         #'function-name-p env))
+  (%expand-ambiguous-declamation '(cl:notinline) function-names-or-form body
+                                 #'function-name-p env))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun optimize-quality-p (x)
@@ -124,9 +133,9 @@ If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), to emb
 (defmacro cl-annot-revisit:optimize (qualities &body body &environment env)
   "Adds `optimize' declaration into BODY.
 If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), to embed it as a declaration using '#.'"
-  (expand-at-declamation `(cl:optimize ,@(ensure-list-with qualities #'optimize-quality-p))
-                         nil body
-                         (constantly nil) env))
+  (%expand-ambiguous-declamation `(cl:optimize ,@(ensure-list-with qualities #'optimize-quality-p))
+                                 nil body
+                                 (constantly nil) env))
 
 
 ;;; Proclamation only -- `declaration'.

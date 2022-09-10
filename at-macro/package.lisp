@@ -26,8 +26,9 @@
    #:expand-add-declaration-using-head
    #:expand-add-declaration
    ;; declamation.lisp
-   #:expand-add-declamation-using-head
-   #:expand-add-declamation
+   #:declaration-target-operator-p
+   #:expand-incompleted-declamation-using-head
+   #:expand-incompleted-declamation
    ;; documentation.lisp
    #:operator-doc-type
    #:expand-documentation-using-head
