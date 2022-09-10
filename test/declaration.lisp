@@ -160,11 +160,11 @@
          (define-method-combination or :identity-with-one-argument t)))))
   (is (equal-after-macroexpand
        '(cl-annot-revisit:ignore (foo)
-         (define-method-combination xxx (&optional (order :most-specific-first))
+         (define-method-combination xyz (&optional (order :most-specific-first))
           ((around (:around))
            (primary (and) :order order :required t))
           etc etc etc))
-       '(define-method-combination xxx (&optional (order :most-specific-first))
+       '(define-method-combination xyz (&optional (order :most-specific-first))
           ((around (:around))
            (primary (and) :order order :required t))
          (declare (ignore foo))

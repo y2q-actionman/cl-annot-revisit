@@ -15,12 +15,19 @@
         finally
            (return `(flet ,clauses ,@body))))
 
-(defun equal-ignoring-gensym (x y)
-  (flet ((test-fn (x y)
-           (or (equal x y)
-               (and (symbolp x) (null (symbol-package x))
-                    (symbolp y) (null (symbol-package y))))))
-    (tree-equal x y :test #'test-fn)))
+(defun equal-ignoring-gensym-test-fn (lhs rhs)
+  (or (equal lhs rhs)
+      (and (symbolp lhs) (null (symbol-package lhs))
+           (symbolp rhs) (null (symbol-package rhs)))
+      ;; For SBCL backquote internals
+      ;;       2: (CL-ANNOT-REVISIT-TEST::EQUAL-IGNORING-GENSYM-TEST-FN #S(SB-IMPL::COMMA :EXPR SB-PCL::.METHOD. :KIND 0) #S(SB-IMPL::COMMA :EXPR SB-PCL::.METHOD. :KIND 0))
+      ;; 2: EQUAL-IGNORING-GENSYM-TEST-FN returned NIL
+      #+sbcl
+      (and (typep lhs 'sb-impl::comma)
+           (typep rhs 'sb-impl::comma))))
+
+(defun equal-ignoring-gensym (lhs rhs)
+  (tree-equal lhs rhs :test #'equal-ignoring-gensym-test-fn))
 
 (defun equal-after-macroexpand (form1 form2)
   (equal-ignoring-gensym (macroexpand form1)
@@ -56,4 +63,4 @@
     #+allegro
     (equal-ignoring-locally expansion1 expansion2)
     #-(or allegro)
-    (equal expansion1 expansion2)))
+    (equal-ignoring-gensym expansion1 expansion2)))

@@ -4,11 +4,11 @@
 
 (test test-decl-special-inline
   (is (equal
-       '(let ((x 100)) #.(cl-annot-revisit:special x) 99)
-       '(let ((x 100)) (declare (special x)) 99)))
+       '(let ((x 100)) #.(cl-annot-revisit:special *x*) 99)
+       '(let ((x 100)) (declare (special *x*)) 99)))
   (is (equal
-       '(let ((x 1)) #.(cl-annot-revisit:special (x x x)) 0)
-       '(let ((x 1)) (declare (special x x x)) 0)))
+       '(let ((x 1)) #.(cl-annot-revisit:special (*x* *x* *x*)) 0)
+       '(let ((x 1)) (declare (special *x* *x* *x*)) 0)))
   (is (equal
        '(let ((x 1)) #.(cl-annot-revisit:special ()) 0)
        '(let ((x 1)) (declare (special)) 0))))
@@ -237,11 +237,11 @@
 
 (test test-decl-type-inline
   (is (equal
-       '(let ((x 100)) #.(cl-annot-revisit:type integer x) 99)
-       '(let ((x 100)) (declare (type integer x)) 99)))
+       '(let ((x 100)) #.(cl-annot-revisit:type integer xxxxx) 99)
+       '(let ((x 100)) (declare (type integer xxxxx)) 99)))
   (is (equal
-       '(let ((x 1)) #.(cl-annot-revisit:type (integer -1 +1) (x x x)) 0)
-       '(let ((x 1)) (declare (type (integer -1 +1) x x x)) 0)))
+       '(let ((x 1)) #.(cl-annot-revisit:type (integer -1 +1) (xxxxx xxxxx xxxxx)) 0)
+       '(let ((x 1)) (declare (type (integer -1 +1) xxxxx xxxxx xxxxx)) 0)))
   (is (equal
        '(let ((x 1)) #.(cl-annot-revisit:type integer ()) 0)
        '(let ((x 1)) (declare (type integer)) 0))))
