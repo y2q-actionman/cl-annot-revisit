@@ -633,6 +633,128 @@
          (locally (declare #4#)
            (defvar *foo* 9999))))))
 
+;;; `optimize'
+
+(test test-decl-optimize-inline
+  (is (equal
+       '(let ((x 100)) #.(cl-annot-revisit:optimize (speed 3)) 99)
+       '(let ((x 100)) (declare (optimize (speed 3))) 99)))
+  (is (equal
+       '(let ((x 1)) #.(cl-annot-revisit:optimize speed) 0)
+       '(let ((x 1)) (declare (optimize speed)) 0)))
+  (is (equal
+       '(let ((x 1)) #.(cl-annot-revisit:optimize) 0)
+       '(let ((x 1)) (declare (optimize)) 0))))
+
+(test test-decl-optimize-no-body         ; will makes a `declaim' form.
+  #+FIXME
+  (is (starts-with-subseq
+       '(progn (declaim (optimize speed debug)))
+       (macroexpand
+        '(cl-annot-revisit:optimize (speed debug)))
+       :test 'equal))
+  (is (starts-with-subseq
+       '(progn (declaim (optimize)))
+       (macroexpand
+        '(cl-annot-revisit:optimize ()))
+       :test 'equal))
+  (is (starts-with-subseq
+       '(progn (declaim (optimize)))
+       (macroexpand
+        '(cl-annot-revisit:optimize))
+       :test 'equal)))
+
+(test test-decl-optimize-function-definitions-operator-p
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:optimize (speed 0) 
+         (defun hoge (x) 100))
+       '(defun hoge (x)
+         (declare (optimize (speed 0)))
+         100)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:optimize ((speed 3) (safety 0))
+         (defmethod hoge (x) 200))
+       '(defmethod hoge (x)
+         (declare (optimize (speed 3) (safety 0)))
+         200)))
+  #+FIXME
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:optimize (speed debug)
+         (define-compiler-macro hoge (x)
+          9999))
+       '(define-compiler-macro hoge (x)
+         (declare (optimize speed debug))
+         9999)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:optimize ((speed 1))
+         (defsetf hoge (x y) (store)
+           9999))
+       '(defsetf hoge (x y) (store)
+         (declare (optimize (speed 1)))
+         9999)))
+  ;; applicable only by `optimize'
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:optimize compilation-speed
+         (defgeneric hoge (x)))
+       '(defgeneric hoge (x)
+         (declare (optimize compilation-speed)))))
+  ;; not applicable
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:optimize debug
+         (define-method-combination hoge))
+       '(locally (declare (optimize debug))
+         (define-method-combination hoge)))))
+
+(test test-decl-optimize-ambiguous-multiforms
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:optimize (list a b c)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (defun foo (x) (declare (optimize (list a b c))))
+         (locally (declare (optimize (list a b c)))
+           "Hello, World!")
+         (locally (declare (optimize (list a b c)))
+           (defvar *foo* 9999)))))
+  ;; These tests are ambiguous.
+  ;; They make unsyntactic declarations, but
+  ;; `cl-annot-revisit:optimize' accept them because I think it should
+  ;; accept implementation-dependent optimization switches.
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:optimize (list 1 2 3)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (defun foo (x) (declare (optimize (list 1 2 3))))
+         (locally (declare (optimize (list 1 2 3)))
+           "Hello, World!")
+         (locally (declare (optimize (list 1 2 3)))
+           (defvar *foo* 9999)))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:optimize (define-method-combination hoge)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (defun foo (x) (declare (optimize (define-method-combination hoge))))
+         (locally (declare (optimize (define-method-combination hoge)))
+           "Hello, World!")
+         (locally (declare (optimize (define-method-combination hoge)))
+           (defvar *foo* 9999)))))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:optimize (progn lambda-list-keywords)
+         (defun foo (x))
+         "Hello, World!"
+         (defvar *foo* 9999))
+       '(progn
+         (defun foo (x) (declare (optimize (progn lambda-list-keywords))))
+         (locally (declare (optimize (progn lambda-list-keywords)))
+           "Hello, World!")
+         (locally (declare (optimize (progn lambda-list-keywords)))
+           (defvar *foo* 9999))))))
+
 ;;; combination
 
 (test test-decl-type-and-ftype

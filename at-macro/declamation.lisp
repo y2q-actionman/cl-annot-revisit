@@ -130,7 +130,7 @@ If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), to emb
                  (every #'atom (rest x)))) ; seeing '(speed 3)' etc.
       (otherwise nil))))
 
-(defmacro cl-annot-revisit:optimize (qualities &body body &environment env)
+(defmacro cl-annot-revisit:optimize (&optional qualities &body body &environment env)
   "Adds `optimize' declaration into BODY.
 If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), to embed it as a declaration using '#.'"
   (%expand-ambiguous-declamation `(cl:optimize ,@(ensure-list-with qualities #'optimize-quality-p))

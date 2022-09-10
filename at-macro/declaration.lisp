@@ -94,7 +94,7 @@ If FORM can be expanded, returns the expansion. If not, returns FORM.")
     (:method ((operator (eql 'defgeneric)) decl-specifier form)
       "For `defgeneric'. Note: This does not add declarations into methods defined in this form."
       (cond
-        ((not (starts-with decl-specifier 'optimize))
+        ((not (starts-with 'optimize decl-specifier))
          (when *at-macro-verbose*
            (warn 'at-macro-style-warning
                  :message (format nil "`defgeneric' accepts only `optimize' declarations.")
