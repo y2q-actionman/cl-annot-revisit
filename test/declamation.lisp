@@ -30,6 +30,34 @@
         '(cl-annot-revisit:special))
        :test 'equal)))
 
+(test test-decl-special-one-body
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:special (x y z)
+         #1=(defvar *hoge* 12345))
+       '(locally (declare (special x y z))
+         #1#)))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:special ()
+         #2=(defvar *hoge* 12345))
+       '(locally (declare (special))
+         #2#)))
+  (is (equal-after-macroexpand-all      ; ambiguous case.
+       '(cl-annot-revisit:special
+         #3=(defvar *hoge* 12345))
+       '(progn
+         (declaim (special *hoge*))
+         #3#)))
+  (is (or (equal-after-macroexpand-all
+           '#4=(cl-annot-revisit:special
+                   (defun foo (x) 12345))
+           '(defun foo (x)
+             (declare (special))        ; may or may not exist.
+             12345))
+          (equal-after-macroexpand-all
+           '#4#
+           '(defun foo (x)
+             12345)))))
+
 (test test-decl-special-with-one-var    ; will add a declaration.
   (is (equal-after-macroexpand
        '(cl-annot-revisit:special x
