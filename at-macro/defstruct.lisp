@@ -157,10 +157,13 @@
     "Special handling for `defstruct', which define a new type only when it doesn't have :type."
     (multiple-value-bind (name options)
         (parse-defstruct-form form)
-      `(let ((name ,name))
-         (setf (documentation name 'structure) ,docstring)
-         ,@(if (gethash :type options)
-               `((documentation name 'type) ,docstring))))))
+      (declare (ignore name))
+      (with-gensyms (obj)
+        `(let ((,obj ,form))
+           (setf (documentation ,obj 'structure) ,docstring
+                 ,@(unless (gethash :type options)
+                     `((documentation ,obj 'type) ,docstring)))
+           ,obj)))))
 
 ;;; `export-accessors'
 (eval-when (:compile-toplevel :load-toplevel :execute)

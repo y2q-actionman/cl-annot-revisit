@@ -15,7 +15,28 @@
        '(locally (declare (optimize speed))
          #3#))))
 
-;;; TODO: documentation
+(test test-defstruct-documentation
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:documentation "doc"
+         #1=(defstruct struct slot1 slot2))
+       '(let ((#:obj #1#))
+         (setf (documentation #:obj 'structure) "doc"
+               (documentation #:obj 'type) "doc")
+         #:obj)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:documentation "doc"
+         #2=(defstruct (struct) slot1 slot2))
+       '(let ((#:obj #2#))
+         (setf (documentation #:obj 'structure) "doc"
+               (documentation #:obj 'type) "doc")
+         #:obj)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:documentation "doc"
+         #3=(defstruct (struct (:type list)) slot1 slot2))
+       '(let ((#:obj #3#))
+         (setf (documentation #:obj 'structure) "doc")
+         #:obj))))
+
 ;;; TODO: export
 
 (test test-defstruct-metaclass
