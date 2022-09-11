@@ -64,7 +64,8 @@
       (declare (ignore operator))
       form)
     (:method ((operator (eql 'defclass)) form)
-      (when (assoc :metaclass (pick-defclass-options form))
+      (when (and *at-macro-verbose*
+                 (assoc :metaclass (pick-defclass-options form)))
         ;; TODO: FIXME:
         ;; If this class was extended by metaclass, it may has more
         ;; keywords making an accessor. The correct way to seeing it is
@@ -72,9 +73,8 @@
         ;; this macro works before `defclass' works!
         ;; My only idea is leaving `*slot-accessor-option-names*' for
         ;; this purpose...
-        (when *at-macro-verbose*
-          (warn 'at-macro-style-warning :form form
-                :message "Additional slot options added by metaclass is ignored. Please add them into `*slot-accessor-option-names*'.")))
+        (warn 'at-macro-style-warning :form form
+              :message "Additional slot options added by metaclass is ignored. Please add them into `*slot-accessor-option-names*'."))
       (loop with slot-specifiers = (pick-defclass-slots form)
          for (nil . slot-options) in slot-specifiers
          nconc (loop for (option-name value) on slot-options by #'cddr
