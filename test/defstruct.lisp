@@ -159,4 +159,88 @@
                    (export '(make!)))
            #9#)))))
 
-;;; TODO: export-structure
+(test test-export-structure
+  (let ((*package* (find-package :cl-annot-revisit-test))) ; See `test-export-accessors-defstruct'
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-structure
+           #1=(defstruct foo slot1 slot2))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(foo make-foo copy-foo foo-p foo-slot1 foo-slot2)))
+           #1#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-structure
+           #2=(defstruct (foo (:constructor nil) :copier) slot))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(foo copy-foo foo-p foo-slot)))
+           #2#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-structure
+           #3=(defstruct (foo (:constructor nil) (:copier nil)) slot))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(foo foo-p foo-slot)))
+           #3#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-structure
+           #4=(defstruct (foo (:constructor) (:copier) (:predicate nil)) slot))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(foo make-foo copy-foo foo-slot)))
+           #4#)))
+    ;; CLHS examples
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-structure
+           #5=(defstruct (door (:conc-name dr-)) knob-color width material))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(door make-door copy-door door-p
+                             dr-knob-color dr-width dr-material)))
+           #5#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-structure
+           #6=(defstruct (binop (:type list) :named (:initial-offset 2))
+                (operator '? :type symbol)
+                operand-1
+                operand-2))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(binop make-binop copy-binop binop-p
+                             binop-operator binop-operand-1 binop-operand-2)))
+           #6#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-structure
+           #7=(defstruct (binop (:type list))
+                (operator '? :type symbol)
+                operand-1
+                operand-2))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(binop make-binop copy-binop
+                             binop-operator binop-operand-1 binop-operand-2)))
+           #7#)))
+    ;; some combinations
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-structure
+           #8=(defstruct (foo (:conc-name conc-)
+                              (:constructor) (:constructor make!!)
+                              (:copier copier!)
+                              (:predicate predicate!))
+                slot1 slot2))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(foo make-foo make!! copier! predicate! conc-slot1 conc-slot2)))
+           #8#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-structure
+           #9=(defstruct (foo (:conc-name nil)
+                              (:constructor nil)
+                              (:copier nil)
+                              (:predicate nil))
+                slot1 slot2))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(foo slot1 slot2)))
+           #9#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-structure
+           #10=(defstruct (foo (:conc-name)
+                              (:constructor)
+                              (:copier)
+                              (:predicate))
+                slot1 slot2))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(foo make-foo copy-foo foo-p slot1 slot2)))
+           #10#)))))

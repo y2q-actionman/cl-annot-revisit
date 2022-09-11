@@ -52,6 +52,7 @@ values and see N-th value as a condition."
           ,@clause1-body))
       (t
        `(multiple-value-bind (,@vars) ,clause1-cond
+          (declare (ignorable ,@vars))
 	  (if ,(nth n vars)
               ,(if clause1-body
                    `(progn ,@clause1-body)

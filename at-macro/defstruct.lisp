@@ -77,18 +77,21 @@
         (nreversef (gethash :constructor options-table))
         (ensure-gethash :copier options-table default-copier)
         (when (gethash :initial-offset options-table)
-          (assert (not (gethash :type options-table)) ()
+          (assert (gethash :type options-table) ()
                   'at-macro-error :form name-and-options
                   :message ":initial-offset appered but no :type supplied"))
         ;; about `:predicate'
         (let ((named? (or (gethash :named options-table)
-                          (not (gethash :type options-table)))))
-          (cond ((gethash :predicate options-table)
-                 (assert named? ()
-                         'at-macro-error :form name-and-options
-                         :message ":predicate specified for struct is not named."))
-                ((not named?))          ; nop
-                (t (set-it :predicate default-predicate))))
+                          (not (gethash :type options-table))))
+              (predicate-option-exists?
+                (nth-value 1 (gethash :predicate options-table))))
+          (cond
+            (predicate-option-exists?
+             (assert named? ()
+                     'at-macro-error :form name-and-options
+                                     :message ":predicate specified for struct is not named."))
+            ((not named?))              ; nop
+            (t (set-it :predicate default-predicate))))
         (assert (not (and (gethash :print-function options-table)
                           (gethash :print-object options-table)))
                 () 'at-macro-error :form name-and-options
