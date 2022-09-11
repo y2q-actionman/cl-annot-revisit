@@ -255,6 +255,23 @@
            (declare (ignore x y z))
            "aaa")))))
 
+(test test-decl-ignore-lambda
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore (x y z)
+         (lambda (x y z) (+ x y z)))
+       '(lambda (x y z)
+         (declare (ignore x y z))
+         (+ x y z))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore _
+         (lambda (&optional _)
+           "docstring"
+           (declare (dynamic-extent))))
+       '(lambda (&optional _)
+         "docstring"
+         (declare (ignore _))
+         (declare (dynamic-extent))))))
+
 ;;; `ignorable'
 
 (test test-decl-ignorable-inline

@@ -51,9 +51,9 @@
   (defun insert-declaration-to-body (form-body decl-specifier &key documentation whole)
     (multiple-value-bind (body decls doc)
         (parse-body form-body :documentation documentation :whole whole)
-      `((declare ,decl-specifier)
+      `(,@(if doc `(,doc)) 
+        (declare ,decl-specifier)
         ,@decls
-        ,@(if doc `(,doc)) 
         ,@body)))
 
   (defun insert-declaration-to-nth-body (body-index form decl-specifier &key documentation)
