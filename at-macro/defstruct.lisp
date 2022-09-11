@@ -141,12 +141,9 @@
         (when (member :predicate kinds) 
           (when-let ((p-name (gethash :predicate options)))
             (pushnew p-name ret)))
-        (when (intersection '(:slot-name :reader) kinds)
+        (when (member :accessor kinds)
           (loop with conc-name = (gethash :conc-name options)
-             for (s-name) in slot-descriptions
-             when (member :slot-name kinds)
-             do (pushnew s-name ret)
-             when (member :reader kinds)
+             for (s-name . nil) in slot-descriptions
              do (pushnew (if conc-name
                              (symbolicate conc-name s-name)
                              s-name)
@@ -173,7 +170,7 @@
 ;;; `export-accessors'
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defmethod expand-export-accessors-using-head ((form-op (eql 'defstruct)) form)
-    (let ((readers (pick-names-of-defstruct-form form '(:reader))))
+    (let ((readers (pick-names-of-defstruct-form form '(:accessor))))
       (add-export readers form))))
 
 ;;; `export-constructors'
@@ -206,7 +203,7 @@
     (:method ((form-op (eql 'defstruct)) form)
       (let ((all (pick-names-of-defstruct-form
                   form
-                  '(:structure-name :constructor :copier :predicate :slot-name :reader))))
+                  '(:structure-name :constructor :copier :predicate :accessor))))
         (add-export all form))))
 
   (defun expand-export-structure (form)
