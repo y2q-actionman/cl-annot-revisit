@@ -108,12 +108,13 @@
                       x y (+ x y)))
                '#1#))))
 
-(defmacro mv-equal (form1 form2)
-  `(equal (multiple-value-list ,form1)
-          (multiple-value-list ,form2)))
-
 (defmacro test-macro-1 (&body body)
   `(+ (progn ,@body) 9999))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmethod cl-annot-revisit/at-macro:allow-internal-form-macroexpand-p ((op (eql 'test-macro-1)))
+    (declare (ignorable op))
+    t))
 
 (with-function-aliasing ((apply-at-macro cl-annot-revisit/at-macro::apply-at-macro)) 
   (test apply-at-macro-zero-form
@@ -148,12 +149,17 @@
                             (test-operator 3))
                           t))))
 
-  #+ ()
   (test apply-at-macro-macroexpand-1
     (is (mv-equal (apply-at-macro '(test-operator) (constantly nil)
                                   '((test-macro-1 () 1 2 3)) nil)
                   (values `(test-operator (+ (progn () 1 2 3) 9999))
                           t))))
+
+  (test apply-at-macro-not-macroexpand-1
+    (is (mv-equal (apply-at-macro '(test-operator) (constantly nil)
+                                  '((test-macro-2 ())) nil)
+                  (values '(test-macro-2 ())
+                          nil))))
 
   (test apply-at-macro-no-expansion
     (is (mv-equal (apply-at-macro '(never-used) (constantly nil)

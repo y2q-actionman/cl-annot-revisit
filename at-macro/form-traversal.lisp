@@ -88,11 +88,23 @@ returns the name to be defined. If not, returns nil."
              ,@(apply-at-macro-to-multiple-forms at-macro-form body))))
         ((otherwise &rest _)
          (declare (ignore _))
-         form)))))
+         form))))
 
+  (defgeneric allow-internal-form-macroexpand-p (operator)
+    (:documentation "Determines whether cl-annot-revisit macros
+ try `macroexpand-1' to forms beginning with OPERATOR.
+ Default is NIL, because applying `macroexpand-1' change internal forms.
+ This may be a problem when `macrolet' was used for for hooking.")
+    (:method (_)
+      (declare (ignore _))
+      nil)
+    (:method ((operator symbol))
+      "In default, returns T only for our macros."
+      (let ((package (symbol-package operator)))
+        (or (equal package (find-package :cl-annot-revisit))
+            (equal package (find-package :cl-annot-revisit/at-macro))))))
 
-;; TODO: rewrite.. ; rename to expand-at-macro-recursively ?
-(eval-when (:compile-toplevel :load-toplevel :execute)
+  ;; TODO: rewrite.. ; rename to expand-at-macro-recursively ?
   (defun apply-at-macro (at-macro-form expander-function forms env)
     (declare (ignorable env))
     (cond
@@ -105,19 +117,9 @@ returns the name to be defined. If not, returns nil."
          (mv-cond-let2 (expansion expanded-p)
            ((funcall expander-function form)) ; try known expansions.
            ((apply-at-macro-to-special-toplevel-form at-macro-form form)) ; try recursive expansion.
-           ;; Temporarily commented out. I occationally thought
-           ;; calling `macroexpand' destroys forms especially if they
-           ;; use `macrolet' for hooking.
-           ;; 
-           ;; TODO: review here..
-           ;; `macroexpand' our macro.
-           ;; 
            ((and (consp form)
-                 (or (equal (symbol-package (first form))
-                            (find-package :cl-annot-revisit))
-                     (equal (symbol-package (first form))
-                            (find-package :cl-annot-revisit/at-macro)))
-                 (macroexpand-1 form env))      ; try `macroexpand-1'.
+                 (allow-internal-form-macroexpand-p (first form))
+                 (macroexpand-1 form env)) ; Try `macroexpand-1' only when it is allowed.
             (values `(,@at-macro-form ,expansion) t))
            (t                       ; nothing to be expanded.
             (values form nil))))))))

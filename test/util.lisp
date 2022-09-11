@@ -5,6 +5,10 @@
       '(:compile-toplevel :load-toplevel :execute)
     :test 'equal))
 
+(defmacro mv-equal (form1 form2)
+  `(equal (multiple-value-list ,form1)
+          (multiple-value-list ,form2)))
+
 (defmacro with-function-aliasing (bindings &body body)
   (loop for (new-name old-name) in bindings
         as args-sym = (gensym "args")
