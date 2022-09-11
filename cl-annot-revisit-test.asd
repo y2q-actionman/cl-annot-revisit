@@ -16,7 +16,7 @@
                (:file "documentation" :depends-on ("util"))
                (:file "export" :depends-on ("util"))
                (:file "class" :depends-on ("util"))
-               ;; TODO: defstruct
+               (:file "defstruct" :depends-on ("util"))
                (:file "slot" :depends-on ("util"))
                (:file "reader" :depends-on ("util"))
                (:file "compat" :depends-on ("util")))

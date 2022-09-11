@@ -19,6 +19,15 @@
   (or (equal lhs rhs)
       (and (symbolp lhs) (null (symbol-package lhs))
            (symbolp rhs) (null (symbol-package rhs)))
+      ;; For Allegro `defstruct' expansion.
+      ;; 0[15]: (CL-ANNOT-REVISIT-TEST::EQUAL-IGNORING-GENSYM-TEST-FN
+      ;;          #<Vector @ #x1000585e6c2> #<Vector @ #x1000585e612>)
+      ;; 0[15]: returned NIL
+      #+allegro
+      (and (arrayp lhs)
+           (arrayp rhs)
+           (eq (aref lhs 0) 'EXCL::DEFSTRUCT-DESCRIPTION)
+           (eq (aref rhs 0) 'EXCL::DEFSTRUCT-DESCRIPTION))
       ;; For SBCL backquote internals
       ;;       2: (CL-ANNOT-REVISIT-TEST::EQUAL-IGNORING-GENSYM-TEST-FN #S(SB-IMPL::COMMA :EXPR SB-PCL::.METHOD. :KIND 0) #S(SB-IMPL::COMMA :EXPR SB-PCL::.METHOD. :KIND 0))
       ;; 2: EQUAL-IGNORING-GENSYM-TEST-FN returned NIL
