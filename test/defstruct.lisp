@@ -57,7 +57,12 @@
          #1=(defstruct struct slot1 slot2))
        '#1#)))
 
-;;; TODO: export-slots
+(test test-defstruct-export-slots
+  ;; EXPORT-SLOTS has no effects.
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:export-slots
+         #1=(defstruct struct slot1 slot2))
+       '#1#)))
 
 (test test-export-accessors-defstruct-1
   ;; XXX: I must let `*package*' because 1am does not preserve current package
