@@ -873,3 +873,52 @@
                ;; The result of `declaim' is implementation-dependent. This code add such a value.
                #.(cl-annot-revisit:declaration hoge)
                t))))
+
+;;; Test `declaim'
+
+(test test-declaim-no-effect
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore (x y z)
+         #1=(declaim))
+       '#1#))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignorable (foo)
+         #2=(declaim (declaration my-declaration)))
+       '#2#))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:dynamic-extent (foo)
+         #3=(declaim (declaration my-declaration1 my-declaration2)))
+       '#3#)))
+
+(test test-declaim-addition
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:special (*x*)
+         (declaim))
+       '(declaim (special *x*))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:type integer (var)
+         (declaim (declaration my-declaration)))
+       '(declaim (type integer var)
+         (declaration my-declaration))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ftype #1=(function (t) (values t t)) (func)
+         (declaim (declaration my-declaration my-declaration2)))
+       '(declaim (ftype #1# func)
+         (declaration my-declaration my-declaration2))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline (foo bar baz)
+         (declaim (declaration my-declaration)
+          (declaration my-declaration2)))
+       '(declaim (inline foo bar baz)
+         (declaration my-declaration)
+         (declaration my-declaration2))))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:notinline
+         (declaim))
+       '(declaim)))
+  (is (equal-after-macroexpand-all
+       '(cl-annot-revisit:optimize (speed safety)
+         (progn (list 1 2 3) (declaim)))
+       '(progn
+         (locally (declare (optimize speed safety)) (list 1 2 3))
+         (declaim (optimize speed safety))))))

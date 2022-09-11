@@ -67,7 +67,8 @@ values and see N-th value as a condition."
 value.  As the second value, returns a boolean whether the result is
 not same with ORIGINAL-FORM or not.
 This macro is designed to follow the `macroexpand' convention."
-  (let ((result (gensym)))
-    `(let ((,result (progn ,@body)))
-       (values ,result
-               (not (eq ,result ,original-form))))))
+  `(multiple-value-bind (result expanded-p)
+       (progn ,@body)
+     (values result
+             (or expanded-p
+                 (not (eq result ,original-form))))))

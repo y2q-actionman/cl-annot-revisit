@@ -30,9 +30,6 @@
             (add-declaim-to-definiton-form form decl-specifier)
             form))))
 
-  ;; Supporting `declaim' and `proclaim' is easy, but are they meaningful?
-  ;;   (cl-annot-revisit:inline (func-a) (declaim)) ; => (declaim (inline func-a))
-  
   (defun expand-incompleted-declamation (decl-specifier form)
     (macroexpand-convention (form)
       (if (consp form)

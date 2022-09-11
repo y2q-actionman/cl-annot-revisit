@@ -23,6 +23,7 @@
    ;; declaration.lisp
    #:operator-body-location
    #:operator-accept-docstring-in-body-p
+   #:valid-proclamation-identifier-p
    #:expand-add-declaration-using-head
    #:expand-add-declaration
    ;; declamation.lisp

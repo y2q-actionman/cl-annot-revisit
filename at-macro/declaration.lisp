@@ -36,6 +36,17 @@
     (:method (operator)
       (member operator +standard-operators-accept-docstring-in-body+)))
 
+  (defgeneric valid-proclamation-identifier-p (declaration-identifier)
+    (:documentation "Returns T if DECLARATION-IDENTIFIER can be used at a proclamation context.")
+    (:method (declaration-identifier)
+      "See http://www.lispworks.com/documentation/HyperSpec/Body/f_procla.htm"
+      (case declaration-identifier
+        ((cl:declaration cl:ftype cl:inline cl:notinline cl:optimize cl:special cl:type)
+         t)
+        ((cl:dynamic-extent cl:ignorable cl:ignore)
+         nil)
+        (otherwise ; There may be a implementation-dependent declarations.
+         t))))
   
   (defun insert-declaration-to-body (form-body decl-specifier &key documentation whole)
     (multiple-value-bind (body decls doc)
@@ -131,7 +142,16 @@ If FORM can be expanded, returns the expansion. If not, returns FORM.")
                  :form form))
          form)
         (t
-         (insert-declaration-to-nth-body 4 form decl-specifier :documentation t)))))
+         (insert-declaration-to-nth-body 4 form decl-specifier :documentation t))))
+    (:method ((operator (eql 'cl:declaim)) decl-specifier form)
+      (cond
+        ((not (valid-proclamation-identifier-p (first decl-specifier)))
+         (values form t))
+        (t
+         (destructuring-bind (op &rest rest) form
+           `(,op ,decl-specifier ,@rest)))))
+    ;; I don't handle `proclaim', which accepts only one declaration-specifier.
+    )
 
   (defun expand-add-declaration (decl-specifier form)
     "Insert DECL-SPECIFIER into FORM.
