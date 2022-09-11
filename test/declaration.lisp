@@ -143,9 +143,14 @@
   (is (equal-after-macroexpand
        '#2#
        '(locally (declare (ignore x))
-         #1#)))
-  ;; TODO: `optimize'
-  )
+         #1#))))
+
+(test test-decl-optimize-defgeneric
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:optimize (speed)
+         (defgeneric foo (&rest args)))
+       '(defgeneric foo (&rest args)
+         (declare (optimize speed))))))
 
 (test test-decl-ignore-define-method-combination
   (signals at-macro-style-warning
