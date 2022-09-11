@@ -20,12 +20,10 @@
        '#1#)))
 
 (test test-export-slots
-  (is (equal-after-macroexpand
+  (is (expanded-export-name-equalp
        '(cl-annot-revisit:export-slots
-         #1=(define-condition hoge () #2=(slot1 slot2)))
-       '(progn
-         (eval-when (:compile-toplevel :load-toplevel :execute) (export '#2#))
-         #1#)))
+         (define-condition hoge () #1=(slot1 slot2)))
+       '#1#))
   (is (equal-after-macroexpand
        '(cl-annot-revisit:export-slots
          #3=(defclass hoge (standard-object) ()))
@@ -37,16 +35,14 @@
        '(progn #4# #5#))))
 
 (test test-export-accessors
-  (is (equal-after-macroexpand
+  (is (expanded-export-name-equalp
        '(cl-annot-revisit:export-accessors
-         #1=(defclass foo ()
-              (slot0
-               (slot1)
-               (slot2 :reader x :reader y :accessor z :writer (setf p))
-               (slot3 :reader foo))))
-       '(progn
-         (eval-when (:compile-toplevel :load-toplevel :execute) (export '(x y z p foo)))
-         #1#)))
+         (defclass foo ()
+           (slot0
+            (slot1)
+            (slot2 :reader x :reader y :accessor z :writer (setf p))
+            (slot3 :reader foo))))
+       '(x y z p foo)))
   (is (equal-after-macroexpand-all
        '(cl-annot-revisit:export-accessors
          #2=(defclass bar () ())
