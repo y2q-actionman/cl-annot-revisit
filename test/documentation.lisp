@@ -13,8 +13,16 @@
 
 (test test-@doc-empty
   (is (equal-after-macroexpand
-       (cl-annot-revisit:documentation "hoge")
+       '(cl-annot-revisit:documentation "hoge")
        nil)))
+
+(test test-@doc-defun
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:documentation "hoge"
+         #1=(defun foo (x)))
+       '(let ((#:obj #1#))
+         (setf (documentation #:obj 'function) "hoge")
+         #:obj))))
 
 (test test-@doc-defclass
   (is (equal-ignoring-gensym
