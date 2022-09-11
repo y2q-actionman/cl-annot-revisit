@@ -69,7 +69,8 @@
          #1=(defclass foo () ()))
        '(cl-annot-revisit:export-slots
          (cl-annot-revisit:export-accessors
-           #1#))))
+           (cl-annot-revisit:export
+             #1#)))))
   (is (equal-after-macroexpand
        '(cl-annot-revisit:export-class
          #2=(defclass foo ()
@@ -77,7 +78,8 @@
                (slot2 :reader slot2-read :writer slot2-write))))
        '(cl-annot-revisit:export-slots
          (cl-annot-revisit:export-accessors
-           #2#))))
+           (cl-annot-revisit:export
+             #2#)))))
   (is (equal-after-macroexpand
        '(cl-annot-revisit:export-class (list 1 2 3))
        '(list 1 2 3)))
