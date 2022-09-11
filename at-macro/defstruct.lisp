@@ -5,23 +5,18 @@
     (let* ((name-and-options (ensure-list name-and-options))
            (name (first name-and-options))
            (options-list (rest name-and-options))
-           (options-table (make-hash-table :test 'eq)))
+           (options-table (make-hash-table :test 'eq))
+           (default-conc-name (symbolicate name #\-))
+           (default-constructor (list (symbolicate "MAKE-" name))) ; arglist is not supplied.
+           (default-copier (symbolicate "COPY-" name))
+           (default-predicate (symbolicate name "-P")))
       (flet ((set-it (key val)
                (setf (gethash key options-table) val))
              (push-it (key val)
                (push val (gethash key options-table)))
              (zero-arg-option-p (name option)
                (or (eq option name)
-                   (equal option `(,name))))
-             ;; They are functions to suppress needless `intern' till used.
-             (default-conc-name ()
-               (symbolicate name #\-))
-             (default-constructor ()
-               (list (symbolicate "MAKE-" name))) ; arglist is not supplied.
-             (default-copier ()
-               (symbolicate "COPY-" name))
-             (default-predicate ()
-               (symbolicate name "-P")))
+                   (equal option `(,name)))))
         ;; parse options
         (dolist (option options-list)
           (cond
@@ -32,12 +27,12 @@
              (set-it :conc-name (second option)))
             ;; :constructor ; It is a list on options-table because it may appear twice or more.
             ((zero-arg-option-p :constructor option)
-             (push-it :constructor (default-constructor)))
+             (push-it :constructor default-constructor))
             ((starts-with :constructor option)
              (push-it :constructor (rest option)))
             ;; :copier
             ((zero-arg-option-p :copier option)
-             (set-it :copier (default-copier))) ; if no argument, uses default
+             (set-it :copier default-copier)) ; if no argument, uses default
             ((starts-with :copier option)
              (set-it :copier (second option)))
             ;; :include
@@ -58,7 +53,7 @@
              (set-it :named t))
             ;; :predicate
             ((zero-arg-option-p :predicate option)
-             (set-it :predicate (default-predicate)))
+             (set-it :predicate default-predicate))
             ((starts-with :predicate option)
              (set-it :predicate (second option)))
             ;; :print-function
@@ -77,9 +72,9 @@
             (t (error 'at-macro-error :form name-and-options
                       :message (format nil "Unknown defstruct option ~A" option)))))
         ;; Checks and set defaults
-        (ensure-gethash :conc-name options-table (default-conc-name))
-        (ensure-gethash :constructor options-table (list (default-constructor)))
-        (ensure-gethash :copier options-table (default-copier))
+        (ensure-gethash :conc-name options-table default-conc-name)
+        (ensure-gethash :constructor options-table (list default-constructor))
+        (ensure-gethash :copier options-table default-copier)
         (when (gethash :initial-offset options-table)
           (assert (not (gethash :type options-table)) ()
                   'at-macro-error :form name-and-options
@@ -92,7 +87,7 @@
                          'at-macro-error :form name-and-options
                          :message ":predicate specified for struct is not named."))
                 ((not named?))          ; nop
-                (t (set-it :predicate (default-predicate)))))
+                (t (set-it :predicate default-predicate))))
         (assert (not (and (gethash :print-function options-table)
                           (gethash :print-object options-table)))
                 () 'at-macro-error :form name-and-options

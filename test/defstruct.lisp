@@ -29,11 +29,13 @@
 (test test-export-accessors-defstruct-1
   ;; XXX: I must let `*package*' because 1am does not preserve current package
   ;; when it runs `macroexpand-1' which will call `intern' in defstruct parser.
-  (is (equal (let ((*package* (find-package :cl-annot-revisit-test)))
-               (macroexpand-1 '(cl-annot-revisit:export-accessors
-                                #1=(defstruct foo slot1 slot2))))
-             '(progn (eval-when #.+at-macro-eval-always+ (export '(foo-slot1 foo-slot2)))
-               #1#))))
+  (let ((*package* (find-package :cl-annot-revisit-test)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-accessors
+           #1=(defstruct foo slot1 slot2))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(foo-slot1 foo-slot2)))
+           #1#)))))
 
 #+ ()                                   ; TODO
 (test test-defstruct-export-class
