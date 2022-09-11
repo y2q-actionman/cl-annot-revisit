@@ -27,4 +27,23 @@
                 (slot2 :initform initform2 :initarg xxx)
                 (slot3 :initarg yyy :initform zzz))))))
 
-;;; TODO: @required
+(defun check-required-slot-expansion (form slot-name slot-initarg)
+  (let* ((expansion (macroexpand form))
+         (unquoted (second expansion)))
+    (destructuring-bind (name &key initarg initform &allow-other-keys)
+        unquoted
+      (and (eql name slot-name)
+           (equal initarg slot-initarg)
+           (starts-with 'cerror initform)))))
+
+(test test-required-slots
+  (is (check-required-slot-expansion 
+       '(cl-annot-revisit:required slot1)
+       'slot1 :slot1))
+  (is (check-required-slot-expansion
+       '(cl-annot-revisit:required
+         (slot2 :initarg :my-initarg))
+       'slot2 :my-initarg))
+  (signals cl-annot-revisit/at-macro:at-required-precondition-error
+    (macroexpand
+     '(cl-annot-revisit:required (slot1 :initform some-form :initarg :slot1)))))

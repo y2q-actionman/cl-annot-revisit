@@ -1,11 +1,5 @@
 (in-package #:cl-annot-revisit/at-macro)
 
-;;; NOTE:
-;;; The macros defined here is derived from cl-annot.  They use a
-;;; keyword having a same name of slot-name as :initarg.  However, I
-;;; think using it always is not a good style. Additionally, I should
-;;; argue whether :initarg is added *ONLY* when no :initarg there.
-
 (defun split-slot-specifier (slot-specifier)
   "Returns the slot name and slot options from SLOT-SPECIFIER."
   (etypecase slot-specifier
@@ -50,7 +44,7 @@
     (unless (get-properties options '(:initarg))
       (setf options (list* :initarg (make-keyword name) options)))
     (when (get-properties options '(:initform))
-      (error 'at-required-precondition-error :slot-name name)) ; FIXME: change to style-warning?
+      (error 'at-required-precondition-error :slot-name name))
     (setf options
           (list* :initform
                  ;; TODO: Utilize `use-value' restart.
