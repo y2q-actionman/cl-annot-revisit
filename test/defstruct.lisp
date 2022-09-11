@@ -104,5 +104,59 @@
          #1=(defstruct struct slot1 slot2))
        '#1#)))
 
-;;; TODO: export-constructors
+(test test-export-constructors
+  (let ((*package* (find-package :cl-annot-revisit-test))) ; See `test-export-accessors-defstruct'
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-constructors
+           #1=(defstruct foo slot))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(make-foo)))
+           #1#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-constructors
+           #2=(defstruct (foo1 (:conc-name cccccccc)) slot))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(make-foo1))) ; :conc-name has not effect
+           #2#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-constructors
+           #3=(defstruct (foo (:constructor)) slot))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(make-foo)))
+           #3#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-constructors
+           #4=(defstruct (foo :constructor) slot))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(make-foo)))
+           #4#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-constructors
+           #5=(defstruct (foo (:constructor nil)) slot))
+         '#5#))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-constructors
+           #6=(defstruct (foo :constructor (:constructor nil)) slot))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(make-foo)))
+           #6#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-constructors
+           #7=(defstruct (foo :constructor (:constructor nil) (:constructor make!!)) slot))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(make-foo make!!)))
+           #7#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-constructors
+           #8=(defstruct (foo (:constructor make??) (:constructor make!!)) slot))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(make?? make!!)))
+           #8#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-constructors
+           #9=(defstruct (foo (:constructor make! (x y z))) slot))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(make!)))
+           #9#)))))
+
 ;;; TODO: export-structure

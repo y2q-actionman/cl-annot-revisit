@@ -74,6 +74,7 @@
         ;; Checks and set defaults
         (ensure-gethash :conc-name options-table default-conc-name)
         (ensure-gethash :constructor options-table (list default-constructor))
+        (nreversef (gethash :constructor options-table))
         (ensure-gethash :copier options-table default-copier)
         (when (gethash :initial-offset options-table)
           (assert (not (gethash :type options-table)) ()
