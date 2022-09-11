@@ -1,5 +1,21 @@
 (in-package #:cl-annot-revisit-test)
 
+(test test-@doc-alias
+  (is (equal
+       (macroexpand-1 '(cl-annot-revisit:doc "hoge"))
+       '(cl-annot-revisit:documentation "hoge") ))
+  (is (equal
+       (macroexpand-1 '(cl-annot-revisit:doc "fuga" (defun x ())))
+       '(cl-annot-revisit:documentation "fuga" (defun x ()))))
+  (is (equal
+       (macroexpand-1 '(cl-annot-revisit:doc "piyo" (list x) (list y)))
+       '(cl-annot-revisit:documentation "piyo" (list x) (list y)))))
+
+(test test-@doc-empty
+  (is (equal-after-macroexpand
+       (cl-annot-revisit:documentation "hoge")
+       nil)))
+
 (test test-@doc-defclass
   (is (equal-ignoring-gensym
        (macroexpand-1 '(cl-annot-revisit:documentation #1="hoge"

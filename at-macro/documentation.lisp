@@ -69,13 +69,13 @@ If failed, returns (values <original-form> nil)."
          (expand-documentation-using-head (first form) docstring form)
          form))))
 
-(defmacro cl-annot-revisit:documentation (docstring &body forms &environment env)
+(defmacro cl-annot-revisit:documentation (docstring &body body &environment env)
   "Insert DOCSTRING into FORMS."
   ;; Should I warn about 'setting same docstrings into many forms'?
   (apply-at-macro `(cl-annot-revisit:documentation ,docstring)
                   (alexandria:curry #'expand-documentation docstring) 
-                  forms env))
+                  body env))
 
-(defmacro cl-annot-revisit:doc (docstring form)
+(defmacro cl-annot-revisit:doc (docstring &body body)
   "Just an alias of (cl-annot-revisit:documentation ...)"
-  `(cl-annot-revisit:documentation ,docstring ,form))
+  `(cl-annot-revisit:documentation ,docstring ,@body))
