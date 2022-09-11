@@ -102,10 +102,10 @@
 
   (defun parse-defstruct-form (form)
     (let ((operator (pop form)))
-      (unless (eq operator 'defstruct)
-        (when *at-macro-verbose*
-          (warn 'at-macro-style-warning :form form
-                :message (format nil "operator ~A is not defstruct" operator)))))
+      (when (and *at-macro-verbose*
+                 (not (eq operator 'cl:defstruct)))
+        (warn 'at-macro-style-warning :form form
+              :message (format nil "operator ~A is not defstruct" operator))))
     (multiple-value-bind (name options)
         (parse-defstruct-option (pop form))
       (let* ((documentation (if (stringp (first form))
@@ -117,16 +117,17 @@
   (defun pick-names-of-defstruct-form (form kinds)
     (multiple-value-bind (struct-name options slot-descriptions)
         (parse-defstruct-form form)
-      (when (gethash :include options)
+      (when (and *at-macro-verbose*
+                 (gethash :include options))
         ;; If `:include' specified, `defstruct' makes accessors about the included
         ;; struct. I think looking them by `cl-annot-revisit:export-accessors' is very hard...
         (warn 'at-macro-style-warning :form form
               :message "at-macro does not export accessors for :include'd slots."))
       (let (ret)
         (when (member :structure-name kinds) 
-          (when (and (gethash :type options)
-                     (not (gethash :named options))
-                     *at-macro-verbose*)
+          (when (and *at-macro-verbose*
+                     (gethash :type options)
+                     (not (gethash :named options)))
             (warn 'at-macro-style-warning :form form
                   :message "Unnamed defstruct does not define its name as a type-specifier"))
           (pushnew struct-name ret))
