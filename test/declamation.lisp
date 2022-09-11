@@ -871,5 +871,5 @@
     (compile nil
              '(lambda ()
                ;; The result of `declaim' is implementation-dependent. This code add such a value.
-               #.(@declaration hoge)
+               #.(cl-annot-revisit:declaration hoge)
                t))))
