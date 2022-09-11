@@ -102,9 +102,28 @@
   (apply-at-macro '(cl-annot-revisit:export-accessors) #'expand-export-accessors forms env))
 
 ;;; `export-class'
-(defmacro cl-annot-revisit:export-class (&body forms)
-  "Just an alias of nested `cl-annot-revisit:export-slots',
-`cl-annot-revisit:export-accessors', and `cl-annot-revisit:export'."
-  `(cl-annot-revisit:export-slots
-    (cl-annot-revisit:export-accessors
-     (cl-annot-revisit:export ,@forms))))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defgeneric expand-export-class-using-head (operator form)
+    (:method (operator form)
+      (declare (ignore operator))
+      form)
+    (:method ((operator (eql 'defclass)) form)
+      `(cl-annot-revisit:export-slots
+         (cl-annot-revisit:export-accessors ,form)))
+    (:method ((operator (eql 'define-condition)) form)
+      `(cl-annot-revisit:export-slots
+         (cl-annot-revisit:export-accessors ,form)))
+    ;; In the original cl-annot, export-class effected `defstruct'.
+    ;; But I think it was unintentional.
+    )
+
+  (defun expand-export-class (form)
+    (macroexpand-convention (form)
+     (if (consp form)
+         (expand-export-class-using-head (first form) form)
+         form))))
+
+(defmacro cl-annot-revisit:export-class (&body body &environment env)
+  "For `defclass' and `define-conditions', just an alias of nested
+`cl-annot-revisit:export-slots' and `cl-annot-revisit:export-accessors'."
+  (apply-at-macro '(cl-annot-revisit:export-class) #'expand-export-class body env))

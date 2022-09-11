@@ -70,12 +70,12 @@
                    (export '(foo-slot1 foo-slot2)))
            #1#)))))
 
-#+ ()                                   ; TODO
 (test test-defstruct-export-class
+  ;; EXPORT-CLASS has no effects.
   (is (equal-after-macroexpand
        '(cl-annot-revisit:export-class
-         (defstruct struct slot1 slot2))
-       '...)))
+         #1=(defstruct struct slot1 slot2))
+       '#1#)))
 
 ;;; TODO: export-constructors
 ;;; TODO: export-structure
