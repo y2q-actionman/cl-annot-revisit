@@ -37,7 +37,19 @@
          (setf (documentation #:obj 'structure) "doc")
          #:obj))))
 
-;;; TODO: export
+(test test-defstruct-export
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:export
+         #1=(defstruct struct1 slot1 slot2))
+       '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                 (export '(struct1)))
+         #1#)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:export
+         #2=(defstruct (struct2) slot1 slot2))
+       '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                 (export '(struct2)))
+         #2#))))
 
 (test test-defstruct-metaclass
   (is (equal-after-macroexpand
