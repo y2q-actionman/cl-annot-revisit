@@ -64,7 +64,7 @@
          #1=(defstruct struct slot1 slot2))
        '#1#)))
 
-(test test-export-accessors-defstruct-1
+(test test-export-accessors-defstruct
   ;; XXX: I must let `*package*' because 1am does not preserve current package
   ;; when it runs `macroexpand-1' which will call `intern' in defstruct parser.
   (let ((*package* (find-package :cl-annot-revisit-test)))
@@ -73,7 +73,29 @@
            #1=(defstruct foo slot1 slot2))
          '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
                    (export '(foo-slot1 foo-slot2)))
-           #1#)))))
+           #1#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-accessors
+           #2=(defstruct (foo1 (:conc-name foo1-conc-)) (slot1) (slot2 0)))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(foo1-conc-slot1 foo1-conc-slot2)))
+           #2#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-accessors
+           #3=(defstruct (foo2 (:conc-name)) slot1 slot2))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(slot1 slot2)))
+           #3#)))
+    (is (equal-after-macroexpand
+         '(cl-annot-revisit:export-accessors
+           #4=(defstruct (foo3 :conc-name) s1 s2))
+         '(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+                   (export '(s1 s2)))
+           #4#)))
+    (signals at-macro-style-warning
+      (macroexpand
+       '(cl-annot-revisit:export-accessors
+         (defstruct (foo3 (:include other)) s1 s2))))))
 
 (test test-defstruct-export-class
   ;; EXPORT-CLASS has no effects.

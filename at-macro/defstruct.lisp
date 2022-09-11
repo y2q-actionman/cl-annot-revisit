@@ -37,7 +37,7 @@
              (set-it :copier (second option)))
             ;; :include
             ((starts-with :include option)
-             (assert (gethash :include options-table) ()
+             (assert (not (gethash :include options-table)) ()
                      'at-macro-error :form name-and-options
                      :message "Two :include options appeared.")
              (set-it :include (rest option)))
@@ -109,15 +109,10 @@
              (slot-descriptions (mapcar #'ensure-list form)))
         (values name options slot-descriptions documentation))))
 
-  (defun pick-names-of-defstruct-form (form kinds)
+  (defun pick-names-of-defstruct-form
+      (form &optional (kinds '(:structure-name :constructor :copier :predicate :accessor)))
     (multiple-value-bind (struct-name options slot-descriptions)
         (parse-defstruct-form form)
-      (when (and *at-macro-verbose*
-                 (gethash :include options))
-        ;; If `:include' specified, `defstruct' makes accessors about the included
-        ;; struct. I think looking them by `cl-annot-revisit:export-accessors' is very hard...
-        (warn 'at-macro-style-warning :form form
-              :message "at-macro does not export accessors for :include'd slots."))
       (let (ret)
         (when (member :structure-name kinds) 
           (when (and *at-macro-verbose*
@@ -137,6 +132,12 @@
           (when-let ((p-name (gethash :predicate options)))
             (pushnew p-name ret)))
         (when (member :accessor kinds)
+          (when (gethash :include options)
+            ;; If `:include' specified, `defstruct' makes accessors about the included
+            ;; struct. I think looking them by `cl-annot-revisit:export-accessors' is very hard...
+            ;; This warning cannot be suppressed by setting `*at-macro-verbose*' intentionally.
+            (warn 'at-macro-style-warning :form form
+                  :message "at-macro does not export accessors for :include'd slots."))
           (loop with conc-name = (gethash :conc-name options)
              for (s-name . nil) in slot-descriptions
              do (pushnew (if conc-name
@@ -199,9 +200,7 @@
       (declare (ignore form-op))
       form)
     (:method ((form-op (eql 'defstruct)) form)
-      (let ((all (pick-names-of-defstruct-form
-                  form
-                  '(:structure-name :constructor :copier :predicate :accessor))))
+      (let ((all (pick-names-of-defstruct-form form)))
         (add-export all form))))
 
   (defun expand-export-structure (form)
