@@ -66,19 +66,30 @@
        '(cl-annot-revisit:export (defvar *defvar-name*))
        '*defvar-name*))
   ;; functions
-  ;; TODO: setf function, defgeneric, define-compiler-macro, defmethod, defun
   (is (expanded-export-name-equalp
        '(cl-annot-revisit:export (defgeneric defgeneric-name ()))
        'defgeneric-name))
   (is (expanded-export-name-equalp
+       '(cl-annot-revisit:export (defgeneric (setf setf-defgeneric-name) ()))
+       'setf-defgeneric-name))
+  (is (expanded-export-name-equalp
        '(cl-annot-revisit:export (define-compiler-macro define-compiler-macro-name ()))
        'define-compiler-macro-name))
+  (is (expanded-export-name-equalp
+       '(cl-annot-revisit:export (define-compiler-macro (setf setf-define-compiler-macro-name) ()))
+       'setf-define-compiler-macro-name))
   (is (expanded-export-name-equalp
        '(cl-annot-revisit:export (defmethod defmethod-name :around ()))
        'defmethod-name))
   (is (expanded-export-name-equalp
+       '(cl-annot-revisit:export (defmethod (setf setf-defmethod-name) :around ()))
+       'setf-defmethod-name))
+  (is (expanded-export-name-equalp
        '(cl-annot-revisit:export (defun defun-name ()))
        'defun-name))
+  (is (expanded-export-name-equalp
+       '(cl-annot-revisit:export (defun (setf setf-defun-name) ()))
+       'setf-defun-name))
   ;; others
   (is (expanded-export-name-equalp
        '(cl-annot-revisit:export (defclass defclass-name () ()))

@@ -15,13 +15,15 @@ If FORM can be expanded, returns its expansion. If not, returns FORM.")
     (:method (form-head form)
       "General case. If FORM found by `find-name-to-be-defined',
 returns the expansion of FORM. If not, returns FORM."
+      (declare (ignore form-head))
       (if-let ((name (find-name-to-be-defined form)))
         (cond ((listp name)
-               (unless (and (function-definition-operator-p form-head)
-                            (function-name-p name))
+               (when (and *at-macro-verbose*
+                          (not (function-name-p name)))
                  (warn 'at-macro-style-warning
                        :form form :message "Name ~A looks like non-conforming" name))
-               (add-export (list (second name)) form))
+               (let ((setf-funcion-symbol (second name)))
+                 (add-export (list setf-funcion-symbol) form)))
               (t
                (add-export (list name) form)))
         form))
