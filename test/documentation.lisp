@@ -24,6 +24,14 @@
          (setf (documentation #:obj 'function) "hoge")
          #:obj))))
 
+(test test-@doc-defun-setf
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:documentation "hoge"
+         #1=(defun (setf foo) (new-value x)))
+       '(let ((#:obj #1#))
+         (setf (documentation #:obj 'function) "hoge")
+         #:obj))))
+
 (test test-@doc-defclass
   (is (equal-after-macroexpand
        '(cl-annot-revisit:documentation #1="hoge"
@@ -39,40 +47,23 @@
          #:obj))))
 
 (test test-@doc-lambda
-  ;; This is checking `parse-body' usage.
   (is (equal-after-macroexpand
        '(cl-annot-revisit:documentation "doc"
-         (lambda (x y z) (+ x y z)))
-       '(lambda (x y z) "doc" (+ x y z))))
-  (is (equal-after-macroexpand
-       '(cl-annot-revisit:documentation "doc"
-         (lambda ())) ; This is a bug of cl-annot.
-       '(lambda () "doc" nil)))
-  (is (equal-after-macroexpand
-       '(cl-annot-revisit:documentation "doc"
-         (lambda () nil))
-       '(lambda () "doc" nil)))
-  (is (equal-after-macroexpand
-       '(cl-annot-revisit:documentation "doc"
-         (lambda () #1="this is not docstring"))
-       '(lambda () "doc" #1#)))
-  (is (equal-after-macroexpand
-       '(cl-annot-revisit:documentation "doc"
-         (lambda (x) (declare (ignore x))))
-       '(lambda (x) (declare (ignore x)) "doc" nil)))
-  (is (equal-after-macroexpand
-       '(cl-annot-revisit:documentation "doc"
-         (lambda (x) (declare (ignore x)) 100))
-       '(lambda (x) (declare (ignore x)) "doc" 100)))
-  t)
+         #1=(lambda (x y z) (+ x y z)))
+       '(let ((#:obj #1#))
+         (setf (documentation #:obj 'function) "doc")
+         #:obj))))
 
 (test test-@doc-lambda-func
   (is (equal-after-macroexpand
        '(cl-annot-revisit:documentation "doc"
-         #'(lambda (x y z) (+ x y z)))
-       '#'(lambda (x y z) "doc" (+ x y z))))
+         #1=#'(lambda (x y z) (+ x y z)))
+       '(let ((#:obj #1#))
+         (setf (documentation #:obj 'function) "doc")
+         #:obj)))
   (is (equal-after-macroexpand
        '(cl-annot-revisit:documentation "doc"
-         #'(lambda ()))
-       '#'(lambda () "doc" nil)))
-  t)
+         #2=#'(lambda ()))
+       '(let ((#:obj #2#))
+         (setf (documentation #:obj 'function) "doc")
+         #:obj))))

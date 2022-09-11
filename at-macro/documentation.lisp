@@ -10,7 +10,8 @@
         ((cl:defconstant cl:defparameter cl:defvar)
          'cl:variable)
         ((cl:defgeneric cl:defmacro cl:defun
-           cl:define-modify-macro) ; define-modify-macro == defmacro == `function'
+           cl:define-modify-macro ; define-modify-macro == defmacro == `function'
+           cl:lambda)
          'cl:function)
         ((cl:define-compiler-macro)
          'cl:compiler-macro)
@@ -25,37 +26,26 @@
         ;; There is no docstring for `define-symbol-macro'. (cl-annot's comment is wrong.)
         (otherwise
          nil))))
+
+  (defun expand-doc-macro-to-assign (docstring form doc-type)
+    ;; Using the result of FORM (like below) is simple, but may
+    ;; prevent compilation as a top-level form.
+    (with-gensyms (obj)
+      `(let ((,obj ,form))
+         (setf (documentation ,obj ',doc-type) ,docstring)
+         ,obj)))
   
   (defgeneric expand-documentation-using-head (operator docstring form)
     (:documentation "Called by `expand-documentation' to insert DOCSTRING into FORM.
 If FORM can be expanded, returns its expansion. If not, returns FORM.")
     (:method (operator docstring form)
       (if-let ((doc-type (operator-doc-type operator)))
-        ;; Using the result of FORM (like below) is simple, but may
-        ;; prevent compilation as a top-level form.
-        (with-gensyms (obj)
-          `(let ((,obj ,form))
-             (setf (documentation ,obj ',doc-type) ,docstring)
-             ,obj))
+        (expand-doc-macro-to-assign docstring form doc-type)
         form))
-    (:method ((operator (eql 'lambda)) docstring form)
-      "Special handling for `lambda', adds docstring to an anonymous function."
-      (destructuring-bind (op lambda-list &rest body0) form
-        (multiple-value-bind (body decls old-doc)
-            (parse-body body0 :documentation t :whole form)
-          (when (and old-doc docstring)
-            (error 'at-macro-error :form form
-                                   :message "Lambda form already has a docstring."))
-          (let* ((new-doc (or docstring old-doc))
-                 (new-body (or body
-                               (if new-doc `(nil) nil)))) ; Handling no body ; (lambda ())
-            `(,op ,lambda-list ,@decls
-                  ,@(ensure-list new-doc)
-                  ,@new-body)))))
     (:method ((operator (eql 'function)) docstring form)
-      "Special handling for #'(lambda ..), adds docstring to an anonymous function."
+      "Special handling for #'(lambda ..), adds DOCSTRING to the anonymous function."
       (if (starts-with 'lambda (second form))
-          `(function ,(expand-documentation-using-head 'lambda docstring (second form)))
+          (expand-doc-macro-to-assign docstring form 'function)
           form)))
 
   ;; special handling for `defstruct' is in 'defstruct.lisp'.
