@@ -4,10 +4,8 @@
   (defgeneric operator-body-location (operator)
     (:documentation "When OPERATOR can be treated by our at-macros for
     declaration, returns an integer where its body locates.")
-    (:method (_)
-      (declare (ignore _))
-      nil)
-    (:method ((operator symbol))
+    (:method (operator)
+      "See http://www.lispworks.com/documentation/HyperSpec/Body/s_declar.htm"
       (case operator
         ((cl:locally)
          1)
@@ -35,10 +33,7 @@
 
   (defgeneric operator-accept-docstring-in-body-p (operator)
     (:documentation "Returns T if OPERATOR accepts docstring in its body.")
-    (:method (_)
-      (declare (ignore _))
-      nil)
-    (:method ((operator symbol))
+    (:method (operator)
       (member operator +standard-operators-accept-docstring-in-body+)))
 
   

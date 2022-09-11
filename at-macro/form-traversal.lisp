@@ -8,10 +8,7 @@
   (defgeneric variable-definition-operator-p (operator)
     (:documentation "Returns T if OPERATOR naming a definition form and
 its first argument is a variable name to be defined.")
-    (:method (_)
-      (declare (ignore _))
-      nil)
-    (:method ((operator symbol))
+    (:method (operator)
       (member operator +standard-variable-definiton-form-list+)))
 
   (define-constant +standard-function-definiton-form-list+
@@ -21,10 +18,7 @@ its first argument is a variable name to be defined.")
   (defgeneric function-definition-operator-p (operator)
     (:documentation "Returns T if OPERATOR naming a definition form and
 its first argument is a function name to be defined.")
-    (:method (_)
-      (declare (ignore _))
-      nil)
-    (:method ((operator symbol))
+    (:method (operator)
       (member operator +standard-function-definiton-form-list+)))
 
   (define-constant +standard-definiton-form-list+

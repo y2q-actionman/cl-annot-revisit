@@ -3,10 +3,7 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defgeneric operator-doc-type (operator)
     (:documentation "Returns the doc-type (in `cl:documentation') of OPERATOR.")
-    (:method (_)
-      (declare (ignore _))
-      nil)
-    (:method ((operator symbol))
+    (:method (operator)
       (case operator
         ((cl:defclass cl:define-condition cl:deftype)
          'cl:type)
