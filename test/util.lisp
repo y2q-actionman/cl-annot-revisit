@@ -38,12 +38,7 @@
   expansion by `macroexpand-all'. This function compares FORM1 and
   FORM2 considering it"
   (flet ((equal-rest-forms (form1 form2)
-           (declare (type list form1 form2))
-           (loop for i-cons on form1
-                 for j-cons on form2
-                 always (equal-ignoring-locally (car i-cons) (car j-cons))
-                 finally (return (and (null (cdr i-cons))
-                                      (null (cdr j-cons)))))))
+           (tree-equal form1 form2 :test #'equal-ignoring-locally)))
     (cond
       ((not (and (consp form1)
                  (consp form2)))
