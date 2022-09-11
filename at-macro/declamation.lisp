@@ -122,12 +122,31 @@ If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), to emb
                                  #'function-name-p env))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun optimize-quality-p (x)
-    (typecase x
-      (symbol t)
-      ;; There may be implementation-dependent switch. I try to match loosely.
-      (cons (and (symbolp (first x))
-                 (every #'atom (rest x)))) ; seeing '(speed 3)' etc.
+  (define-constant +standard-optimize-quality-symbols+
+      '(cl:compilation-speed cl:debug cl:safety cl:space cl:speed)
+    :test 'equal)
+  
+  (defun common-lisp-package-p (package)
+    (eql package (load-time-value (find-package '#:COMMON-LISP))))
+  
+  (defun optimize-quality-p (qual)
+    ;; There may be implementation-dependent switch. I try to match loosely.
+    (typecase qual
+      (symbol
+       (cond
+         ((member qual +standard-optimize-quality-symbols+) t)
+         ((common-lisp-package-p (symbol-package qual)) nil)
+         (t t)))
+      (cons
+       (let ((1st (first qual)))
+         (and (symbolp 1st)
+              (cond
+                ((member 1st +standard-optimize-quality-symbols+)
+                 (and (length= 2 qual)
+                      (typep (second qual) '(integer 0 3))))
+                ((common-lisp-package-p (symbol-package 1st))
+                 nil)
+                (t t)))))
       (otherwise nil))))
 
 (defmacro cl-annot-revisit:optimize (&optional qualities &body body &environment env)
