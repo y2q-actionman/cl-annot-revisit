@@ -67,3 +67,9 @@
        '(let ((#:obj #2#))
          (setf (documentation #:obj 'function) "doc")
          #:obj))))
+
+(test test-@doc-lambda-form
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:documentation "doc"
+         #1=((lambda (x y z) (+ x y z)) 1 2 3))
+       '#1#)))

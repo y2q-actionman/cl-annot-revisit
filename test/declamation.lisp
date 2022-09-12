@@ -239,6 +239,13 @@
          (progn (declaim (special *foo*))
                 (defvar *foo* 9999))))))
 
+(test test-decl-special-lambda-form
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:special (x y z)
+         #1=((lambda (x y z) (+ x y z)) 1 2 3))
+       '(locally (declare (special x y z))
+         #1#))))
+
 ;;; `type'
 
 (test test-decl-type-inline
@@ -547,6 +554,13 @@
          "Hello, World!"
          (defvar *foo* 9999)))))
 
+(test test-decl-inline-lambda-form
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline (x y z)
+         #1=((lambda (x y z) (+ x y z)) 1 2 3))
+       '(locally (declare (inline x y z))
+         #1#))))
+
 ;;; `notinline'
 
 (test test-decl-notinline-ambiguous-multiforms
@@ -838,6 +852,13 @@
            "Hello, World!")
          (locally (declare (optimize (bar 1)))
            (defvar *foo* 9999))))))
+
+(test test-decl-optimize-lambda-form
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:optimize (speed safety debug)
+         #1=((lambda (x y z) (+ x y z)) 1 2 3))
+       '(locally (declare (optimize speed safety debug))
+         #1#))))
 
 ;;; combination
 

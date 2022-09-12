@@ -277,6 +277,13 @@
          (declare (ignore _))
          (declare (dynamic-extent))))))
 
+(test test-decl-ignore-lambda-form
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:ignore (x y z)
+         #1=((lambda (x y z) (+ x y z)) 1 2 3))
+       '(locally (declare (ignore x y z))
+         #1#))))
+
 ;;; `ignorable'
 
 (test test-decl-ignorable-inline

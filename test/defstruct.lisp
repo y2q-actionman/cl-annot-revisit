@@ -196,3 +196,13 @@
                            (:predicate))
              slot1 slot2))
          '(foo make-foo copy-foo foo-p slot1 slot2)))))
+
+(test test-export-struct-lambda-form
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:export-constructors
+         #1=((lambda (x y z) (+ x y z)) 1 2 3))
+       '#1#))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:export-structure
+         #2=((lambda (x y z) (+ x y z)) 1 2 3))
+       '#2#)))

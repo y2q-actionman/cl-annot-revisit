@@ -40,7 +40,11 @@
   (is (equal-after-macroexpand
        '(cl-annot-revisit:export
          #2=(lambda () (format t "Hello, World!")))
-       '#2#)))
+       '#2#))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:export
+         #3=((lambda (x y z) (+ x y z)) 1 2 3))
+       '#3#)))
 
 (test test-export-many
   (is (equal-after-macroexpand

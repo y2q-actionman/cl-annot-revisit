@@ -82,3 +82,21 @@
   (is (equal-after-macroexpand
        '(cl-annot-revisit:export-class)
        'nil)))
+
+(test test-export-class-lambda-form
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:metaclass meta
+         #1=((lambda (x y z) (+ x y z)) 1 2 3))
+       '#1#))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:export-slots
+         #2=((lambda (x y z) (+ x y z)) 1 2 3))
+       '#2#))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:export-accessors
+         #3=((lambda (x y z) (+ x y z)) 1 2 3))
+       '#3#))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:export-class
+         #4=((lambda (x y z) (+ x y z)) 1 2 3))
+       '#4#)))
