@@ -147,3 +147,31 @@
           (slot1 :initform initform1 :initarg :slot1)
           (slot2 :initform initform2 :initarg xxx)
           (slot3 :initarg yyy :initform zzz))))))
+
+(test test-at-syntax-shart-at
+  (is (equal
+       '#@list 1
+       '(list 1)))
+  (is (equal
+       '#5@list 1 2 3 4 5
+       '(list 1 2 3 4 5))))
+
+(defmethod cl-annot-revisit:find-at-syntax-arity ((op (eql 'not-annot-op)) _)
+  (declare (ignorable op _))
+  nil)
+
+(test test-at-syntax-not-annot
+  (within-at-syntax-readtable
+    (let ((*at-macro-verbose* t)
+          (*package* (find-package :cl-annot-revisit-test)))
+      (signals at-macro-style-warning
+        (read-from-string "@200"))
+      (signals at-macro-style-warning
+        (read-from-string "@not-annot-op")))))
+
+(test test-at-syntax-lambda-form
+  (is (equal
+       '@ (lambda (x y z) (+ x y z)) 1 20 300
+       '((lambda (x y z) (+ x y z)) 1 20 300))))
+
+;;; TODO: :infinite

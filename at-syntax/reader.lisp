@@ -25,15 +25,19 @@
                     (find-at-syntax-arity operator *cl-annot-compatibility*))))
     ;; If no arity is supplied, the operator is not registered as '@' syntax macro.
     (unless arity
-      (typecase operator
-        (symbol
-         (when *at-macro-verbose* ;TODO: use style-warnings.
-           (warn "'~A', appeared after '~C', is not for @-syntax." operator at-char))
-         (return-from read-at-syntax (intern (format nil "~C~A" at-char operator))))
-        (t
-         (when *at-macro-verbose* ;TODO: use style-warnings.
-           (warn "'~A', appeared after '~C', is not a symbol." operator at-char))
-         (return-from read-at-syntax operator))))
+      (when *at-macro-verbose*
+        (typecase operator
+          (symbol
+           (warn 'at-macro-style-warning
+                 :message (format nil "'~A', appeared after '~C', is not for @-syntax."
+                                  operator at-char)
+                 :form operator))
+          (t
+           (warn 'at-macro-style-warning
+                 :message (format nil "'~A', appeared after '~C', is not like a operator name."
+                                  operator at-char)
+                 :form operator))))
+      (return-from read-at-syntax operator))
     ;; Collect arguments
     (let* ((args (if (eq arity :infinite)
                      (read-delimited-list-no-eof #\) stream t)

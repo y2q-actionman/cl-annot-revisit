@@ -4,9 +4,7 @@
   (:use #:cl #:alexandria)
   (:import-from #:cl-annot-revisit
                 #:*at-macro-verbose*)
-  (:import-from #:cl-annot-revisit/at-syntax
-                #:*cl-annot-compatibility*
-                #:find-at-syntax-arity)
+  (:use #:cl-annot-revisit/at-syntax)
   (:export
     #:*cl-annot-compatibility*
     #:defannotation))

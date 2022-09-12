@@ -51,6 +51,3 @@
   (set-cl-annot-compat-config 'cl-annot-revisit:optimize 1 t '(cl:optimize))
   (set-cl-annot-compat-config 'cl-annot-revisit:inline 1 t '(cl:inline))
   (set-cl-annot-compat-config 'cl-annot-revisit:notinline 1 t '(cl:notinline)))
-
-
-
