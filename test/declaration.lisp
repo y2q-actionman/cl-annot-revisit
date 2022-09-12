@@ -320,7 +320,7 @@
          (declare (dynamic-extent x y z))
          (+ x y z)))))
 
-;;; These tests are for testing `add-declaration' and `apply-at-macro'.
+;;; These tests are for testing `add-declaration' and `apply-at-macro-for-each-form'.
 
 (test test-decl-special-form
   ;; progn

@@ -168,9 +168,9 @@ If failed, returns (values <original-form> nil)."
 If BODY is a form accepts declarations, adds a DECL-SPECIFIER into it.
 If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
   (multiple-value-bind (expansion expanded-p)
-      (apply-at-macro `(add-declaration ,decl-specifier)
-                      (alexandria:curry #'expand-add-declaration decl-specifier)
-                      body env)
+      (apply-at-macro-for-each-form `(add-declaration ,decl-specifier)
+                                    (alexandria:curry #'expand-add-declaration decl-specifier)
+                                    body env)
     (values (if expanded-p
                 expansion
                 `(locally (declare ,decl-specifier)

@@ -23,9 +23,9 @@
          form))))
 
 (defmacro cl-annot-revisit:metaclass (class-name &body forms &environment env)
-  (apply-at-macro `(cl-annot-revisit:metaclass ,class-name)
-                  (alexandria:curry #'expand-metaclass class-name)
-                  forms env))
+  (apply-at-macro-for-each-form `(cl-annot-revisit:metaclass ,class-name)
+                                (alexandria:curry #'expand-metaclass class-name)
+                                forms env))
 
 ;;; `export-slots'
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -52,7 +52,7 @@
          form))))
 
 (defmacro cl-annot-revisit:export-slots (&body forms &environment env)
-  (apply-at-macro '(cl-annot-revisit:export-slots) #'expand-export-slots forms env))
+  (apply-at-macro-for-each-form '(cl-annot-revisit:export-slots) #'expand-export-slots forms env))
 
 ;;; `export-accessors'
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -99,7 +99,7 @@
          form))))
 
 (defmacro cl-annot-revisit:export-accessors (&body forms &environment env)
-  (apply-at-macro '(cl-annot-revisit:export-accessors) #'expand-export-accessors forms env))
+  (apply-at-macro-for-each-form '(cl-annot-revisit:export-accessors) #'expand-export-accessors forms env))
 
 ;;; `export-class'
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -128,4 +128,4 @@
 (defmacro cl-annot-revisit:export-class (&body body &environment env)
   "For `defclass' and `define-conditions', just an alias of nested
 `cl-annot-revisit:export-slots' and `cl-annot-revisit:export-accessors'."
-  (apply-at-macro '(cl-annot-revisit:export-class) #'expand-export-class body env))
+  (apply-at-macro-for-each-form '(cl-annot-revisit:export-class) #'expand-export-class body env))

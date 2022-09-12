@@ -90,7 +90,7 @@ returns the name to be defined. If not, returns nil."
          (declare (ignore _))
          form))))
 
-  (defgeneric allow-internal-form-macroexpand-p (operator)
+  (defgeneric allow-macroexpand-internal-form-p (operator)
     (:documentation "Determines whether cl-annot-revisit macros
  try `macroexpand-1' to forms beginning with OPERATOR.
  Default is NIL, because applying `macroexpand-1' change internal forms.
@@ -104,8 +104,7 @@ returns the name to be defined. If not, returns nil."
         (or (equal package (find-package :cl-annot-revisit))
             (equal package (find-package :cl-annot-revisit/at-macro))))))
 
-  ;; TODO: rewrite.. ; rename to expand-at-macro-recursively ?
-  (defun apply-at-macro (at-macro-form expander-function forms env)
+  (defun apply-at-macro-for-each-form (at-macro-form expander-function forms env)
     (declare (ignorable env))
     (cond
       ((null forms)
@@ -118,7 +117,7 @@ returns the name to be defined. If not, returns nil."
            ((funcall expander-function form)) ; try known expansions.
            ((apply-at-macro-to-special-toplevel-form at-macro-form form)) ; try recursive expansion.
            ((and (consp form)
-                 (allow-internal-form-macroexpand-p (first form))
+                 (allow-macroexpand-internal-form-p (first form))
                  (macroexpand-1 form env)) ; Try `macroexpand-1' only when it is allowed.
             (values `(,@at-macro-form ,expansion) t))
            (t                       ; nothing to be expanded.

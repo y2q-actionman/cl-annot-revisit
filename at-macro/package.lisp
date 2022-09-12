@@ -20,7 +20,7 @@
    #:function-definition-operator-p
    #:find-name-to-be-defined-using-head
    #:find-name-to-be-defined
-   #:allow-internal-form-macroexpand-p
+   #:allow-macroexpand-internal-form-p
    ;; declaration.lisp
    #:operator-body-location
    #:operator-accept-docstring-in-body-p

@@ -62,8 +62,8 @@ If failed, returns (values <original-form> nil)."
 (defmacro cl-annot-revisit:documentation (docstring &body body &environment env)
   "Insert DOCSTRING into FORMS."
   ;; Should I warn about 'setting same docstrings into many forms'?
-  (apply-at-macro `(cl-annot-revisit:documentation ,docstring)
-                  (alexandria:curry #'expand-documentation docstring) 
+  (apply-at-macro-for-each-form `(cl-annot-revisit:documentation ,docstring)
+                                (alexandria:curry #'expand-documentation docstring) 
                   body env))
 
 (defmacro cl-annot-revisit:doc (docstring &body body)

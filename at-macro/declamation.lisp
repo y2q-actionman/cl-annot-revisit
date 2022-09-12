@@ -37,9 +37,10 @@
           form))))
 
 (defmacro apply-incompleted-declamation (decl-specifier-head &body body &environment env)
-  (apply-at-macro `(apply-incompleted-declamation ,decl-specifier-head)
-                  (alexandria:curry #'expand-incompleted-declamation decl-specifier-head)
-                  body env))
+  (apply-at-macro-for-each-form
+   `(apply-incompleted-declamation ,decl-specifier-head)
+   (alexandria:curry #'expand-incompleted-declamation decl-specifier-head)
+   body env))
 
 ;;; Declaration and proclamation -- `type', `ftype', `inline', `notinline', `optimize', `special'
 

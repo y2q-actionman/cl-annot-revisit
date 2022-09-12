@@ -111,57 +111,61 @@
 (defmacro test-macro-1 (&body body)
   `(+ (progn ,@body) 9999))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defmethod cl-annot-revisit/at-macro:allow-internal-form-macroexpand-p ((op (eql 'test-macro-1)))
-    (declare (ignorable op))
-    t))
+(defmethod cl-annot-revisit/at-macro:allow-macroexpand-internal-form-p ((op (eql 'test-macro-1)))
+  (declare (ignorable op))
+  t)
 
-(with-function-aliasing ((apply-at-macro cl-annot-revisit/at-macro::apply-at-macro)) 
+(with-function-aliasing ((apply-at-macro-for-each-form cl-annot-revisit/at-macro::apply-at-macro-for-each-form)) 
   (test apply-at-macro-zero-form
-    (is (mv-equal (apply-at-macro '(never-used) (constantly nil)
-                                  () nil)
-                  (values nil nil))))
+    (is (mv-equal
+         (apply-at-macro-for-each-form '(never-used) (constantly nil) () nil)
+         (values nil nil))))
   
   (test apply-at-macro-multi-forms
-    (is (mv-equal (apply-at-macro '(test-operator) (constantly nil)
-                                  '(1 2 3 4 5) nil)
-                  (values '(progn (test-operator 1)
-                            (test-operator 2)
-                            (test-operator 3)
-                            (test-operator 4)
-                            (test-operator 5))
-                          t))))
+    (is (mv-equal
+         (apply-at-macro-for-each-form '(test-operator) (constantly nil) '(1 2 3 4 5) nil)
+         (values '(progn (test-operator 1)
+                   (test-operator 2)
+                   (test-operator 3)
+                   (test-operator 4)
+                   (test-operator 5))
+                 t))))
   
   (test apply-at-macro-expander
-    (is (mv-equal (apply-at-macro '(test-operator)
-                                  (lambda (x)
-                                    (values (list* :hello x) t))
-                                  '((1 2 3 4 5)) nil)
-                  (values '(:hello 1 2 3 4 5)
-                          t))))
+    (is (mv-equal
+         (apply-at-macro-for-each-form
+          '(test-operator)
+          (lambda (x) (values (list* :hello x) t))
+          '((1 2 3 4 5)) nil)
+         (values '(:hello 1 2 3 4 5)
+                 t))))
 
   (test apply-at-macro-special-form
-    (is (mv-equal (apply-at-macro '(test-operator) (constantly nil)
-                                  '((locally (declare) 1 2 3)) nil)
-                  (values '(locally (declare)
-                            (test-operator 1)
-                            (test-operator 2)
-                            (test-operator 3))
-                          t))))
+    (is (mv-equal
+         (apply-at-macro-for-each-form
+          '(test-operator) (constantly nil) '((locally (declare) 1 2 3)) nil)
+         (values '(locally (declare)
+                   (test-operator 1)
+                   (test-operator 2)
+                   (test-operator 3))
+                 t))))
 
   (test apply-at-macro-macroexpand-1
-    (is (mv-equal (apply-at-macro '(test-operator) (constantly nil)
-                                  '((test-macro-1 () 1 2 3)) nil)
-                  (values `(test-operator (+ (progn () 1 2 3) 9999))
-                          t))))
+    (is (mv-equal
+         (apply-at-macro-for-each-form
+          '(test-operator) (constantly nil) '((test-macro-1 () 1 2 3)) nil)
+         (values `(test-operator (+ (progn () 1 2 3) 9999))
+                 t))))
 
   (test apply-at-macro-not-macroexpand-1
-    (is (mv-equal (apply-at-macro '(test-operator) (constantly nil)
-                                  '((test-macro-2 ())) nil)
-                  (values '(test-macro-2 ())
-                          nil))))
+    (is (mv-equal
+         (apply-at-macro-for-each-form
+          '(test-operator) (constantly nil) '((test-macro-2 ())) nil)
+         (values '(test-macro-2 ())
+                 nil))))
 
   (test apply-at-macro-no-expansion
-    (is (mv-equal (apply-at-macro '(never-used) (constantly nil)
-                                  '(#1=(list 1 2 3)) nil)
-                  (values '#1#nil)))))
+    (is (mv-equal
+         (apply-at-macro-for-each-form
+          '(never-used) (constantly nil) '(#1=(list 1 2 3)) nil)
+         (values '#1#nil)))))

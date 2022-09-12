@@ -45,6 +45,6 @@ If failed, returns (values FORM nil)."
 
 (defmacro cl-annot-revisit:export (&body forms &environment env)
   "`export' the defined names in FORMS."
-  (apply-at-macro '(cl-annot-revisit:export) #'expand-export-form forms env))
+  (apply-at-macro-for-each-form '(cl-annot-revisit:export) #'expand-export-form forms env))
 
 ;;; TODO: support `restart-case'?

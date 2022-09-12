@@ -194,8 +194,8 @@
 
 (defmacro cl-annot-revisit:export-constructors (&body forms &environment env)
   "`Export' constructors of the structure will be defined in FORMS."
-  (apply-at-macro '(cl-annot-revisit:export-constructors) #'expand-export-constructors
-                  forms env))
+  (apply-at-macro-for-each-form '(cl-annot-revisit:export-constructors)
+                                #'expand-export-constructors forms env))
 
 ;;; `export-structure'
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -218,4 +218,5 @@
 accessors of the structure will be defined in FORMS."
   ;; In original, Just an alias of nested `@export-accessors',`@export-constructors',
   ;; `@export-slots', and `@export'. (But `@export-slots' does nothing).
-  (apply-at-macro '(cl-annot-revisit:export-structure) #'expand-export-structure forms env))
+  (apply-at-macro-for-each-form '(cl-annot-revisit:export-structure)
+                                #'expand-export-structure forms env))
