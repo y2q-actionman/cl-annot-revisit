@@ -26,17 +26,10 @@
     ;; If no arity is supplied, the operator is not registered as '@' syntax macro.
     (unless arity
       (when *at-macro-verbose*
-        (typecase operator
-          (symbol
-           (warn 'at-macro-style-warning
-                 :message (format nil "'~A', appeared after '~C', is not for @-syntax."
-                                  operator at-char)
-                 :form operator))
-          (t
-           (warn 'at-macro-style-warning
-                 :message (format nil "'~A', appeared after '~C', is not like a operator name."
-                                  operator at-char)
-                 :form operator))))
+        (warn 'at-macro-style-warning
+              :message (format nil "'~A', appeared after '~C', is not for @-syntax."
+                               operator at-char)
+              :form operator))
       (return-from read-at-syntax operator))
     ;; Collect arguments
     (let* ((args (if (eq arity :infinite)
