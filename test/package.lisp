@@ -2,6 +2,7 @@
 
 (defpackage #:cl-annot-revisit-test
   (:use #:cl #:1am #:alexandria
+        #:named-readtables
         #:trivial-macroexpand-all)
   (:import-from #:cl-annot-revisit
                 #:*at-macro-verbose*

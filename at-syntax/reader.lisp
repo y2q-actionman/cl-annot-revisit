@@ -17,12 +17,6 @@
  by ARITY or`find-at-syntax-arity', and creates a new form.
  If arity is :infinite, this function tries to read until next ')' or
  EOF. This weird feature allows us to effect the whole file."
-  ;; Seeing whether '@' appeared alone. If so, returns '@' as a symbol.
-  (let ((next-char (peek-char nil stream t :eof t)))
-    (when (char= next-char #\space)
-      (when *at-macro-verbose*
-        (warn "Character '~C' appeared alone." at-char))
-      (return-from read-at-syntax (intern at-char))))
   (let* ((operator (read stream t :eof t))
          (arity (or arity
                     (find-at-syntax-arity operator))))

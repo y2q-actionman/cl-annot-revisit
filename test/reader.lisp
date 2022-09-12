@@ -1,6 +1,19 @@
 (in-package :cl-annot-revisit-test)
 
-(named-readtables:in-readtable cl-annot-revisit:at-syntax-readtable)
+(defmacro within-at-syntax-readtable (&body body)
+  `(let ((*readtable* (find-readtable 'cl-annot-revisit:at-syntax-readtable)))
+     ,@body))
+
+(in-readtable cl-annot-revisit:at-syntax-readtable)
+
+(test test-at-syntax-symbol-empty
+  (within-at-syntax-readtable
+   (signals stream-error
+     (read-from-string "@"))
+   (signals stream-error
+     (read-from-string "@)"))
+   (signals stream-error
+     (read-from-string "@ "))))
 
 (test test-at-syntax-symbol-eval-when
   (is (equal '@cl-annot-revisit:eval-when-compile (1 2 3)
@@ -14,8 +27,9 @@
        ((lambda (x y z) (* x y z)) 100 200 300)
        '(eval-when (:compile-toplevel :load-toplevel :execute)
          ((lambda (x y z) (* x y z)) 100 200 300))))
-  (signals stream-error
-    (read-from-string "@cl-annot-revisit:eval-always")))
+  (within-at-syntax-readtable
+    (signals stream-error
+      (read-from-string "@cl-annot-revisit:eval-always"))))
 
 (test test-at-syntax-symbol-declaration
   (is (equal-after-macroexpand
@@ -36,6 +50,8 @@
        '(defun foo (x)
          (declare (dynamic-extent x))
          9999)))
-  (signals stream-error
-    (read-from-string
-     "@cl-annot-revisit:dynamic-extent (x)")))
+  (within-at-syntax-readtable
+    (signals stream-error
+      (read-from-string "@cl-annot-revisit:dynamic-extent"))
+    (signals stream-error
+      (read-from-string "@cl-annot-revisit:dynamic-extent (x)"))))
