@@ -148,6 +148,11 @@
           (slot2 :initform initform2 :initarg xxx)
           (slot3 :initarg yyy :initform zzz))))))
 
+(test test-at-syntax-lambda-form
+  (is (equal
+       '@ (lambda (x y z) (+ x y z)) 1 20 300
+       '((lambda (x y z) (+ x y z)) 1 20 300))))
+
 (test test-at-syntax-shart-at
   (is (equal
        '#@list 1
@@ -169,9 +174,24 @@
       (signals at-macro-style-warning
         (read-from-string "@not-annot-op")))))
 
-(test test-at-syntax-lambda-form
-  (is (equal
-       '@ (lambda (x y z) (+ x y z)) 1 20 300
-       '((lambda (x y z) (+ x y z)) 1 20 300))))
+(defmethod cl-annot-revisit:find-at-syntax-arity ((op (eql 'infinite-annot)) _)
+  (declare (ignorable op _))
+  :infinite)
 
-;;; TODO: :infinite
+(defmacro infinite-annot (&body body)
+  `(progn ,@body))
+
+(test test-at-syntax-infinite-annot
+  (within-at-syntax-readtable
+    (let ((*at-macro-verbose* t)
+          (*package* (find-package :cl-annot-revisit-test)))
+      (is (equal
+           '(infinite-annot 1 2 3 4 5 6 7 8 9)
+           '@infinite-annot 1 2 3 4 5 6 7 8 9))
+      (is (equal
+           '(a b c)
+           @infinite-annot
+           "a"
+           "b"
+           "c"
+           (list 'a 'b 'c))))))
