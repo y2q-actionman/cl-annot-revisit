@@ -77,7 +77,13 @@
          #1=(defvar *hoge* 12345))
        '(locally
          (declare (special x))
-         #1#))))
+         #1#)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:special x
+         (lambda (x) (+ x x)))
+       '(lambda (x)
+         (declare (special x))
+         (+ x x)))))
 
 (test test-decl-special-with-vars       ; will add a declaration.
   (is (equal-after-macroexpand
@@ -359,6 +365,12 @@
          (define-compiler-macro hoge (x)
            9999))
        '(define-compiler-macro hoge (x)
+         (declare (inline hoge))
+         9999)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:inline hoge
+         (lambda (x) 9999))
+       '(lambda (x)
          (declare (inline hoge))
          9999)))
   ;; not applicable
@@ -683,6 +695,12 @@
        '(define-compiler-macro hoge (x)
          (declare (optimize speed debug))
          9999)))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:optimize ((speed 1))
+         (lambda (x y) (+ x y)))
+       '(lambda (x y)
+         (declare (optimize (speed 1)))
+         (+ x y))))
   (is (equal-after-macroexpand
        '(cl-annot-revisit:optimize ((speed 1))
          (defsetf hoge (x y) (store)

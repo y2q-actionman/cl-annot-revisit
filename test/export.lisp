@@ -36,7 +36,11 @@
   (is (equal-after-macroexpand
        '(cl-annot-revisit:export
          #1=(format t "Hello, World!"))
-       '#1#)))
+       '#1#))
+  (is (equal-after-macroexpand
+       '(cl-annot-revisit:export
+         #2=(lambda () (format t "Hello, World!")))
+       '#2#)))
 
 (test test-export-many
   (is (equal-after-macroexpand
