@@ -17,9 +17,9 @@
       (otherwise
        1))))
 
-(defgeneric expand-at-read-time-p (operator cl-annot-compatible-p)
+(defgeneric eval-at-read-time-p (operator cl-annot-compatible-p)
   (:documentation "If this returns T, the macro named OPERATOR will be
-  `macroexpand'ed at read-time.
+  `eval'ed at read-time.
 
   This feature is for supporting ':inline' feature of the original
   cl-annot, but it is not needed conceptually because you can use '#.'

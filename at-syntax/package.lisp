@@ -9,5 +9,5 @@
   (:export
     #:*cl-annot-compatibility*
     #:find-at-syntax-arity
-    #:expand-at-read-time-p
+    #:eval-at-read-time-p
     #:resolve-at-syntax-alias))

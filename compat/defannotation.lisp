@@ -28,7 +28,7 @@
                ',name)))
         (inline-form
           (when inline-supplied-p
-            `(defmethod cl-annot-revisit/at-syntax::expand-at-read-time-p ((_ (eql ',name)) _bool)
+            `(defmethod cl-annot-revisit/at-syntax::eval-at-read-time-p ((_ (eql ',name)) _bool)
                (declare (ignorable _ _bool))
                ,inline))))
     `(progn
@@ -37,8 +37,8 @@
            (declare (ignorable _ _bool))
            ,arity)
          ,@(if inline-form
-               `(,inline-form)))
-       ,@(if alias-form
-             `(,alias-form))
+               `(,inline-form))
+         ,@(if alias-form
+               `(,alias-form)))
        (defmacro ,name ,lambda-list
          ,@body))))

@@ -8,4 +8,6 @@
                 #:*at-macro-verbose*
                 #:at-macro-condition
                 #:at-macro-style-warning
-                #:at-macro-error))
+                #:at-macro-error)
+  (:import-from #:cl-annot-revisit-compat
+                #:*cl-annot-compatibility*))

@@ -40,11 +40,11 @@
                      (loop repeat arity
                         collect (read stream t :eof t))))
            (at-macro-form `(,operator ,@args)))
-      ;; If the at-macro was requested read-time expansion by
-      ;; `expand-at-read-time-p', the form is expaneded at read
+      ;; If the at-macro was requested read-time eval by
+      ;; `eval-at-read-time-p', the form is expaneded at read
       ;; time.
-      (if (expand-at-read-time-p operator *cl-annot-compatibility*)
-          (macroexpand at-macro-form)
+      (if (eval-at-read-time-p operator *cl-annot-compatibility*)
+          (eval at-macro-form)
           at-macro-form))))
 
 (defun read-at (stream char)

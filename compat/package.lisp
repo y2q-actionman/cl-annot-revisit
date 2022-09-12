@@ -7,4 +7,6 @@
   (:import-from #:cl-annot-revisit/at-syntax
                 #:*cl-annot-compatibility*
                 #:find-at-syntax-arity)
-  (:export #:defannotation))
+  (:export
+    #:*cl-annot-compatibility*
+    #:defannotation))
