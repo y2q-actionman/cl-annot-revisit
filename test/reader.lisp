@@ -55,3 +55,95 @@
       (read-from-string "@cl-annot-revisit:dynamic-extent"))
     (signals stream-error
       (read-from-string "@cl-annot-revisit:dynamic-extent (x)"))))
+
+(test test-at-syntax-symbol-declamation
+  (is (equal-after-macroexpand-all
+       '@cl-annot-revisit:special
+       (defvar *foo*)
+       '(progn (declaim (special *foo*))
+         (defvar *foo*))))
+  (is (equal-after-macroexpand-all
+       '@cl-annot-revisit:type integer
+       (defvar *foo*)
+       '(progn (declaim (type integer *foo*))
+         (defvar *foo*))))
+  (within-at-syntax-readtable
+    (signals stream-error
+      (read-from-string "@cl-annot-revisit:type"))
+    (signals stream-error
+      (read-from-string "@cl-annot-revisit:type t")))
+  (is (equal-after-macroexpand
+       '@cl-annot-revisit:ftype (function)
+       (defun foo (x) 9999)
+       '(progn (declaim (ftype (function) foo))
+         (defun foo (x) 9999))))
+  (is (equal-after-macroexpand
+       '@cl-annot-revisit:inline
+       (defun bar (x))
+       '(progn (declaim (inline bar))
+         (defun bar (x)))))
+  (is (equal-after-macroexpand
+       '@cl-annot-revisit:notinline
+       (defmethod baz (x))
+       '(progn (declaim (notinline baz))
+         (defmethod baz (x)))))
+  (within-at-syntax-readtable
+    (signals stream-error
+      (read-from-string "@cl-annot-revisit:notinline")))
+  (is (equal-after-macroexpand
+       '@cl-annot-revisit:optimize (speed)
+       (defgeneric hoge (x))
+       '(defgeneric hoge (x)
+         (declare (optimize speed)))))
+  (is (equal-after-macroexpand
+       '@cl-annot-revisit:optimize (speed)
+       (defgeneric hoge (x))
+       '(defgeneric hoge (x)
+         (declare (optimize speed)))))
+  (within-at-syntax-readtable
+    (signals stream-error
+      (read-from-string "@cl-annot-revisit:optimize")))
+  (within-at-syntax-readtable
+    (signals stream-error
+      (read-from-string "@cl-annot-revisit:optimize (speed 3)"))))
+
+(test test-at-syntax-symbol-documentation
+  (is (equal-after-macroexpand
+       '@cl-annot-revisit:documentation "docstring"
+       #1=(defun foo (x))
+       '(let ((#:obj #1#))
+         (setf (documentation #:obj 'function) "docstring")
+         #:obj)))
+  (is (equal-after-macroexpand
+       '@cl-annot-revisit:doc "docstring"
+       #2=#'(lambda bar (x))
+       '(let ((#:obj #2#))
+         (setf (documentation #:obj 'function) "docstring")
+         #:obj)))
+  (within-at-syntax-readtable
+    (signals stream-error
+      (read-from-string "@cl-annot-revisit:documentation"))
+    (signals stream-error
+      (read-from-string "@cl-annot-revisit:doc"))))
+
+(test test-at-syntax-symbol-export
+  (is (expanded-export-name-equalp
+       '@cl-annot-revisit:export
+       (defun foo (x) 9999)
+       '(foo)))
+  (within-at-syntax-readtable
+    (signals stream-error
+      (read-from-string "@cl-annot-revisit:export"))))
+
+(test test-at-syntax-symbol-slots
+  (is (equal
+       '(defclass foo ()
+         (slot0
+          #.@cl-annot-revisit:optional initform1 slot1
+          #.@cl-annot-revisit:optional initform2 (slot2 :initarg xxx)
+          #.@cl-annot-revisit:optional initform3 (slot3 :initarg yyy :initform zzz)))
+       '(defclass foo ()
+         (slot0
+          (slot1 :initform initform1 :initarg :slot1)
+          (slot2 :initform initform2 :initarg xxx)
+          (slot3 :initarg yyy :initform zzz))))))
