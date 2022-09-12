@@ -53,5 +53,7 @@
    #:expand-export-structure
    ;; slot.lisp
    #:at-required-precondition-error
+   #:at-required-precondition-error-slot-name
    #:at-required-runtime-error
-   ))
+   #:at-required-runtime-error-slot-name
+   #:at-required-runtime-error-initarg))
