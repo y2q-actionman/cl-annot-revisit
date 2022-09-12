@@ -1,24 +1,5 @@
 (in-package #:cl-annot-revisit/at-syntax)
 
-(defgeneric find-at-syntax-arity (operator)
-  (:documentation "Returns at-syntax arity of OPERATOR. If this
-  returns NIL, OPERATOR is considered as not for @-syntax.")
-  (:method (operator)
-    "Default is 1, means OPERATOR takes one argument for '@' syntax."
-    (declare (ignore operator))
-    1))
-
-(defgeneric expand-at-read-time-p (operator)
-  (:documentation "If this returns T, the macro named OPERATOR will be
-  `macroexpand'ed at read-time.
-
-  This feature is for supporting ':inline' feature of the original
-  cl-annot, but not needed conceptually because you can use '#.'
-  anytime.  So, this function is not exported by design.")
-  (:method (operator)
-    (declare (ignore operator))
-    nil))
-
 (defun read-delimited-list-no-eof (char &optional (stream *standard-input*) recursive-p)
   "Reads until CHAR appearance or the end of stream."
   (let* ((last-char-stream (make-string-input-stream (string char)))

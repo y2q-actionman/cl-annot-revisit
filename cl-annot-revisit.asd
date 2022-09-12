@@ -24,6 +24,6 @@
                 :serial t        
                 :components
                 ((:file "package")
-                 (:file "reader")
-                 (:file "definitions"))))
+                 (:file "defmethods")
+                 (:file "reader"))))
   :in-order-to ((test-op (test-op #:cl-annot-revisit-test))))
