@@ -9,7 +9,7 @@
                 #:find-at-syntax-arity)
   (:export
     #:*cl-annot-compatibility*
-    #:lambda-list-required-arguments
+    #:count-lambda-list-required-arguments
     #:find-at-syntax-arity
     #:eval-at-read-time-p
     #:resolve-at-syntax-alias))

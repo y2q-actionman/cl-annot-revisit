@@ -2,7 +2,7 @@
 
 (defmacro defannotation
     (name lambda-list
-     (&key (arity (length (lambda-list-required-arguments lambda-list)))
+     (&key (arity (count-lambda-list-required-arguments lambda-list))
         (inline nil inline-supplied-p)
         alias)
      &body body)

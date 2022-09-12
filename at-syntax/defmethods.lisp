@@ -1,18 +1,16 @@
 (in-package #:cl-annot-revisit/at-syntax)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun lambda-list-required-arguments (lambda-list)
-    "Returns list of symbols naming required arguments in LAMBDA-LIST."
-    ;; Drop &whole or &environment and its argument.
-    (loop for i = (first lambda-list)
-          while (member i '(&whole &environment))
-          do (setf lambda-list (nthcdr 2 lambda-list)))
-    (loop for i in lambda-list
-          until (member i lambda-list-keywords)
-          collect i))
-  ;; TODO: use this and https://github.com/Shinmera/trivial-arguments
-  ;; for calc arity in `find-at-syntax-arity'.
-  )
+  (defun count-lambda-list-required-arguments (lambda-list)
+    "Counts required arguments in LAMBDA-LIST."
+    (let ((required-arg-start lambda-list))
+      (when (starts-with '&whole required-arg-start)
+        (setf required-arg-start (nthcdr 2 required-arg-start)))
+      (when (starts-with '&environment required-arg-start)
+        (setf required-arg-start (nthcdr 2 required-arg-start)))
+      (loop for i in required-arg-start
+            until (member i lambda-list-keywords)
+            count i))))
 
 (defgeneric find-at-syntax-arity (operator cl-annot-compatible-p)
   (:documentation "Returns at-syntax arity of OPERATOR. If this
@@ -36,7 +34,7 @@
        (destructuring-case operator
          ((lambda lambda-list &body body)
           (declare (ignore body))
-          (length (lambda-list-required-arguments lambda-list)))
+          (count-lambda-list-required-arguments lambda-list))
          ((otherwise &rest _)
           (declare (ignore _))
           nil)))
