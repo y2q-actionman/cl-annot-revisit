@@ -5,5 +5,6 @@
   :depends-on (:cl-annot-revisit)
   :pathname #.(make-pathname :directory '(:relative "compat"))
   :serial t
-  :components ((:file "compat")
-               (:file "definitions")))
+  :components ((:file "package")
+               (:file "compat")
+               (:file "defannotation")))

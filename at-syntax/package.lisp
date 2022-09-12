@@ -7,4 +7,7 @@
                 #:*at-macro-verbose*
                 #:find-at-syntax-arity)
   (:export
-    #:find-at-syntax-arity))
+    #:*cl-annot-compatibility*
+    #:find-at-syntax-arity
+    #:expand-at-read-time-p
+    #:resolve-at-syntax-alias))

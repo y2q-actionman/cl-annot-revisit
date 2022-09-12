@@ -1,70 +1,63 @@
-(defpackage #:cl-annot-revisit-compat
-  (:use #:cl #:alexandria)
-  (:import-from #:cl-annot-revisit
-                #:*at-macro-verbose*)
-  (:import-from #:cl-annot-revisit/at-syntax
-                #:find-at-syntax-arity)
-  (:export #:*cl-annot-compatibility*
-           #:defannotation))
-
 (in-package #:cl-annot-revisit-compat)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *cl-annot-compatibility* nil)
+;;; Copied from the original cl-annot.
+(defpackage #:cl-annot.core
+  (:use :cl)
+  (:export
+    #:annotation-real
+    #:annotation-arity
+    #:annotation-inline-p
+    #:annotation-form
+    #:annotation-form-p
+    #:%annotation))
 
-  (define-constant +cl-annot-core-package-name+ "CL-ANNOT.CORE"
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmethod cl-annot-revisit/at-syntax:find-at-syntax-arity (operator (cl-annot-compatible-p (eql t)))
+    (or (get operator 'cl-annot.core:annotation-arity)
+        (call-next-method)))
+
+  (defmethod cl-annot-revisit/at-syntax:expand-at-read-time-p (operator (cl-annot-compatible-p (eql t)))
+    (or (get operator 'cl-annot.core:annotation-inline-p)
+        (call-next-method)))
+
+  (defmethod cl-annot-revisit/at-syntax:resolve-at-syntax-alias (operator (cl-annot-compatible-p (eql t)))
+    (or (get operator 'cl-annot.core:annotation-real)
+        (call-next-method))))
+
+;;; In the original cl-annot, some '@' macros are defined as 'inline'.
+;;; I follow the convention below.
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (define-constant +compat-inline-operator-list+
+      '(cl-annot-revisit:ignore cl-annot-revisit:ignorable cl-annot-revisit:dynamic-extent
+        cl-annot-revisit:special cl-annot-revisit:type cl-annot-revisit:ftype
+        cl-annot-revisit:inline cl-annot-revisit:notinline cl-annot-revisit:optimize
+        ;; 'declaration' was :inline in cl-annot, but I think it is a bug.
+        cl-annot-revisit:optional cl-annot-revisit:required)
     :test 'equal)
 
-  (defun find-cl-annot-symbol (symbol-name)
-    (if-let ((package (find-package +cl-annot-core-package-name+)))
-      (find-symbol symbol-name package)))
+  (defun set-to-compat-inline-operator (operator-name)
+    (setf (get operator-name 'cl-annot.core:annotation-inline-p)
+          t))
 
-  (defmethod cl-annot-revisit/at-syntax:find-at-syntax-arity :around ((symbol symbol))
-    (or (if *cl-annot-compatibility*
-            (get symbol (find-cl-annot-symbol "ANNOTATION-ARITY")))
-        (call-next-method)))
+  (loop for i in +compat-inline-operator-list+
+        do (set-to-compat-inline-operator i)))
 
-  (defmethod cl-annot-revisit/at-syntax::expand-at-read-time-p :around ((symbol symbol))
-    (or (if *cl-annot-compatibility*
-            (get symbol (find-cl-annot-symbol "ANNOTATION-INLINE-P")))
-        (call-next-method)))
+;;; In the original cl-annot, some macros has an alias from CL symbols.
 
-  (defun lambda-list-required-arguments (lambda-list)
-    "Returns list of symbols naming required arguments in LAMBDA-LIST."
-    ;; Drop &whole or &environment and its argument.
-    (loop for i = (first lambda-list)
-          while (member i '(&whole &environment))
-          do (setf lambda-list (nthcdr 2 lambda-list)))
-    (loop for i in lambda-list
-          until (member i lambda-list-keywords)
-          collect i))
-  ;; TODO: use this and https://github.com/Shinmera/trivial-arguments
-  ;; for calc arity in `find-at-syntax-arity'.
-  )
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (define-constant +compat-alias-operator-list+
+      '(cl-annot-revisit:export
+        cl-annot-revisit:ignore cl-annot-revisit:ignorable cl-annot-revisit:dynamic-extent
+        cl-annot-revisit:special cl-annot-revisit:type cl-annot-revisit:ftype
+        cl-annot-revisit:inline cl-annot-revisit:notinline cl-annot-revisit:optimize
+        cl-annot-revisit:declaration)
+    :test 'equal)
 
-(defmacro defannotation
-    (name lambda-list
-     (&key (arity (length (lambda-list-required-arguments lambda-list)))
-        (inline nil inline-supplied-p)
-        alias)
-     &body body)
-  "`cl-annot:defannotation' like one."
-  (let ((alias-form
-          (when alias
-            (when *at-macro-verbose*
-              (warn ":alias keyword is not recommended."))
-            `(defannotation ,alias (&rest forms) (:arity ,arity :inline ,inline)
-               `(,',name ,@forms)))))
-    `(progn
-       (eval-when (:compile-toplevel :load-toplevel :execute)
-         (defmethod find-at-syntax-arity ((_ (eql ',name)))
-           (declare (ignorable _))
-           ,arity)
-         ,@(if inline-supplied-p
-               `((defmethod cl-annot-revisit/at-syntax::expand-at-read-time-p ((_ (eql ',name)))
-                   (declare (ignorable _))
-                   ,inline))))
-       ,@(if alias-form
-             `(,alias-form))
-       (defmacro ,name ,lambda-list
-         ,@body))))
+  (defun set-compat-cl-alias-operator (operator-name)
+    (let ((cl-symbol (find-symbol (symbol-name operator-name) :cl)))
+      (setf (get cl-symbol 'cl-annot.core:annotation-real)
+            operator-name)))
+  
+  (loop for i in +compat-alias-operator-list+
+        do (set-compat-cl-alias-operator i)))

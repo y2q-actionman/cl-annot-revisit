@@ -1,5 +1,7 @@
 (in-package #:cl-annot-revisit/at-syntax)
 
+(defvar *cl-annot-compatibility* nil)
+
 (defun read-delimited-list-no-eof (char &optional (stream *standard-input*) recursive-p)
   "Reads until CHAR appearance or the end of stream."
   (let* ((last-char-stream (make-string-input-stream (string char)))
@@ -18,17 +20,18 @@
  If arity is :infinite, this function tries to read until next ')' or
  EOF. This weird feature allows us to effect the whole file."
   (let* ((operator (read stream t :eof t))
+         (operator (resolve-at-syntax-alias operator *cl-annot-compatibility*))
          (arity (or arity
-                    (find-at-syntax-arity operator))))
+                    (find-at-syntax-arity operator *cl-annot-compatibility*))))
     ;; If no arity is supplied, the operator is not registered as '@' syntax macro.
     (unless arity
       (typecase operator
         (symbol
-         (when *at-macro-verbose*
+         (when *at-macro-verbose* ;TODO: use style-warnings.
            (warn "'~A', appeared after '~C', is not for @-syntax." operator at-char))
          (return-from read-at-syntax (intern (format nil "~C~A" at-char operator))))
         (t
-         (when *at-macro-verbose*
+         (when *at-macro-verbose* ;TODO: use style-warnings.
            (warn "'~A', appeared after '~C', is not a symbol." operator at-char))
          (return-from read-at-syntax operator))))
     ;; Collect arguments
@@ -40,7 +43,7 @@
       ;; If the at-macro was requested read-time expansion by
       ;; `expand-at-read-time-p', the form is expaneded at read
       ;; time.
-      (if (expand-at-read-time-p operator)
+      (if (expand-at-read-time-p operator *cl-annot-compatibility*)
           (macroexpand at-macro-form)
           at-macro-form))))
 
