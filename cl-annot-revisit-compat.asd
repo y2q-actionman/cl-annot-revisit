@@ -6,5 +6,4 @@
   :pathname #.(make-pathname :directory '(:relative "compat"))
   :serial t
   :components ((:file "package")
-               (:file "compat")
-               (:file "defannotation")))
+               (:file "compat")))

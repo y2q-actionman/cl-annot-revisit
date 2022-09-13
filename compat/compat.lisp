@@ -17,7 +17,7 @@
     (or (get operator 'cl-annot.core:annotation-arity)
         (call-next-method)))
 
-  (defmethod cl-annot-revisit/at-syntax:eval-at-read-time-p
+  (defmethod cl-annot-revisit/at-syntax:expand-at-read-time-p
       ((operator symbol) (cl-annot-compatible-p (eql t)))
     (or (get operator 'cl-annot.core:annotation-inline-p)
         (call-next-method)))
@@ -27,30 +27,107 @@
     (or (get operator 'cl-annot.core:annotation-real)
         (call-next-method))))
 
+(defmacro defannotation
+    (name lambda-list
+     (&key (arity (count-lambda-list-required-arguments lambda-list))
+        (inline nil inline-supplied-p)
+        (alias nil alias-supplied-p))
+     &body body)
+  "`cl-annot:defannotation' like one."
+  (let ((alias-list (ensure-list alias)))
+    `(progn
+       (eval-when (:compile-toplevel :load-toplevel :execute)
+         (setf (get ',name 'cl-annot.core:annotation-arity) ,arity)
+         ,@(when inline-supplied-p
+             `((setf (get ',name 'cl-annot.core:annotation-inline-p) ,inline)))
+         ,@(when alias-supplied-p
+             (loop for alias in alias-list
+                   collect
+                   `(setf (get ',alias 'cl-annot.core:annotation-real) ',name))))
+       (defmacro ,name ,lambda-list
+         ,@body))))
+
 ;;; In the original cl-annot, some '@' macros are defined as 'inline'
 ;;; or may have an alias from CL symbols. I follow the convention
 ;;; below.
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun set-cl-annot-compat-config (name arity inline alias-list)
-    (setf (get name 'cl-annot.core:annotation-arity) arity
-          (get name 'cl-annot.core:annotation-inline-p) inline)
-    (loop for alias in alias-list
-          do (setf (get alias 'cl-annot.core:annotation-real) name)))
+;;; Having an alias to the CL package.
 
-  (set-cl-annot-compat-config 'cl-annot-revisit:doc 2 nil nil)
-  (set-cl-annot-compat-config 'cl-annot-revisit:metaclass 2 nil nil)
-  (set-cl-annot-compat-config 'cl-annot-revisit:optional 2 t nil)
-  (set-cl-annot-compat-config 'cl-annot-revisit:required 1 t nil)
-  (set-cl-annot-compat-config 'cl-annot-revisit:export 1 nil '(cl:export))
-  (set-cl-annot-compat-config 'cl-annot-revisit:ignore 1 t '(cl:ignore))
-  (set-cl-annot-compat-config 'cl-annot-revisit:ignorable 1 t '(cl:ignorable))
-  (set-cl-annot-compat-config 'cl-annot-revisit:dynamic-extent 1 t '(cl:dynamic-extent))
-  ;; 'declaration' was :inline in cl-annot, but I think it is a bug.
-  (set-cl-annot-compat-config 'cl-annot-revisit:declaration 1 nil '(cl:declaration)) ; 
-  (set-cl-annot-compat-config 'cl-annot-revisit:special 1 t '(cl:special))
-  (set-cl-annot-compat-config 'cl-annot-revisit:type 2 t '(cl:type))
-  (set-cl-annot-compat-config 'cl-annot-revisit:ftype 2 t '(cl:ftype))
-  (set-cl-annot-compat-config 'cl-annot-revisit:optimize 1 t '(cl:optimize))
-  (set-cl-annot-compat-config 'cl-annot-revisit:inline 1 t '(cl:inline))
-  (set-cl-annot-compat-config 'cl-annot-revisit:notinline 1 t '(cl:notinline)))
+(defannotation compat-export (form)
+    (:alias cl:export)
+  `(cl-annot-revisit:export ,form))
+
+;;; Slots
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun %unquote (form)
+    "(quote <something>) -> <something>"
+    (assert (starts-with 'quote form))
+    (second form)))
+
+(defannotation compat-optional (initform slot-specifier)
+    (:inline t :alias cl-annot-revisit:optional)
+  (%unquote
+   (macroexpand `(cl-annot-revisit:optional ,initform ,slot-specifier))))
+
+(defannotation compat-required (slot-specifier)
+    (:inline t :alias cl-annot-revisit:required)
+  (%unquote
+   (macroexpand `(cl-annot-revisit:required ,slot-specifier))))
+
+;; Declarations
+  
+(defannotation compat-ignore (name-or-names)
+    (:inline t :alias (cl-annot-revisit:ignore cl:ignore))
+  (%unquote
+   (macroexpand `(cl-annot-revisit:ignore ,name-or-names))))
+
+(defannotation compat-ignorable (name-or-names)
+    (:inline t :alias (cl-annot-revisit:ignorable cl:ignorable))
+  (%unquote
+   (macroexpand `(cl-annot-revisit:ignorable ,name-or-names))))
+
+(defannotation compat-dynamic-extent (name-or-names)
+    (:inline t :alias (cl-annot-revisit:dynamic-extent cl:dynamic-extent))
+  (%unquote
+   (macroexpand `(cl-annot-revisit:dynamic-extent ,name-or-names))))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun %remove-declaim-and-unquote (form)
+    "See `cl-annot-revisit/at-macro::expand-to-declaim-form'"
+    (assert (starts-with 'progn form))
+    (assert (starts-with 'declaim (second form)))
+    (%unquote (third form))))
+
+(defannotation compat-special (name-or-names)
+    (:inline t :alias (cl-annot-revisit:special cl:special))
+  (%remove-declaim-and-unquote
+   (macroexpand `(cl-annot-revisit:special ,name-or-names))))
+
+(defannotation compat-type (typespec name-or-names)
+    (:inline t :alias (cl-annot-revisit:type cl:type))
+  (%remove-declaim-and-unquote
+   (macroexpand `(cl-annot-revisit:type ,typespec ,name-or-names))))
+
+(defannotation compat-ftype (typespec name-or-names)
+    (:inline t :alias (cl-annot-revisit:ftype cl:ftype))
+  (%remove-declaim-and-unquote
+   (macroexpand `(cl-annot-revisit:ftype ,typespec ,name-or-names))))
+
+(defannotation compat-inline (name-or-names)
+    (:inline t :alias (cl-annot-revisit:inline cl:inline))
+  (%remove-declaim-and-unquote
+   (macroexpand `(cl-annot-revisit:inline ,name-or-names))))
+
+(defannotation compat-notinline (name-or-names)
+    (:inline t :alias (cl-annot-revisit:notinline cl:notinline))
+  (%remove-declaim-and-unquote
+   (macroexpand `(cl-annot-revisit:notinline ,name-or-names))))
+
+(defannotation compat-optimize (qualities)
+    (:inline t :alias (cl-annot-revisit:optimize cl:optimize))
+  (%remove-declaim-and-unquote
+   (macroexpand `(cl-annot-revisit:optimize ,qualities))))
+
+;;; 'declaration' was :inline in cl-annot and expanded like '(declare (declaration ...))'
+;;; I think it is a bug because `cl:declaration' is proclamation only.

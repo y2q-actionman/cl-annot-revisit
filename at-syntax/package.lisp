@@ -13,5 +13,5 @@
     #:*cl-annot-compatibility*
     #:count-lambda-list-required-arguments
     #:find-at-syntax-arity
-    #:eval-at-read-time-p
+    #:expand-at-read-time-p
     #:resolve-at-syntax-alias))

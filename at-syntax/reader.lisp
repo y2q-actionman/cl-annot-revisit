@@ -43,11 +43,11 @@
                 `(,@operator ,@args))   ; @() support
                (t
                 `(,operator ,@args)))))
-      ;; If the at-macro was requested read-time eval by
-      ;; `eval-at-read-time-p', the form is expaneded at read
+      ;; If the at-macro was requested read-time expansion by
+      ;; `expand-at-read-time-p', the form is expaneded at read
       ;; time.
-      (if (eval-at-read-time-p operator *cl-annot-compatibility*)
-          (eval at-macro-form)
+      (if (expand-at-read-time-p operator *cl-annot-compatibility*)
+          (macroexpand at-macro-form)
           at-macro-form))))
 
 (defreadtable cl-annot-revisit:at-syntax-readtable
