@@ -1,7 +1,7 @@
 (in-package #:cl-annot-revisit/at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defgeneric declaration-target-operator-p (declaration-name operator)
+  (defgeneric incompleted-declamation-applicable-p (declaration-name operator)
     (:documentation "Returns true when DECLARATION-NAME is usable for OPERATOR.")
     (:method ((declaration-name (eql 'cl:special)) operator)
       (variable-definition-operator-p operator))
@@ -26,7 +26,7 @@
     (:documentation "Called by `expand-add-declamation' to expand FORM.")
     (:method (operator decl-specifier form)
       (let ((declaration-name (first decl-specifier)))
-        (if (declaration-target-operator-p declaration-name operator)
+        (if (incompleted-declamation-applicable-p declaration-name operator)
             (add-declaim-to-definiton-form form decl-specifier)
             form))))
 

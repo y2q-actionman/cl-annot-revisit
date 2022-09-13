@@ -28,7 +28,7 @@
    #:expand-add-declaration-using-head
    #:expand-add-declaration
    ;; declamation.lisp
-   #:declaration-target-operator-p
+   #:incompleted-declamation-applicable-p
    #:expand-incompleted-declamation-using-head
    #:expand-incompleted-declamation
    ;; documentation.lisp
