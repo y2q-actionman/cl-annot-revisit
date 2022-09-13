@@ -149,8 +149,7 @@
          (declare (optimize (speed 3))))))
   (within-at-syntax-readtable
     (signals stream-error
-      (read-from-string "@cl-annot-revisit:optimize")))
-  (within-at-syntax-readtable
+      (read-from-string "@cl-annot-revisit:optimize"))
     (signals stream-error
       (read-from-string "@cl-annot-revisit:optimize (speed 3)"))))
 
@@ -216,8 +215,7 @@
          (declare (optimize (speed 3))))))
   (within-at-syntax-readtable
     (signals stream-error
-      (read-from-string "@(cl-annot-revisit:optimize)")))
-  (within-at-syntax-readtable
+      (read-from-string "@(cl-annot-revisit:optimize)"))
     (signals stream-error
       (read-from-string "@(cl-annot-revisit:optimize (speed 3))"))))
 
