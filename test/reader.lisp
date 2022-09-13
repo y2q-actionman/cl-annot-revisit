@@ -153,14 +153,6 @@
        '@ (lambda (x y z) (+ x y z)) 1 20 300
        '((lambda (x y z) (+ x y z)) 1 20 300))))
 
-(test test-at-syntax-shart-at
-  (is (equal
-       '#@list 1
-       '(list 1)))
-  (is (equal
-       '#5@list 1 2 3 4 5
-       '(list 1 2 3 4 5))))
-
 (defmethod cl-annot-revisit:find-at-syntax-arity ((op (eql 'not-annot-op)) _)
   (declare (ignorable op _))
   nil)
