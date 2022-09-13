@@ -12,7 +12,7 @@
    ;; condition.lisp
    ;;
    ;; util.lisp
-   ;;
+   #:lambda-expression-p
    ;; eval-when.lisp
    ;;
    ;; form-traversal.lisp

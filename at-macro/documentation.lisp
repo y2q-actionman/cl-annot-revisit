@@ -44,7 +44,7 @@ If FORM can be expanded, returns its expansion. If not, returns FORM.")
         form))
     (:method ((operator (eql 'function)) docstring form)
       "Special handling for #'(lambda ..), adds DOCSTRING to the anonymous function."
-      (if (starts-with 'lambda (second form))
+      (if (lambda-expression-p (second form))
           (expand-doc-macro-to-assign docstring form 'function)
           form)))
 

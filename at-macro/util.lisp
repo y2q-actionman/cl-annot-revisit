@@ -31,7 +31,11 @@ when (funcall TEST OBJ) results true."
     "Return true when it is a function name."
     (typecase x
       (symbol t)
-      (cons (starts-with 'cl:setf x)))))
+      (cons (starts-with 'cl:setf x))))
+
+  (defun lambda-expression-p (form)
+    (and (consp form)
+         (eq (first form) 'cl:lambda))))
 
 (defmacro mv-cond-let-n (n (&rest vars) &body clauses)
   "Multiple value variant of the famous 'COND-LET'. It takes multiple

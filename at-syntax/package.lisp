@@ -7,6 +7,8 @@
                 #:*at-macro-verbose*
                 #:at-macro-style-warning
                 #:find-at-syntax-arity)
+  (:import-from #:cl-annot-revisit/at-macro
+                #:lambda-expression-p)
   (:export
     #:*cl-annot-compatibility*
     #:count-lambda-list-required-arguments

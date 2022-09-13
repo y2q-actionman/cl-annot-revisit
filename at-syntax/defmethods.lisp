@@ -30,14 +30,10 @@
           2)
          (otherwise
           1)))
-      (list
-       (destructuring-case operator
-         ((lambda lambda-list &body body)
-          (declare (ignore body))
-          (count-lambda-list-required-arguments lambda-list))
-         ((otherwise &rest _)
-          (declare (ignore _))
-          nil)))
+      (cons
+       (if (lambda-expression-p operator)
+           (count-lambda-list-required-arguments (second operator))
+           1))
       (t nil))))
 
 (defgeneric eval-at-read-time-p (operator cl-annot-compatible-p)
