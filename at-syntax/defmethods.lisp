@@ -16,25 +16,26 @@
   (:documentation "Returns at-syntax arity of OPERATOR. If this
   returns NIL, OPERATOR is considered as not for @-syntax.
   Default is 1, means OPERATOR takes one argument for '@' syntax.")
-  (:method (operator cl-annot-compatible-p)
+  (:method ((operator symbol) cl-annot-compatible-p)
     (declare (ignore cl-annot-compatible-p))
-    (typecase operator
-      (symbol
-       (case operator
-         ((cl-annot-revisit:ignore cl-annot-revisit:ignorable cl-annot-revisit:dynamic-extent
-            cl-annot-revisit:type cl-annot-revisit:ftype
-            cl-annot-revisit:optimize
-            cl-annot-revisit:documentation cl-annot-revisit:doc
-            cl-annot-revisit:metaclass
-            cl-annot-revisit:optional)
-          2)
-         (otherwise
-          1)))
-      (cons
-       (if (lambda-expression-p operator)
-           (count-lambda-list-required-arguments (second operator))
-           1))
-      (t nil))))
+    (case operator
+      ((cl-annot-revisit:ignore cl-annot-revisit:ignorable cl-annot-revisit:dynamic-extent
+         cl-annot-revisit:type cl-annot-revisit:ftype
+         cl-annot-revisit:optimize
+         cl-annot-revisit:documentation cl-annot-revisit:doc
+         cl-annot-revisit:metaclass
+         cl-annot-revisit:optional)
+       2)
+      (otherwise
+       1)))
+  (:method ((operator cons) cl-annot-compatible-p)
+    (declare (ignore cl-annot-compatible-p))
+    (if (lambda-expression-p operator)
+        (count-lambda-list-required-arguments (second operator))
+        1))
+  (:method (operator cl-annot-compatible-p)
+    (declare (ignore operator cl-annot-compatible-p))
+    nil))
 
 (defgeneric eval-at-read-time-p (operator cl-annot-compatible-p)
   (:documentation "If this returns T, the macro named OPERATOR will be

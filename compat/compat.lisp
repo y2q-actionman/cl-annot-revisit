@@ -12,15 +12,18 @@
     #:%annotation))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defmethod cl-annot-revisit/at-syntax:find-at-syntax-arity (operator (cl-annot-compatible-p (eql t)))
+  (defmethod cl-annot-revisit/at-syntax:find-at-syntax-arity
+      ((operator symbol) (cl-annot-compatible-p (eql t)))
     (or (get operator 'cl-annot.core:annotation-arity)
         (call-next-method)))
 
-  (defmethod cl-annot-revisit/at-syntax:eval-at-read-time-p (operator (cl-annot-compatible-p (eql t)))
+  (defmethod cl-annot-revisit/at-syntax:eval-at-read-time-p
+      ((operator symbol) (cl-annot-compatible-p (eql t)))
     (or (get operator 'cl-annot.core:annotation-inline-p)
         (call-next-method)))
 
-  (defmethod cl-annot-revisit/at-syntax:resolve-at-syntax-alias (operator (cl-annot-compatible-p (eql t)))
+  (defmethod cl-annot-revisit/at-syntax:resolve-at-syntax-alias
+      ((operator symbol) (cl-annot-compatible-p (eql t)))
     (or (get operator 'cl-annot.core:annotation-real)
         (call-next-method))))
 
