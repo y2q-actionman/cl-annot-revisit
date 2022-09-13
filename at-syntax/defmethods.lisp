@@ -16,6 +16,9 @@
   (:documentation "Returns at-syntax arity of OPERATOR. If this
   returns NIL, OPERATOR is considered as not for @-syntax.
   Default is 1, means OPERATOR takes one argument for '@' syntax.")
+  (:method ((operator null) cl-annot-compatible-p)
+    (declare (ignore cl-annot-compatible-p))
+    nil)
   (:method ((operator symbol) cl-annot-compatible-p)
     (declare (ignore cl-annot-compatible-p))
     (case operator

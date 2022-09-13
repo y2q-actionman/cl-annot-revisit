@@ -8,12 +8,14 @@
 
 (test test-at-syntax-symbol-empty
   (within-at-syntax-readtable
-   (signals stream-error
-     (read-from-string "@"))
-   (signals stream-error
-     (read-from-string "@)"))
-   (signals stream-error
-     (read-from-string "@ "))))
+    (signals stream-error
+      (read-from-string "@"))
+    (signals stream-error
+      (read-from-string "@)"))
+    (signals stream-error
+      (read-from-string "@ "))
+    (signals stream-error
+      (read-from-string "@("))))
 
 (test test-at-syntax-symbol-eval-when
   (is (equal '@cl-annot-revisit:eval-when-compile (1 2 3)
@@ -153,18 +155,32 @@
        '@ (lambda (x y z) (+ x y z)) 1 20 300
        '((lambda (x y z) (+ x y z)) 1 20 300))))
 
+
 (defmethod cl-annot-revisit:find-at-syntax-arity ((op (eql 'not-annot-op)) _)
   (declare (ignorable op _))
   nil)
 
 (test test-at-syntax-not-annot
   (within-at-syntax-readtable
-    (let ((*at-macro-verbose* t)
-          (*package* (find-package :cl-annot-revisit-test)))
-      (signals at-macro-style-warning
-        (read-from-string "@200"))
-      (signals at-macro-style-warning
-        (read-from-string "@not-annot-op")))))
+    (let ((*package* (find-package :cl-annot-revisit-test)))
+      (let ((*at-macro-verbose* t))
+        (signals at-macro-style-warning
+          (read-from-string "@200"))
+        (signals at-macro-style-warning
+          (read-from-string "@not-annot-op"))
+        (signals at-macro-style-warning
+          (read-from-string "@()")))
+      (let ((*at-macro-verbose* nil))
+        (with-input-from-string (stream "@200 100")
+          (eql (read stream) 200)
+          (eql (read stream) 100))
+        (with-input-from-string (stream "@not-annot-op @not-annot-op")
+          (eql (read stream) 'not-annot-op)
+          (eql (read stream) 'not-annot-op))
+        (with-input-from-string (stream "@() nil")
+          (eql (read stream) nil)
+          (eql (read stream) nil))))))
+
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defmethod cl-annot-revisit:find-at-syntax-arity ((op (eql 'infinite-annot)) _)
