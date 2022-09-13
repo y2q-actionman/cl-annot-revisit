@@ -174,9 +174,10 @@
       (signals at-macro-style-warning
         (read-from-string "@not-annot-op")))))
 
-(defmethod cl-annot-revisit:find-at-syntax-arity ((op (eql 'infinite-annot)) _)
-  (declare (ignorable op _))
-  :infinite)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmethod cl-annot-revisit:find-at-syntax-arity ((op (eql 'infinite-annot)) _)
+    (declare (ignorable op _))
+    :infinite))
 
 (defmacro infinite-annot (&body body)
   `(progn ,@body))
