@@ -36,7 +36,13 @@
                      (read-delimited-list-no-eof #\) stream t)
                      (loop repeat arity
                         collect (read stream t :eof t))))
-           (at-macro-form `(,operator ,@args)))
+           (at-macro-form
+             (cond
+               ((and (consp operator)
+                     (not (lambda-expression-p operator)))
+                `(,@operator ,@args))   ; @() support
+               (t
+                `(,operator ,@args)))))
       ;; If the at-macro was requested read-time eval by
       ;; `eval-at-read-time-p', the form is expaneded at read
       ;; time.

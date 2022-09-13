@@ -56,4 +56,3 @@
   (is (equal-after-macroexpand
        '@read-time-eval-annot (+ 1 2 3)
        (format nil "~A is ~A" '(+ 1 2 3) (+ 1 2 3)))))
-

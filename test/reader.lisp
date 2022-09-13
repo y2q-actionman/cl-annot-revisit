@@ -196,3 +196,13 @@
            "b"
            "c"
            (list 'a 'b 'c))))))
+
+(test test-at-cons
+  (within-at-syntax-readtable
+    (let ((*package* (find-package :cl-annot-revisit-test)))
+      (is (equal-after-macroexpand
+           '@(cl-annot-revisit:ignore x)
+           (defun foo (x) 9999)
+           '(defun foo (x)
+             (declare (ignore x))
+             9999))))))
