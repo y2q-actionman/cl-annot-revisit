@@ -23,7 +23,7 @@
    #:allow-macroexpand-internal-form-p
    ;; declaration.lisp
    #:operator-body-location
-   #:operator-accept-docstring-in-body-p
+   #:operator-accept-docstring-p
    #:valid-proclamation-identifier-p
    #:expand-add-declaration-using-head
    #:expand-add-declaration

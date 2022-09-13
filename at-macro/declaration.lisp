@@ -31,7 +31,7 @@
         cl:define-method-combination cl:defsetf) ; only in long-form.
     :test 'equal)
 
-  (defgeneric operator-accept-docstring-in-body-p (operator)
+  (defgeneric operator-accept-docstring-p (operator)
     (:documentation "Returns T if OPERATOR accepts docstring in its body.")
     (:method (operator)
       (member operator +standard-operators-accept-docstring-in-body+)))
@@ -95,7 +95,7 @@ If FORM can be expanded, returns the expansion. If not, returns FORM.")
     (:method (operator decl-specifier form)
       (if-let ((body-location (operator-body-location operator)))
         (insert-declaration-to-nth-body body-location form decl-specifier
-                                        :documentation (operator-accept-docstring-in-body-p operator))
+                                        :documentation (operator-accept-docstring-p operator))
         form))
     (:method ((operator (eql 'defgeneric)) decl-specifier form)
       "For `defgeneric'. Note: This does not add declarations into methods defined in this form."
