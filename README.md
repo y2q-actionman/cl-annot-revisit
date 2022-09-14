@@ -58,6 +58,13 @@ And, adding a docstring
 
 ## Using with '@' syntax
 
+(stub)
+
+### @(list) syntax
+
+### @symbol syntax
+
+
 ``` common-lisp
 ;; Enables @ syntax
 (named-readtables:in-readtable cl-annot-revisit:at-syntax-readtable)
@@ -67,6 +74,12 @@ And, adding a docstring
 @cl-annot-revisit:export
 (defun foo () t)
 ```
+
+### #n@(list) and #n@symbol syntax
+
+### #@(list) and #@symbol -- infinite application
+
+
 
 # See Also
 

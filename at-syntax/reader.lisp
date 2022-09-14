@@ -14,15 +14,15 @@
       (unread-char char stream))
     ret))
 
-(defun read-at-syntax (stream at-char)
-  "The reader-macro function of '@' char. It reads the next symbol and
- collects arguments by ARITY or`find-at-syntax-arity', and creates a
- new form.
+(defun read-at-syntax (stream at-char arity)
+  "The main reader of at-syntax. It reads the next symbol and collects arguments
+ by ARITY or`find-at-syntax-arity', and creates a new form.
  If arity is :infinite, this function tries to read until next ')' or
  EOF. This weird feature allows us to effect the whole file."
   (let* ((operator (read stream t :eof t))
          (operator (resolve-at-syntax-alias operator *cl-annot-compatibility*))
-         (arity (find-at-syntax-arity operator *cl-annot-compatibility*)))
+         (arity (or arity
+                    (find-at-syntax-arity operator *cl-annot-compatibility*))))
     ;; If no arity is supplied, the operator is not registered as '@' syntax macro.
     (unless arity
       (when *at-macro-verbose*
@@ -50,6 +50,15 @@
           (macroexpand at-macro-form)
           at-macro-form))))
 
+(defun read-at (stream char)
+  "The reader-macro function of '@' char."
+  (read-at-syntax stream char nil))
+
+(defun read-sharp-at (stream char n)
+  "The reader-macro function of '#@' syntax."
+  (read-at-syntax stream char (or n :infinite)))
+
 (defreadtable cl-annot-revisit:at-syntax-readtable
   (:merge :standard)
-  (:macro-char #\@ #'read-at-syntax t))
+  (:macro-char #\@ #'read-at t)
+  (:dispatch-macro-char #\# #\@ #'read-sharp-at))

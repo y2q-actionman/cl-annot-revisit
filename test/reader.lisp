@@ -368,3 +368,28 @@
             "c")
          (list 'a 'b 'c)))))
 
+(test test-at-syntax-shart-at-infinite
+  ;; #@symbol
+  (is (equal
+       '(list 1 2 3 4 5 6 7)
+       '#@list 1 2 3 4 5 6 7))
+  ;; #@(list)
+  (is (equal
+       '(concatenate 'string "abc" "ABC" "123")
+       '#@(concatenate 'string)
+       "abc"
+       "ABC"
+       "123")))
+
+(test test-at-syntax-shart-at-integer
+  ;; #n@symbol
+  (is (equal
+       '#5@list 1 2 3 4 5
+       '(list 1 2 3 4 5)))
+  ;; #n@(list)
+  (is (equal
+       '#3@(concatenate 'string)
+       "abc"
+       "ABC"
+       "123"
+       '(concatenate 'string "abc" "ABC" "123"))))
