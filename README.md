@@ -4,14 +4,17 @@
 
 cl-annot-revisit is a re-implementation of [cl-annot](https://github.com/m2ym/cl-annot), an annotation library for Common Lisp.
 
-Motivations why I implemented it again is to split its concept to two parts:
+The main motivation why I implemented it again is to split its concept to two parts:
 
 1. Normal `defmacro`s acting like `export`, `doc`, etc in cl-annot. Overriding and rewriting forms can be implemented only with `defmacro`s conceptually.
 2. `@` reader macro which just wraps forms with (), like `@foo bar` => `(foo bar)`.
 
-Another motiviation is to fix many bugs of cl-annot. (TODO: make a link)
+Other motiviations are:
 
-I described my motivations in [this article (Japanese)](http://y2q-actionman.hatenablog.com/entry/2019/12/20/cl-annot_%E3%82%92%E5%86%8D%E5%AE%9F%E8%A3%85%E3%81%97%E3%81%A6_cl-annot-revisit_%E3%82%92%E4%BD%9C%E3%81%A3%E3%81%9F) also.
+- Fix many bugs of cl-annot. (TODO: make a link)
+- Show the funny *infinite* annotation I found. See `#@` syntax below.
+
+I described those in [this article (Japanese)](http://y2q-actionman.hatenablog.com/entry/2019/12/20/cl-annot_%E3%82%92%E5%86%8D%E5%AE%9F%E8%A3%85%E3%81%97%E3%81%A6_cl-annot-revisit_%E3%82%92%E4%BD%9C%E3%81%A3%E3%81%9F) also.
 
 # Before Using This...
 
@@ -26,20 +29,20 @@ Please consider these alternatives:
 - [How to Check Slots Types at make-instance](https://lisp-journey.gitlab.io/blog/how-to-check-slots-types-at-make-instance/) for saying CLOS slots as "optional" or "required".
 - Just wrap your forms with `()` before trying `@` macro.
 
+# Loading
 
+cl-annot-revisit is not Quicklisp-ready now. 
 
-
-# Examples
-
-## Loading
-
-Clone this repository, locate it into `~/quicklisp/local-projects/`, and:
+At this time, clone this repository, locate it into
+`~/quicklisp/local-projects/`, and:
 
 ``` common-lisp
 (ql:quickload "cl-annot-revisit")
 ```
 
-## Using without '@' syntax
+# Usage
+
+## Macros 
 
 `defun` and export its name.
 
@@ -56,7 +59,7 @@ And, adding a docstring
      (defun foo () t)))
 ```
 
-## Using with '@' syntax
+## '@' syntax
 
 (stub)
 
@@ -64,6 +67,7 @@ And, adding a docstring
 
 ### @symbol syntax
 
+`cl-annot-revisit/at-syntax:find-at-syntax-arity`
 
 ``` common-lisp
 ;; Enables @ syntax
@@ -77,7 +81,7 @@ And, adding a docstring
 
 ### #n@(list) and #n@symbol syntax
 
-### #@(list) and #@symbol -- infinite application
+### #@(list) and #@symbol -- *infinite* application
 
 
 
@@ -88,7 +92,7 @@ And, adding a docstring
 
 # License 
 
-Copyright © 2022 YOKOTA Yuki <y2q-actionman@users.noreply.github.com>
+Copyright © 2021-2022 YOKOTA Yuki <y2q-actionman@users.noreply.github.com>
 This work is free. You can redistribute it and/or modify it under the
 terms of the Do What The Fuck You Want To Public License, Version 2,
 as published by Sam Hocevar. See the COPYING file for more details.
