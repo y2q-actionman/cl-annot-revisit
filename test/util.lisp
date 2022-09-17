@@ -9,15 +9,9 @@
   `(equal (multiple-value-list ,form1)
           (multiple-value-list ,form2)))
 
-(defmacro with-function-aliasing (bindings &body body)
-  (loop for (new-name old-name) in bindings
-        as args-sym = (gensym "args")
-        collect `(,new-name (&rest ,args-sym)
-                            (declare (dynamic-extent ,args-sym))
-                            (apply #',old-name ,args-sym))
-          into clauses
-        finally
-           (return `(flet ,clauses ,@body))))
+(defmacro define-alias (new-name old-name)
+  `(defmacro ,new-name (&rest args)
+     `(,',old-name ,@args)))
 
 (defun equal-ignoring-gensym-test-fn (lhs rhs)
   (or (equal lhs rhs)
