@@ -1,19 +1,5 @@
 (in-package #:cl-annot-revisit-test)
 
-(defun expanded-export-name-equalp (cl-annot-revisit-export-form name-or-names
-                                    &aux (names (ensure-list name-or-names)))
-  ;; (cl-annot-revisit:export (defconstant foo 100))
-  ;; ->
-  ;; (progn (eval-when (:compile-toplevel :load-toplevel :execute)
-  ;;          (export '(foo)))
-  ;;        (defconstant foo 100))
-  (equal-after-macroexpand
-   cl-annot-revisit-export-form
-   `(progn
-      (eval-when (:compile-toplevel :load-toplevel :execute)
-        (export '(,@names)))
-      ,@(rest cl-annot-revisit-export-form))))
-
 (test test-export-single
   (is (expanded-export-name-equalp
        '(cl-annot-revisit:export (defconstant hoge 100))

@@ -77,7 +77,7 @@
                      (lambda (e)
                        (let* ((slot-name
                                 (cl-annot-revisit/at-macro:at-required-runtime-error-slot-name e))
-                              (value (format nil "~A-VALUE" slot-name)))
+                              (value (format nil "~A-VALUE" (string-upcase (string slot-name)))))
                          (use-value value e)))))
                 (make-instance 'required-slot-test-class))))
         (and (string= (slot-value obj 'slot1) "SLOT1-VALUE")

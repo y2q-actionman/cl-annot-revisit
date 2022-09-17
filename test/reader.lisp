@@ -348,25 +348,24 @@
   `(progn ,@body))
 
 (test test-at-syntax-infinite-annot
-  (within-at-syntax-readtable
-    (is (equal
-         '(infinite-annot 1 2 3 4 5 6 7 8 9)
-         '@infinite-annot 1 2 3 4 5 6 7 8 9))
-    (is (equal
-         '(a b c)
-         @infinite-annot
-         "a"
-         "b"
-         "c"
-         (list 'a 'b 'c)))
-    ;; @(list) syntax does not see the symbol's arity.
-    (is (equal
-         '(a b c)
-         @(infinite-annot
-            "a"
-            "b"
-            "c")
-         (list 'a 'b 'c)))))
+  (is (equal
+       '(infinite-annot 1 2 3 4 5 6 7 8 9)
+       '@infinite-annot 1 2 3 4 5 6 7 8 9))
+  (is (equal
+       '(a b c)
+       @infinite-annot
+       "a"
+       "b"
+       "c"
+       (list 'a 'b 'c)))
+  ;; @(list) syntax does not see the symbol's arity.
+  (is (equal
+       '(a b c)
+       @(infinite-annot
+          "a"
+          "b"
+          "c")
+       (list 'a 'b 'c))))
 
 (test test-at-syntax-shart-at-infinite
   ;; #@symbol
