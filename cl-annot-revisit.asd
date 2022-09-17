@@ -1,8 +1,9 @@
 (defsystem #:cl-annot-revisit
-  :description "Re-implementation of 'cl-annot', authored by Tomohiro Matsuyama."
+  :description "Re-implementation of 'cl-annot', an annotation syntax library for Common Lisp."
   :license "WTFPL"
   :author "YOKOTA Yuki <y2q.actionman@gmail.com>"
   :depends-on (#:alexandria #:named-readtables)
+  :pathname #.(make-pathname :directory '(:relative "src"))
   :serial t
   :components ((:file "package")
                (:module "at-macro"
@@ -17,8 +18,7 @@
                  (:file "documentation" :depends-on ("util" "form-traversal"))
                  (:file "export" :depends-on ("util" "form-traversal"))
                  (:file "defclass" :depends-on ("export"))
-                 (:file "defstruct" :depends-on ("defclass"
-                                                 "documentation"))
+                 (:file "defstruct" :depends-on ("defclass" "documentation"))
                  (:file "slot" :depends-on ("package"))))
 	       (:module "at-syntax"
                 :serial t        
