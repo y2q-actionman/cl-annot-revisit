@@ -67,7 +67,7 @@ And, adding a docstring
 
 ### @symbol syntax
 
-`cl-annot-revisit/at-syntax:find-at-syntax-arity`
+`cl-annot-revisit-at-syntax:find-at-syntax-arity`
 
 ``` common-lisp
 ;; Enables @ syntax

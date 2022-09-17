@@ -1,4 +1,4 @@
-(in-package #:cl-annot-revisit/at-syntax)
+(in-package #:cl-annot-revisit-at-syntax)
 
 (defvar *cl-annot-compatibility* nil)
 

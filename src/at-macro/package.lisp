@@ -1,6 +1,6 @@
 (in-package :cl-user)
 
-(defpackage #:cl-annot-revisit/at-macro
+(defpackage #:cl-annot-revisit-at-macro
   (:documentation "The at-macros of cl-annot-revisit.")
   (:use #:cl #:alexandria)
   (:import-from #:cl-annot-revisit

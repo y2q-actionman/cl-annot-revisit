@@ -1,4 +1,4 @@
-(in-package #:cl-annot-revisit/at-macro)
+(in-package #:cl-annot-revisit-at-macro)
 
 (defun split-slot-specifier (slot-specifier)
   "Returns the slot name and slot options from SLOT-SPECIFIER."

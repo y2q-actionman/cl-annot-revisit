@@ -2,6 +2,6 @@
 
 (defpackage #:cl-annot-revisit-compat
   (:use #:cl #:alexandria)
-  (:use #:cl-annot-revisit/at-syntax)
+  (:use #:cl-annot-revisit-at-syntax)
   (:export
     #:defannotation))

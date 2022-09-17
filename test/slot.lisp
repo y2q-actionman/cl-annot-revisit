@@ -44,7 +44,7 @@
        '(cl-annot-revisit:required
          (slot2 :initarg :my-initarg))
        'slot2 :my-initarg))
-  (signals cl-annot-revisit/at-macro:at-required-precondition-error
+  (signals cl-annot-revisit-at-macro:at-required-precondition-error
     (macroexpand
      '(cl-annot-revisit:required (slot1 :initform some-form :initarg :slot1)))))
 
@@ -55,7 +55,7 @@
    #.(cl-annot-revisit:required (slot3 :accessor slot3-accessor))))
 
 (test test-required-slot-runtime-error
-  (signals cl-annot-revisit/at-macro:at-required-runtime-error
+  (signals cl-annot-revisit-at-macro:at-required-runtime-error
     (make-instance 'required-slot-test-class))
   (is (typep (make-instance 'required-slot-test-class :slot1 1 'xxx 2 :slot3 3)
              'required-slot-test-class)))
@@ -63,7 +63,7 @@
 (test test-required-slot-runtime-error-restart
   (is (let ((obj
               (handler-bind
-                  ((cl-annot-revisit/at-macro:at-required-runtime-error
+                  ((cl-annot-revisit-at-macro:at-required-runtime-error
                      (lambda (e)
                        (declare (ignore e))
                        (invoke-restart 'use-value 'filling-value))))
@@ -73,10 +73,10 @@
              (eq (slot3-accessor obj) 'filling-value))))
   (is (let ((obj
               (handler-bind
-                  ((cl-annot-revisit/at-macro:at-required-runtime-error
+                  ((cl-annot-revisit-at-macro:at-required-runtime-error
                      (lambda (e)
                        (let* ((slot-name
-                                (cl-annot-revisit/at-macro:at-required-runtime-error-slot-name e))
+                                (cl-annot-revisit-at-macro:at-required-runtime-error-slot-name e))
                               (value (format nil "~A-VALUE" (string-upcase (string slot-name)))))
                          (use-value value e)))))
                 (make-instance 'required-slot-test-class))))

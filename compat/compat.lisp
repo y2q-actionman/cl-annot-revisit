@@ -12,17 +12,17 @@
     #:%annotation))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defmethod cl-annot-revisit/at-syntax:find-at-syntax-arity
+  (defmethod cl-annot-revisit-at-syntax:find-at-syntax-arity
       ((operator symbol) (cl-annot-compatible-p (eql t)))
     (or (get operator 'cl-annot.core:annotation-arity)
         (call-next-method)))
 
-  (defmethod cl-annot-revisit/at-syntax:expand-at-read-time-p
+  (defmethod cl-annot-revisit-at-syntax:expand-at-read-time-p
       ((operator symbol) (cl-annot-compatible-p (eql t)))
     (or (get operator 'cl-annot.core:annotation-inline-p)
         (call-next-method)))
 
-  (defmethod cl-annot-revisit/at-syntax:resolve-at-syntax-alias
+  (defmethod cl-annot-revisit-at-syntax:resolve-at-syntax-alias
       ((operator symbol) (cl-annot-compatible-p (eql t)))
     (or (get operator 'cl-annot.core:annotation-real)
         (call-next-method))))
@@ -94,7 +94,7 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun %remove-declaim-and-unquote (form)
-    "See `cl-annot-revisit/at-macro::expand-to-declaim-form'"
+    "See `cl-annot-revisit-at-macro::expand-to-declaim-form'"
     (assert (starts-with 'progn form))
     (assert (starts-with 'declaim (second form)))
     (%unquote (third form))))

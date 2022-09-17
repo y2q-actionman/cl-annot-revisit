@@ -1,4 +1,4 @@
-(in-package #:cl-annot-revisit/at-syntax)
+(in-package #:cl-annot-revisit-at-syntax)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun count-lambda-list-required-arguments (lambda-list)

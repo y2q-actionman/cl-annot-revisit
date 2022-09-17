@@ -1,4 +1,4 @@
-(in-package #:cl-annot-revisit/at-macro)
+(in-package #:cl-annot-revisit-at-macro)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (define-constant +standard-variable-definiton-form-list+
@@ -102,7 +102,7 @@ returns the name to be defined. If not, returns nil."
       "In default, returns T only for our macros."
       (let ((package (symbol-package operator)))
         (or (equal package (find-package :cl-annot-revisit))
-            (equal package (find-package :cl-annot-revisit/at-macro))))))
+            (equal package (find-package :cl-annot-revisit-at-macro))))))
 
   (defun apply-at-macro-for-each-form (at-macro-form expander-function forms env)
     (declare (ignorable env))

@@ -1,7 +1,7 @@
 (in-package #:cl-annot-revisit-test)
 
 (test test-ensure-list-with
-  (with-function-aliasing ((ensure-list-with cl-annot-revisit/at-macro::ensure-list-with)) 
+  (with-function-aliasing ((ensure-list-with cl-annot-revisit-at-macro::ensure-list-with)) 
     (let ((test (complement #'listp)))
       (is (equal (ensure-list-with nil test)
                  nil))
@@ -23,7 +23,7 @@
                  '(bar (foo 1 2 3)))))))
 
 (test test-split-list-at
-  (with-function-aliasing ((split-list-at cl-annot-revisit/at-macro::split-list-at))
+  (with-function-aliasing ((split-list-at cl-annot-revisit-at-macro::split-list-at))
     (is (multiple-value-bind (head tail) (split-list-at 0 '(0 1 2))
           (equal head nil)
           (equal tail '(0 1 2))))
@@ -47,7 +47,7 @@
           (equal tail nil)))))
 
 (with-function-aliasing ((apply-at-macro-to-special-toplevel-form
-                          cl-annot-revisit/at-macro::apply-at-macro-to-special-toplevel-form)) 
+                          cl-annot-revisit-at-macro::apply-at-macro-to-special-toplevel-form)) 
   (test expand-recursive-1-progn
     (is (equal (apply-at-macro-to-special-toplevel-form
                 '(test-operator)
@@ -111,11 +111,11 @@
 (defmacro test-macro-1 (&body body)
   `(+ (progn ,@body) 9999))
 
-(defmethod cl-annot-revisit/at-macro:allow-macroexpand-internal-form-p ((op (eql 'test-macro-1)))
+(defmethod cl-annot-revisit-at-macro:allow-macroexpand-internal-form-p ((op (eql 'test-macro-1)))
   (declare (ignorable op))
   t)
 
-(with-function-aliasing ((apply-at-macro-for-each-form cl-annot-revisit/at-macro::apply-at-macro-for-each-form)) 
+(with-function-aliasing ((apply-at-macro-for-each-form cl-annot-revisit-at-macro::apply-at-macro-for-each-form)) 
   (test apply-at-macro-zero-form
     (is (mv-equal
          (apply-at-macro-for-each-form '(never-used) (constantly nil) () nil)
