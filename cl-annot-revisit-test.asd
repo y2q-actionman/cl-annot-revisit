@@ -2,11 +2,11 @@
   :description "Tests for cl-annot-revisit"
   :license "WTFPL"
   :author "YOKOTA Yuki <y2q.actionman@gmail.com>"
-  :pathname #.(make-pathname :directory '(:relative "test"))
   :depends-on (#:cl-annot-revisit
                #:cl-annot-revisit-compat
                #:1am
                #:trivial-macroexpand-all)
+  :pathname #.(make-pathname :directory '(:relative "test"))
   :components ((:file "package")
                (:file "util" :depends-on ("package"))
                (:file "util-test" :depends-on ("util"))
