@@ -25,7 +25,7 @@ I recommend to read articles below;
 
 Please consider these alternatives:
 
-- The `nest` macro, introduced in [A tale of many nests](https://fare.livejournal.com/189741.html) by fare, to flat macro nestings.
+- The `nest` macro, introduced in [A tale of many nests](https://fare.livejournal.com/189741.html) by fare, to flatten macro nestings.
 - [How to Check Slots Types at make-instance](https://lisp-journey.gitlab.io/blog/how-to-check-slots-types-at-make-instance/) for saying CLOS slots as "optional" or "required".
 - Just wrap your forms with `()` before trying `@` macro.
 
@@ -84,15 +84,12 @@ And, adding a docstring
 ### #@(list) and #@symbol -- *infinite* application
 
 
-
-# See Also
-
-- [The original cl-annot](https://github.com/m2ym/cl-annot), authored by Tomohiro Matsuyama.
-
-
 # License 
 
+```
 Copyright © 2021-2022 YOKOTA Yuki <y2q-actionman@users.noreply.github.com>
+
 This work is free. You can redistribute it and/or modify it under the
 terms of the Do What The Fuck You Want To Public License, Version 2,
 as published by Sam Hocevar. See the COPYING file for more details.
+```
