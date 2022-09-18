@@ -84,9 +84,9 @@ TODO: nesting
 
 ## `eval-when` shorthands
 
-[Macro] **cl-annot-revisit:eval-always** *&body body*
+### [Macro] `cl-annot-revisit:eval-always` *&body body*
 
-`cl-annot-revisit:eval-always` is just a short hand of `(eval-when (:compile-toplevel :load-toplevel :execute) ...)`.
+`cl-annot-revisit:eval-always` is just a shorthand of `(eval-when (:compile-toplevel :load-toplevel :execute) ...)`.
 
 ```common-lisp
 (cl-annot-revisit:eval-always
@@ -100,16 +100,17 @@ is equivalent to:
   (defun foo ()))
 ```
 
-There are three variants works like it.
+### [Macro] `cl-annot-revisit:eval-when-compile` *&body body*
 
-<dl>
-	<dt><code>cl-annot-revisit:eval-when-compile</code></dt>
-	<dd>Just an alias of <code>(eval-when (:compile-toplevel) ...)</code></dd>
-	<dt><code>cl-annot-revisit:eval-when-load</code></dt>
-	<dd>Just an alias of <code>(eval-when (:load-toplevel) ...)</code></dd>
-	<dt><code>cl-annot-revisit:eval-when-execute</code></dt>
-	<dd>Just an alias of <code>(eval-when (:execute) ...)</code></dd>
-</dl>
+Just a shorthand of `(eval-when (:compile-toplevel) ...)`
+
+### [Macro] `cl-annot-revisit:eval-when-load` *&body body*
+
+Just a shorthand of `(eval-when (:load-toplevel) ...)`
+
+### [Macro] `cl-annot-revisit:eval-when-execute` *&body body*
+
+Just a shorthand of `(eval-when (:execute) ...)`
 
 ## Declarations
 
