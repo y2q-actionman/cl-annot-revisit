@@ -98,24 +98,86 @@ To distinguish a macro form from a list of names, I check the form is a macro-fo
          `(add-declaration ,decl-specifier ,@body))))))
 
 (defmacro cl-annot-revisit:special (&optional vars-or-form &body body &environment env)
-  "Adds `special' declaration into BODY.
-If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), to embed it as a declaration using '#.'"
+  "Adds '(declare (special ...))' or '(declaim (special ...))' about
+ the defined variables in BODY.
+
+ * If the first arg is a variable name or a list of names and BODY is
+   not null, it adds a `declare' to BODY.
+
+    (cl-annot-revisit:special *x*
+      (defun foo (*x*) 100))
+
+   is equivalent to
+
+    (defun foo (*x*)
+      (declare (special *x*))
+      100)
+
+ * If the first arg is not names, it tries to add `declaim':
+
+    (cl-annot-revisit:special
+      (defvar *x* 1)
+      (defvar *y* 2)
+      (defun foo (x) 100))
+
+   is equivalent to
+
+    (progn (declaim (special *x*))
+           (defvar *x* 1)
+           (declaim (special *y*))
+           (defvar *y* 2)
+           (defun foo (x) 100))
+ 
+ * If the first arg is a name or a list of names and BODY is null, 
+   it is expanded like below:
+
+    (cl-annot-revisit:special (*x* *y*))
+
+   is expanded to
+
+    (progn (declaim (special *x* *y*))
+           '(declare (special *x* *y*)))
+
+   This works as `declaim' at toplevel and can be embed as declarations
+   using '#.'.
+
+    (defun foo (*x*)
+      #.(cl-annot-revisit:special (*x*))
+      100)
+
+   is equivalent to
+
+    (defun foo (*x*)
+      (declare (special *x*))
+      100)"
   (%expand-ambiguous-declamation '(cl:special) vars-or-form body
                                  #'symbolp env))
 
 (defmacro cl-annot-revisit:type (typespec &optional vars-or-form &body body &environment env)
+  "Adds '(declare (type ...))' or '(declaim (type ...))' about the
+ defined variables in BODY.
+ How this is expanded is described in `cl-annot-revisit:special'."
   (%expand-ambiguous-declamation `(cl:type ,typespec) vars-or-form body
                                  #'symbolp env))
 
 (defmacro cl-annot-revisit:ftype (typespec &optional function-names-or-form &body body &environment env)
+  "Adds '(declare (ftype ...))' or '(declaim (ftype ...))' about the
+ defined functions in BODY.
+ How this is expanded is described in `cl-annot-revisit:special'."
   (%expand-ambiguous-declamation `(cl:ftype ,typespec) function-names-or-form body
                                  #'function-name-p env))
 
 (defmacro cl-annot-revisit:inline (&optional function-names-or-form &body body &environment env)
+  "Adds '(declare (inline ...))' or '(declaim (inline ...))' about the
+ defined functions in BODY.
+ How this is expanded is described in `cl-annot-revisit:special'."
   (%expand-ambiguous-declamation '(cl:inline) function-names-or-form body
                                  #'function-name-p env))
 
 (defmacro cl-annot-revisit:notinline (&optional function-names-or-form &body body &environment env)
+  "Adds '(declare (notinline ...))' or '(declaim (notinline ...))'
+ about the defined functions in BODY.
+ How this is expanded is described in `cl-annot-revisit:special'."
   (%expand-ambiguous-declamation '(cl:notinline) function-names-or-form body
                                  #'function-name-p env))
 
@@ -148,8 +210,9 @@ If BODY is nil, it is expanded to `declaim' and '(declare (special ...)), to emb
       (otherwise nil))))
 
 (defmacro cl-annot-revisit:optimize (&optional qualities &body body)
-  "Adds `optimize' declaration into BODY.
-If BODY is nil, it is expanded to `declaim' and '(declare (optimize ...)), to embed it as a declaration using '#.'"
+  "Adds '(declare (optimize ...))' or '(declaim (optimize ...))'
+ about the defined functions in BODY.
+ How this is expanded is described in `cl-annot-revisit:special'."
   (let ((decl-specifier `(cl:optimize ,@(ensure-list-with qualities #'optimize-quality-p))))
     (cond
       ((not body)
