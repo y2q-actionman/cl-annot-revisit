@@ -78,15 +78,11 @@ This library depends following libraries:
 
 # Usage of macros
 
-(stub)
-
-TODO: nesting
-
 ## `eval-when` shorthands
 
 ### [Macro] `cl-annot-revisit:eval-always` *&body body*
 
-`cl-annot-revisit:eval-always` is just a shorthand of `(eval-when (:compile-toplevel :load-toplevel :execute) ...)`.
+Just a shorthand of `(eval-when (:compile-toplevel :load-toplevel :execute) ...)`.
 
 ```common-lisp
 (cl-annot-revisit:eval-always
@@ -112,7 +108,38 @@ Just a shorthand of `(eval-when (:load-toplevel) ...)`
 
 Just a shorthand of `(eval-when (:execute) ...)`
 
-## Declarations
+## Adding Declarations
+
+### [Macro] `cl-annot-revisit:ignore` *name-or-names &body body*
+
+Adds `cl:ignore' declaration into the BODY.
+
+```common-lisp
+(cl-annot-revisit:ignore (x y z)
+  (defun foo (x y z)
+    "Hello, World!"))
+```
+
+is equivalent to:
+
+```common-lisp
+(defun foo (x y z)
+  (declare (ignore x y z))
+  "Hello, World!")
+```
+
+### [Macro] `cl-annot-revisit:ignorable` *name-or-names &body body*
+
+Adds `cl:ignorable' declaration into the BODY.
+
+### [Macro] `cl-annot-revisit:dynamic-extent` *name-or-names &body body*
+
+Adds `cl:dynamic-extent' declaration into the BODY.
+
+### (stub)
+
+
+
 
 - `special`
 - `type`
@@ -120,9 +147,6 @@ Just a shorthand of `(eval-when (:execute) ...)`
 - `inline`
 - `notinline`
 		
-- `ignore`
-- `ignorable`
-- `dynamic-extent`
 - `optimize`
    
 - `declaration`
