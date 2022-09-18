@@ -5,7 +5,7 @@
 (test test-readme-example-1
   (is (equal
        '@cl-annot-revisit:export
-       @cl-annot-revisit:optimize ((speed 3) (safety 0))
+       @(cl-annot-revisit:optimize ((speed 3) (safety 0)))
        (defun foo ()
          "Hello, World!")
        '#1=(cl-annot-revisit:export
@@ -21,7 +21,7 @@
            "Hello, World!")))))
 
 @cl-annot-revisit:export
-@cl-annot-revisit:optimize ((speed 3) (safety 0))
+@(cl-annot-revisit:optimize ((speed 3) (safety 0)))
 (defun foo ()
   "Hello, World!")
 

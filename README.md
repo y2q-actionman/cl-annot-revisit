@@ -15,7 +15,7 @@ For instance, consider this example:
 (named-readtables:in-readtable cl-annot-revisit:at-syntax-readtable)
 
 @cl-annot-revisit:export
-@cl-annot-revisit:optimize ((speed 3) (safety 0))
+@(cl-annot-revisit:optimize ((speed 3) (safety 0)))
 (defun foo ()
   "Hello, World!")
 ```
