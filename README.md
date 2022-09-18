@@ -7,7 +7,7 @@ cl-annot-revisit is a re-implementation of [cl-annot](https://github.com/m2ym/cl
 My main motivation for implementing it again is to split its concept into two parts:
 
 1. Normal `defmacro`s acting like `export`, `doc`, etc. in cl-annot. Conceptually, form overriding and rewriting can be implemented just with `defmacro`.
-2. `@` reader macro which just wraps forms with (), like `@foo bar` => `(foo bar)`.
+2. `@` reader macro which just wraps forms with `()`, like `@foo bar` => `(foo bar)`.
 
 For instance, consider this example:
 
@@ -29,7 +29,7 @@ For instance, consider this example:
        "Hello, World!")))
 ```
 
-My `export` and `optimize` macros are rewrite the `defun` form to below:
+My `export` and `optimize` macros rewrite the `defun` form to below:
 
 ``` common-lisp
 (progn
@@ -42,8 +42,8 @@ My `export` and `optimize` macros are rewrite the `defun` form to below:
 
 Other motiviations are:
 
-- Fixing many bugs of cl-annot. (TODO: make a link)
-- Showing the funny *infinite* annotation I found. See `#@` syntax below.
+- Fix many bugs of cl-annot. (TODO: make a link)
+- Show the funny *infinite* annotation I found. See [`#@` syntax](#infinite-application) below.
 
 These are described in [this article (Japanese)](http://y2q-actionman.hatenablog.com/entry/2019/12/20/cl-annot_%E3%82%92%E5%86%8D%E5%AE%9F%E8%A3%85%E3%81%97%E3%81%A6_cl-annot-revisit_%E3%82%92%E4%BD%9C%E3%81%A3%E3%81%9F) also.
 
@@ -173,8 +173,9 @@ And, adding a docstring
 
 ## #n@(list) and #n@symbol syntax
 
-## #@(list) and #@symbol -- *infinite* application
+## *infinite* application ##
 
+#@(list) and #@symbol
 
 # License 
 
