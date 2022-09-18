@@ -12,7 +12,7 @@
     (:method ((operator (eql 'cl:defclass)) metaclass form)
       (let ((class-options (pick-defclass-options form)))
         (when (assoc :metaclass class-options)
-          (error 'at-macro-error :form form
+          (error 'at-macro-syntax-error :form form
                  :message ":metaclass option already exists."))
         `(,@form (:metaclass ,metaclass)))))
 

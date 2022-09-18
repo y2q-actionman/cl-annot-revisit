@@ -18,3 +18,11 @@
 (define-condition at-macro-error (error at-macro-condition)
   ()
   (:documentation "Raised if an error occured."))
+
+(define-condition at-macro-syntax-error (at-macro-error)
+  ()
+  (:documentation "Raised when a syntactic error is found."))
+
+(define-condition at-macro-runtime-error (at-macro-error)
+  ()
+  (:documentation "Some macros embed this to report errors at evaluation time."))

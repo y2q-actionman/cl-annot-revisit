@@ -38,14 +38,14 @@
             ;; :include
             ((starts-with :include option)
              (assert (not (gethash :include options-table)) ()
-                     'at-macro-error :form name-and-options
+                     'at-macro-syntax-error :form name-and-options
                      :message "Two :include options appeared.")
              (set-it :include (rest option)))
             ;; :initial-offset
             ((starts-with :initial-offset option)
              (let ((offset (second option)))
                (assert (typep offset '(integer 0)) ()
-                       'at-macro-error :form name-and-options
+                       'at-macro-syntax-error :form name-and-options
                        :message ":initial-offset must be a non-zero integer")
                (set-it :initial-offset offset)))
             ;; :named
@@ -69,7 +69,7 @@
             ((starts-with :type option)
              (set-it :type (second option)))
             ;; 
-            (t (error 'at-macro-error :form name-and-options
+            (t (error 'at-macro-syntax-error :form name-and-options
                       :message (format nil "Unknown defstruct option ~A" option)))))
         ;; Checks and set defaults
         (ensure-gethash :conc-name options-table default-conc-name)
@@ -78,7 +78,7 @@
         (ensure-gethash :copier options-table default-copier)
         (when (gethash :initial-offset options-table)
           (assert (gethash :type options-table) ()
-                  'at-macro-error :form name-and-options
+                  'at-macro-syntax-error :form name-and-options
                   :message ":initial-offset appered but no :type supplied"))
         ;; about `:predicate'
         (let ((named? (or (gethash :named options-table)
@@ -88,13 +88,13 @@
           (cond
             (predicate-option-exists?
              (assert named? ()
-                     'at-macro-error :form name-and-options
+                     'at-macro-syntax-error :form name-and-options
                                      :message ":predicate specified for struct is not named."))
             ((not named?))              ; nop
             (t (set-it :predicate default-predicate))))
         (assert (not (and (gethash :print-function options-table)
                           (gethash :print-object options-table)))
-                () 'at-macro-error :form name-and-options
+                () 'at-macro-syntax-error :form name-and-options
                 :message ":print-function and :print-object are exclusive."))
       ;; Done
       (values name options-table)))

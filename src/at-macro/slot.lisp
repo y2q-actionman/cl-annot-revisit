@@ -19,7 +19,7 @@
         (setf options (list* :initform initform options)))
     `'(,name ,@options)))
 
-(define-condition at-required-precondition-error (simple-error)
+(define-condition at-required-precondition-error (at-macro-runtime-error)
   ((slot-name :initarg :slot-name :initform nil
               :reader at-required-precondition-error-slot-name))
   (:documentation "Raised when :initform supplied for `cl-annot-revisit:required' slot.")
@@ -28,7 +28,7 @@
      (with-slots (slot-name) condition
        (format stream "Required slot ~A must not have :initform" slot-name)))))
 
-(define-condition at-required-runtime-error (simple-error)
+(define-condition at-required-runtime-error (at-macro-runtime-error)
   ((slot-name :initarg :slot-name :initform nil
               :reader at-required-runtime-error-slot-name)
    (initarg :initarg :initarg :initform nil

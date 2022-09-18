@@ -7,7 +7,9 @@
                 #:*at-macro-verbose*
                 #:at-macro-condition
                 #:at-macro-style-warning
-                #:at-macro-error)
+                #:at-macro-error
+                #:at-macro-syntax-error
+                #:at-macro-runtime-error)
   (:export
    ;; condition.lisp
    ;;

@@ -8,7 +8,7 @@
        '(defclass foo ()
          ()
          (:metaclass bar))))
-  (signals at-macro-error
+  (signals at-macro-syntax-error
     (macroexpand-1 '(cl-annot-revisit:metaclass bar
                      (defclass foo ()
                        ()

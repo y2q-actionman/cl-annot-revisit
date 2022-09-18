@@ -9,6 +9,8 @@
    #:at-macro-condition
    #:at-macro-style-warning
    #:at-macro-error
+   #:at-macro-syntax-error
+   #:at-macro-runtime-error
    
    ;; at-macro
    #:eval-when-compile
