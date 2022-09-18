@@ -80,3 +80,10 @@
       (eval-when (:compile-toplevel :load-toplevel :execute)
         (export '(,@names)))
       ,@(rest cl-annot-revisit-export-form))))
+
+(defun find-in-nested-progn (obj progn-form)
+  (or (equal-ignoring-gensym obj progn-form)
+      (and (consp progn-form)
+           (starts-with 'cl:progn progn-form)
+           (loop for form in (rest progn-form)
+                   thereis (find-in-nested-progn obj form)))))

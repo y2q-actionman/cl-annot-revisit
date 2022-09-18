@@ -16,8 +16,11 @@ For instance, consider this example:
 
 @cl-annot-revisit:export
 @(cl-annot-revisit:optimize ((speed 3) (safety 0)))
-(defun foo ()
-  "Hello, World!")
+(cl-annot-revisit:inline
+  (defun foo ()
+    "Hello, World!")
+  (defun bar (x)
+    (1+ x)))
 ```
 
 `@` reader macro expand it to a nested form:
@@ -25,20 +28,30 @@ For instance, consider this example:
 ``` common-lisp
 (cl-annot-revisit:export
   (cl-annot-revisit:optimize ((speed 3) (safety 0))
-     (defun foo ()
-       "Hello, World!")))
+    (cl-annot-revisit:inline
+      (defun foo ()
+        "Hello, World!")
+      (defun bar (x)
+        (1+ x)))))
 ```
 
-The `export` and `optimize` macros rewrite the `defun` form to below:
+The `export`, `optimize`, and `inline` macros rewrite the `defun` form working like below:
 
 ``` common-lisp
 (progn
   (eval-when (:compile-toplevel :load-toplevel :execute)
-    (export '(foo)))                    ; by `cl-annot-revisit:export'
+    (export '(foo bar)))                ; by `cl-annot-revisit:export'
+  (declaim (inline foo bar))            ; by `cl-annot-revisit:inline'
   (defun foo ()
     (declare (optimize (speed 3) (safety 0))) ; by `cl-annot-revisit:optimize'
-    "Hello, World!"))
+    "Hello, World!")
+  (defun bar (x)
+    (declare (optimize (speed 3) (safety 0))) ; by `cl-annot-revisit:optimize'
+    (1+ x)))
 ```
+
+(The actual result is more complicated.)
+
 
 Other motiviations are:
 
@@ -58,7 +71,7 @@ Please consider these alternatives:
 
 - The `nest` macro, introduced in [A tale of many nests](https://fare.livejournal.com/189741.html) by @fare, to flatten nested macros.
 - [How to Check Slots Types at make-instance](https://lisp-journey.gitlab.io/blog/how-to-check-slots-types-at-make-instance/), to make CLOS slots "optional" or "required".
-- Simply enclose your forms with `()`, instead of `@` macro.
+- Simply enclose your forms with `()`, instead of `@` reader macro. One good thing to use `()` is it specifies arguments explicitly. `@` reader macro *implicitly* affects some forms after that.
 
 # Loading
 
@@ -77,6 +90,13 @@ This library depends following libraries:
 - named-readtables
 
 # Usage of macros
+
+(stub)
+
+TODO:
+
+- nesting
+- take multiple forms
 
 ## `eval-when` shorthands
 
