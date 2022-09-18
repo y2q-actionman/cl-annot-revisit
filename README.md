@@ -35,7 +35,7 @@ For instance, consider this example:
         (1+ x)))))
 ```
 
-The `export`, `optimize`, and `inline` macros rewrite the `defun` form working like below:
+The `export`, `optimize`, and `inline` macros rewrite the `defun` form working like below (The actual expansion is more complicated.):
 
 ``` common-lisp
 (progn
@@ -50,7 +50,6 @@ The `export`, `optimize`, and `inline` macros rewrite the `defun` form working l
     (1+ x)))
 ```
 
-(The actual result is more complicated.)
 
 
 Other motiviations are:
@@ -128,7 +127,7 @@ Just a shorthand of `(eval-when (:load-toplevel) ...)`
 
 Just a shorthand of `(eval-when (:execute) ...)`
 
-## Adding Declarations
+## Declarations
 
 ### [Macro] `cl-annot-revisit:declaration` *((&rest names))*
 		
@@ -347,14 +346,19 @@ It is equivalent to:
 
 Refer `cl-annot-revisit:special` description to see why both `declaim` and `declare` appeared.
 
-## Documentation
+## Docstrings
 
-- `documentation`
-- `doc`
+### [Macro] `cl-annot-revisit:documentation` *docstring &body body*
+
+(stub)
+
+### [Macro] `cl-annot-revisit:doc` *docstring &body body*
+
+Just an alias of `(cl-annot-revisit:documentation ...)`.
 
 ## Export
 
-- `export`
+### [Macro] `cl-annot-revisit:export` *&body forms*
 
 `defun` and export its name.
 
@@ -363,32 +367,29 @@ Refer `cl-annot-revisit:special` description to see why both `declaim` and `decl
   (defun foo () t))
 ```
 
-And, adding a docstring
+## Macros affecting `defclass` form
 
-``` common-lisp
-(cl-annot-revisit:documentation "docstring"
-   (cl-annot-revisit:export
-     (defun foo () t)))
-```
+### [Macro] `cl-annot-revisit:metaclass` *class-name &body forms*
 
-## `defclass`
+### [Macro] `cl-annot-revisit:export-slots` *&body forms*
 
-- `metaclass`
-- `export-slots`
-- `export-accessors`
-- `export-class`
+### [Macro] `cl-annot-revisit:export-accessors` *&body forms*
 
-## defclass slots
+works `defstruct` also.
 
-- `optional`
-- `required`
+### [Macro] `cl-annot-revisit:export-class` *&body forms*
 
-## `defstruct`
+## Macros affecting `defclass` form slots
 
-- `export-accessors` (same as above)
-- `export-constructors`
-- `export-structure`
+### [Macro] `cl-annot-revisit:optional` *initform slot-speficier*
 
+### [Macro] `cl-annot-revisit:required` *slot-speficier*
+
+## Macros affecting `defstruct` form
+
+### [Macro] `cl-annot-revisit:export-constructors` *&body forms*
+
+### [Macro] `cl-annot-revisit:export-structure` *&body forms*
 
 # Usage of '@' syntax
 
