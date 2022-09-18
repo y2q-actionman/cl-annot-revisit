@@ -194,7 +194,7 @@ If not, wraps BODY with `locally' containing DECL-SPECIFIER in it."
           `'(declare ,decl-specifier)))))
 
 (defmacro cl-annot-revisit:ignore (name-or-names &body body)
-  "Adds `cl:ignore' declaration into BODY.
+  "Adds `ignore' declaration into BODY.
 If BODY is nil, it is expanded to '(declare (ignore ...)), to embed it as a declaration using '#.'"
   (%expand-at-declaration 'cl:ignore name-or-names body))
 

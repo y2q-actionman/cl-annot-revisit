@@ -29,7 +29,7 @@ For instance, consider this example:
        "Hello, World!")))
 ```
 
-My `export` and `optimize` macros rewrite the `defun` form to below:
+The `export` and `optimize` macros rewrite the `defun` form to below:
 
 ``` common-lisp
 (progn
@@ -89,7 +89,7 @@ Just a shorthand of `(eval-when (:compile-toplevel :load-toplevel :execute) ...)
   (defun foo ()))
 ```
 
-is equivalent to:
+It is equivalent to:
 
 ```common-lisp
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -110,9 +110,23 @@ Just a shorthand of `(eval-when (:execute) ...)`
 
 ## Adding Declarations
 
+### [Macro] `cl-annot-revisit:declaration` *((&rest names))*
+		
+Just a shorthand of `(declaim (declaration ...))`.
+
+```common-lisp
+(cl-annot-revisit:declaration (hoge fuga))
+```
+
+It is equivalent to:
+
+```common-lisp
+(declaim (declaration hoge fuga))
+```
+
 ### [Macro] `cl-annot-revisit:ignore` *name-or-names &body body*
 
-Adds `cl:ignore' declaration into the BODY.
+Adds `cl:ignore` declaration into the BODY.
 
 ```common-lisp
 (cl-annot-revisit:ignore (x y z)
@@ -120,7 +134,7 @@ Adds `cl:ignore' declaration into the BODY.
     "Hello, World!"))
 ```
 
-is equivalent to:
+It is equivalent to:
 
 ```common-lisp
 (defun foo (x y z)
@@ -128,28 +142,190 @@ is equivalent to:
   "Hello, World!")
 ```
 
+If BODY is null, this is expanded to a quoted `(declare (ignore ...))` form, to embed declarations using `#.`.
+(This feature is to follow [the original cl-annot semantics](https://github.com/m2ym/cl-annot#annotation-ignore).)
+
+```common-lisp
+(defun foo (x y z)
+  #.(cl-annot-revisit:ignore (x y z)) ; same as writing (declare (ignore x y z))
+  "Hello, World!")
+```
+
 ### [Macro] `cl-annot-revisit:ignorable` *name-or-names &body body*
 
-Adds `cl:ignorable' declaration into the BODY.
+Adds `cl:ignorable` declaration into the BODY.
+Check `cl-annot-revisit:ignore` to see how it works.
 
 ### [Macro] `cl-annot-revisit:dynamic-extent` *name-or-names &body body*
 
-Adds `cl:dynamic-extent' declaration into the BODY.
+Adds `cl:dynamic-extent` declaration into the BODY.
+Check `cl-annot-revisit:ignore` to see how it works.
 
-### (stub)
+### [Macro] `cl-annot-revisit:special` *&optional vars-or-form &body body*
+
+Adds `special` declaration or proclamation into BODY. This macro has three syntaxes.
+
+1. If the first arg is a variable name or a list of names and BODY is not null, it adds a `declare`.
+
+```common-lisp
+(cl-annot-revisit:special *x*
+  (defun foo (*x*) 100))
+```
+
+It is equivalent to
+
+```common-lisp
+(defun foo (*x*)
+  (declare (special *x*))
+  100)
+```
+
+2. If the first arg is not names, it tries to add `declaim`.
+
+```common-lisp
+(cl-annot-revisit:special
+  (defvar *x* 1)
+  (defvar *y* 2)
+  (defun foo (x) 100))
+```
+
+It is equivalent to
+
+```common-lisp
+(progn (declaim (special *x*))
+       (defvar *x* 1)
+       (declaim (special *y*))
+       (defvar *y* 2)
+       (defun foo (x) 100))
+```
 
 
+3. If the first arg is a name or a list of names and BODY is null, it is expanded to `declaim` and quoted `declare` form.
 
+```common-lisp
+(cl-annot-revisit:special (*x* *y*))
+```
 
-- `special`
-- `type`
-- `ftype`
-- `inline`
-- `notinline`
-		
-- `optimize`
-   
-- `declaration`
+is expanded to
+
+```common-lisp
+(progn (declaim (special *x* *y*))
+       '(declare (special *x* *y*)))
+```
+
+This works as `declaim` at toplevel and can be embed as declarations using `#.`.
+
+```common-lisp
+(defun foo (*x*)
+  #.(cl-annot-revisit:special (*x*))
+  100)
+```
+
+It is equivalent to
+
+```common-lisp
+(defun foo (*x*)
+  (declare (special *x*))
+  100)
+```
+
+### [Macro] `cl-annot-revisit:type` *typespec &optional vars-or-form &body body*
+
+Adds `type` declaration or proclamation into BODY.
+How this is expanded is described in `cl-annot-revisit:special` description.
+
+Next example is "1. Adding a declaration" case:
+
+```common-lisp
+(cl-annot-revisit:type integer x
+  (defun foo (x) 100))
+```
+
+It is equivalent to:
+
+```common-lisp
+(defun foo (x)
+  (declare (type integer x))
+  100)
+```
+
+### [Macro] `cl-annot-revisit:ftype` *typespec &optional vars-or-form &body body*
+
+Adds `ftype` declaration or proclamation into BODY.
+How this is expanded is described in `cl-annot-revisit:special` description.
+
+Next example is "2. Adding a proclamation" case:
+
+```common-lisp
+(cl-annot-revisit:ftype (function (integer integer) integer)
+  (defun foo (x y) (+ x y)))
+```
+
+It is equivalent to:
+
+```common-lisp
+(progn (declaim (ftype (function (integer integer) integer) foo))
+       (defun foo (x y)
+         (+ x y)))
+```
+
+### [Macro] `cl-annot-revisit:inline` *&optional names-or-form &body body*
+
+Adds `inline` declaration or proclamation into BODY. This macro has two syntaxes.
+How this is expanded is described in `cl-annot-revisit:special` description.
+
+Next example is "3. Toplevel declamation" case:
+
+```common-lisp
+(cl-annot-revisit:inline (foo))
+```
+
+It is equivalent to:
+
+```common-lisp
+(progn (declaim (inline foo))
+       '(declare (inline foo)))
+
+```
+
+### [Macro] `cl-annot-revisit:notinline` *&optional names-or-form &body body*
+
+Adds `notinline` declaration or proclamation into BODY.
+How this is expanded is described in `cl-annot-revisit:notinline` description.
+
+### [Macro] `cl-annot-revisit:optimize` *&optional qualities &body body*
+
+Adds `optimize` declaration or proclamation into BODY. This macro has two syntaxes.
+
+1. If BODY is not null, it add a `declare` into BODY.
+
+```common-lisp
+(cl-annot-revisit:optimize (speed safety)
+  (defun foo (x) (1+ x)))
+```
+
+It is equivalent to:
+
+```common-lisp
+(defun foo (x)
+  (declare (optimize speed safety))
+  (1+ x))
+```
+
+2. If BODY is null, it is expanded to `declaim` and quoted `declare`.
+
+```common-lisp
+(cl-annot-revisit:optimize ((speed 3) (safety 0) (debug 0)))
+```
+
+It is equivalent to:
+
+```common-lisp
+(progn (declaim (optimize (speed 3) (safety 0) (debug 0)))
+       '(declare (optimize (speed 3) (safety 0) (debug 0))))
+```
+
+Refer `cl-annot-revisit:special` description to see why both `declaim` and `declare` appeared.
 
 ## Documentation
 
