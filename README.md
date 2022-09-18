@@ -88,7 +88,7 @@ This library depends following libraries:
 - alexandria
 - named-readtables
 
-# Usage of macros
+# Macro usage
 
 (stub)
 
@@ -350,7 +350,14 @@ Refer `cl-annot-revisit:special` description to see why both `declaim` and `decl
 
 ### [Macro] `cl-annot-revisit:documentation` *docstring &body body*
 
-(stub)
+Adds docstring to things defined in the BODY.
+
+```common-lisp
+(cl-annot-revisit:documentation "docstring"
+  (defun foo (x) (1+ x)))
+```
+
+This example will add "docstring" as a documentation to the function `foo`.
 
 ### [Macro] `cl-annot-revisit:doc` *docstring &body body*
 
@@ -360,18 +367,35 @@ Just an alias of `(cl-annot-revisit:documentation ...)`.
 
 ### [Macro] `cl-annot-revisit:export` *&body forms*
 
-`defun` and export its name.
+`export` symbols naming things defined in the BODY.
 
 ``` common-lisp
 (cl-annot-revisit:export
-  (defun foo () t))
+  (defun foo () t)
+  (defvar *bar*)
+  (defclass baz () ()))
 ```
+
+This example will export `foo`, `*bar*`, and `baz`.
 
 ## Macros affecting `defclass` form
 
 ### [Macro] `cl-annot-revisit:metaclass` *class-name &body forms*
 
+Adds `(:metaclass CLASS-NAME)` option to each `defclass` form in FORMS.
+
 ### [Macro] `cl-annot-revisit:export-slots` *&body forms*
+
+Exports all slot-names in each `defclass` forms in FORMS.
+
+```common-lisp
+(cl-annot-revisit:export-slots
+  (defclass foo ()
+    (slot1
+	 (slot2))))
+```
+
+The above example will export `slot1` and `slot2` symbols.
 
 ### [Macro] `cl-annot-revisit:export-accessors` *&body forms*
 
@@ -379,24 +403,30 @@ works `defstruct` also.
 
 ### [Macro] `cl-annot-revisit:export-class` *&body forms*
 
-## Macros affecting `defclass` form slots
-
-### [Macro] `cl-annot-revisit:optional` *initform slot-speficier*
-
-### [Macro] `cl-annot-revisit:required` *slot-speficier*
-
 ## Macros affecting `defstruct` form
+
+`cl-annot-revisit:export-accessors` works. and also...
 
 ### [Macro] `cl-annot-revisit:export-constructors` *&body forms*
 
 ### [Macro] `cl-annot-revisit:export-structure` *&body forms*
 
-# Usage of '@' syntax
+## Macros affecting `defclass` form slots
+
+These macros are designed to be embed with `#.` (read-time eval).
+
+### [Macro] `cl-annot-revisit:optional` *initform slot-speficier*
+
+### [Macro] `cl-annot-revisit:required` *slot-speficier*
+
+`use-value` restart.
+
+
+# '@' syntax usage
 
 (stub)
 
 - `at-syntax-readtable`
-- `find-at-syntax-arity`
 
 ## @(list) syntax
 
