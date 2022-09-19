@@ -391,7 +391,7 @@ Exports all slot-names in each `defclass` and `define-condition` form in FORMS.
 (cl-annot-revisit:export-slots
   (defclass foo ()
     (slot1
-	 (slot2))))
+     (slot2))))
 ```
 
 The above example will export `slot1` and `slot2` symbols.
@@ -447,12 +447,61 @@ The above example will export its name (`foo-struct`), constructor (`make-foo-st
 
 These macros are designed to be embed with `#.` (read-time eval).
 
-### [Macro] `cl-annot-revisit:optional` *initform slot-speficier*
+### [Macro] `cl-annot-revisit:optional` *form slot-speficier*
+
+Inserts `:initform FORM` into the SLOT-SPECIFIER.
+
+```common-lisp
+(defclass foo ()
+  (#.(cl-annot-revisit:optional t slot1)
+   #.(cl-annot-revisit:optional nil (slot2 :initarg :slot2))))
+```
+
+It is equivalent to:
+
+```common-lisp
+(defclass foo ()
+  ((slot1 :initform t)
+   (slot2 :initform nil :initarg :slot2)))
+```
 
 ### [Macro] `cl-annot-revisit:required` *slot-speficier*
 
-`use-value` restart.
+Makes the slot to a kind of *required* one, by setting its `:initform` to a form raises `cl-annot-revisit:at-macro-error`.
 
+This error is raised with `use-value` restart.
+You can fill the slot using the debugger. The following example is from SBCL's REPL.
+
+```
+* (defclass foo ()
+    (#.(cl-annot-revisit:required slot1)))
+#<STANDARD-CLASS COMMON-LISP-USER::FOO>
+
+* (make-instance 'foo)
+
+debugger invoked on a CL-ANNOT-REVISIT-AT-MACRO:AT-REQUIRED-RUNTIME-ERROR in thread
+#<THREAD "main thread" RUNNING {1004BF80A3}>:
+  Must supply SLOT1 slot with :initarg SLOT1
+
+Type HELP for debugger help, or (SB-EXT:EXIT) to exit from SBCL.
+
+restarts (invokable by number or by possibly-abbreviated name):
+  0: [USE-VALUE] Use a new value.
+  1: [ABORT    ] Exit debugger, returning to top level.
+
+(CL-ANNOT-REVISIT-AT-MACRO::RAISE-REQUIRED-SLOT-ERROR SLOT1 :SLOT1)
+   source: (ERROR 'AT-REQUIRED-RUNTIME-ERROR :SLOT-NAME SLOT-NAME :INITARG
+                  INITARG-NAME)
+		  
+0] use-value
+Enter a new value: 12345
+#<FOO {1001774323}>
+
+* (slot-value * 'slot1)
+12345
+```
+
+(Before using this, please see [How to Check Slots Types at make-instance](https://lisp-journey.gitlab.io/blog/how-to-check-slots-types-at-make-instance/).)
 
 # '@' syntax usage
 

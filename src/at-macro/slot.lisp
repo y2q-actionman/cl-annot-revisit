@@ -42,7 +42,8 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun read-new-value ()
-    (format t "Enter a new value: ")
+    (format *debug-io* "Enter a new value: ")
+    (finish-output *debug-io*)
     (list (read)))
 
   (defun raise-required-slot-error (slot-name initarg-name)
