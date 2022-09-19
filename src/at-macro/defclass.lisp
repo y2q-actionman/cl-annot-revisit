@@ -127,5 +127,6 @@
 
 (defmacro cl-annot-revisit:export-class (&body body &environment env)
   "For `defclass' and `define-conditions', just an alias of nested
-`cl-annot-revisit:export-slots' and `cl-annot-revisit:export-accessors'."
+`cl-annot-revisit:export-slots', `cl-annot-revisit:export-accessors'
+and `cl-annot-revisit:export'."
   (apply-at-macro-for-each-form '(cl-annot-revisit:export-class) #'expand-export-class body env))

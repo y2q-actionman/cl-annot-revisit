@@ -378,15 +378,14 @@ Just an alias of `(cl-annot-revisit:documentation ...)`.
 
 This example will export `foo`, `*bar*`, and `baz`.
 
-## Macros affecting `defclass` form
+## Macros treating `defclass` form
 
-### [Macro] `cl-annot-revisit:metaclass` *class-name &body forms*
-
-Adds `(:metaclass CLASS-NAME)` option to each `defclass` form in FORMS.
+For `defclass` and `define-condition`, `cl-annot-revisit:export` exports its name.
+You can use following macros for exporting slots or accessors.
 
 ### [Macro] `cl-annot-revisit:export-slots` *&body forms*
 
-Exports all slot-names in each `defclass` forms in FORMS.
+Exports all slot-names in each `defclass` and `define-condition` form in FORMS.
 
 ```common-lisp
 (cl-annot-revisit:export-slots
@@ -399,19 +398,52 @@ The above example will export `slot1` and `slot2` symbols.
 
 ### [Macro] `cl-annot-revisit:export-accessors` *&body forms*
 
-works `defstruct` also.
+Exports all accessors in each `defclass`, `defune-condifion` *and* `defstruct` forms in FORMS.
+
+```common-lisp
+(cl-annot-revisit:export-accessors
+  (defclass foo ()
+    ((slot1 :accessor foo-slot1-accessor)
+     (slot2 :reader foo-slot2-reader :writer foo-slot2-writer)))
+  (defstruct bar
+    slot1
+    slot2))
+```
+
+The above example will export five symbols; `foo-slot1-accessor`, `foo-slot2-writer` and `bar-slot1-accessor`, `bar-slot1` and `bar-slot2`.
 
 ### [Macro] `cl-annot-revisit:export-class` *&body forms*
 
-## Macros affecting `defstruct` form
+Exports the class name, slot names, and accessors in each `defclass` and `define-condition` form in FORMS.
 
-`cl-annot-revisit:export-accessors` works. and also...
+### [Macro] `cl-annot-revisit:metaclass` *class-name &body forms*
+
+Adds `(:metaclass CLASS-NAME)` option to each `defclass` and `define-condition` form in FORMS.
+
+## Macros treating `defstruct` form
+
+For `defstruct`, `cl-annot-revisit:export` exports its name.
+`cl-annot-revisit:export-accessors` works for exporting accessor functions.(see above). # TODO: make a link.
+
+You can use following macros for exporting other functions made by `defstruct` form.
 
 ### [Macro] `cl-annot-revisit:export-constructors` *&body forms*
 
+Exports constructor names made by `defstruct` form in FORMS.
+
 ### [Macro] `cl-annot-revisit:export-structure` *&body forms*
 
-## Macros affecting `defclass` form slots
+Exports all names made by `defstruct` form in FORMS.
+
+```common-lisp
+(cl-annot-revisit:export-structure
+  (defstruct (foo-struct (:conc-name foo-))
+    slot1 slot2))
+```
+
+The above example will export its name (`foo-struct`), constructor (`make-foo-struct`), copier (`copy-foo-struct`), predicate (`foo-struct-p`), and accessors (`foo-slot1` and `foo-slot2`).
+
+## Macros treating `defclass` slots
 
 These macros are designed to be embed with `#.` (read-time eval).
 
