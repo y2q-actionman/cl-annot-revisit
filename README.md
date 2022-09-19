@@ -423,7 +423,7 @@ Adds `(:metaclass CLASS-NAME)` option to each `defclass` and `define-condition` 
 ## Macros treating `defstruct` form
 
 For `defstruct`, `cl-annot-revisit:export` exports its name.
-`cl-annot-revisit:export-accessors` works for exporting accessor functions.(see above). # TODO: make a link.
+`cl-annot-revisit:export-accessors` works for exporting accessor functions ([see above](#macro-cl-annot-revisitexport-accessors-body-forms)).
 
 You can use following macros for exporting other functions made by `defstruct` form.
 
