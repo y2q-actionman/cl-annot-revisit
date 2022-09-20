@@ -163,8 +163,8 @@
                  (declare (special x))
                (defvar *foo* 9999))
              (defmethod bar ()
-               (declare (special x))
                "docstring"
+               (declare (special x))
                "")
              )))
   (is (equal-after-macroexpand-all
@@ -477,8 +477,8 @@
                  (declare (inline hoge))
                (defvar *foo* 9999))
              (defmethod bar ()
-               (declare (inline hoge))
                "docstring"
+               (declare (inline hoge))
                "")
              )))
   (is (equal-after-macroexpand-all

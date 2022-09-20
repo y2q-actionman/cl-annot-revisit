@@ -209,9 +209,9 @@
            (declare (dynamic-extent))
            100))
        '(defmethod foo :before :after (x y z)
+         "hoo"
          (declare (ignore foo))
          (declare (dynamic-extent))
-         "hoo"
          100))))
 
 (test test-decl-ignore-defsetf

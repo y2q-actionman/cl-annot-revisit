@@ -26,12 +26,16 @@
            (arrayp rhs)
            (eq (aref lhs 0) 'EXCL::DEFSTRUCT-DESCRIPTION)
            (eq (aref rhs 0) 'EXCL::DEFSTRUCT-DESCRIPTION))
-      ;; For SBCL backquote internals
-      ;;       2: (CL-ANNOT-REVISIT-TEST::EQUAL-IGNORING-GENSYM-TEST-FN #S(SB-IMPL::COMMA :EXPR SB-PCL::.METHOD. :KIND 0) #S(SB-IMPL::COMMA :EXPR SB-PCL::.METHOD. :KIND 0))
-      ;; 2: EQUAL-IGNORING-GENSYM-TEST-FN returned NIL
+      ;; For SBCL.
+      ;; - backquote internals	#S(SB-IMPL::COMMA ...)
+      ;; - internal definitions	#S(SB-C:DEFINITION-SOURCE-LOCATION ...)
       #+sbcl
-      (and (typep lhs 'sb-impl::comma)
-           (typep rhs 'sb-impl::comma))))
+      (and (typep lhs 'structure-object) (typep rhs 'structure-object))
+      #+sbcl
+      (and (arrayp lhs)
+           (arrayp rhs)
+           (typep (aref lhs 0) 'structure-object)
+           (typep (aref rhs 0) 'structure-object))))
 
 (defun equal-ignoring-gensym (lhs rhs)
   (tree-equal lhs rhs :test #'equal-ignoring-gensym-test-fn))

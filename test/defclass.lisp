@@ -53,8 +53,8 @@
                 #3#))))
   (is (equal-after-macroexpand
        '(cl-annot-revisit:export-accessors
-         #3=(format t "Hello, World!"))
-       '#3#))
+         #4=(format t "Hello, World!"))
+       '#4#))
   (is (equal-after-macroexpand
        '(cl-annot-revisit:export-accessors)
        nil)))
