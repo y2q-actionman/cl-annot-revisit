@@ -253,7 +253,7 @@ It is equivalent to
 Adds `type` declaration or proclamation into BODY.
 How this is expanded is described in `cl-annot-revisit:special` description.
 
-Next example is "1. Adding a declaration" case:
+The following example is "1. Adding a declaration" case:
 
 ```common-lisp
 (cl-annot-revisit:type integer x
@@ -273,7 +273,7 @@ It is equivalent to:
 Adds `ftype` declaration or proclamation into BODY.
 How this is expanded is described in `cl-annot-revisit:special` description.
 
-Next example is "2. Adding a proclamation" case:
+The following example is "2. Adding a proclamation" case:
 
 ```common-lisp
 (cl-annot-revisit:ftype (function (integer integer) integer)
@@ -293,7 +293,7 @@ It is equivalent to:
 Adds `inline` declaration or proclamation into BODY. This macro has two syntaxes.
 How this is expanded is described in `cl-annot-revisit:special` description.
 
-Next example is "3. Toplevel declamation" case:
+The following example is "3. Toplevel declamation" case:
 
 ```common-lisp
 (cl-annot-revisit:inline (foo))
@@ -402,7 +402,7 @@ Exports all accessors in each `defclass`, `defune-condifion` *and* `defstruct` f
 
 ```common-lisp
 (cl-annot-revisit:export-accessors
-  (defclass foo ()
+p  (defclass foo ()
     ((slot1 :accessor foo-slot1-accessor)
      (slot2 :reader foo-slot2-reader :writer foo-slot2-writer)))
   (defstruct bar
@@ -505,31 +505,123 @@ Enter a new value: 12345
 
 # '@' syntax usage
 
-(stub)
+This library defines two reader macros, `@` and `#@`, into `cl-annot-revisit:at-syntax-readtable` readtable.
 
-- `at-syntax-readtable`
+Place `(named-readtables:in-readtable cl-annot-revisit:at-syntax-readtable)` to use them.
 
 ## @(list) syntax
 
+When a list appears after the `@` reader macro, the next form is expanded to the end of the list.
+
+The following example means same as the `optimize` example above. (TODO: add a link).
+
+```common-lisp
+@(cl-annot-revisit:optimize (speed safety))
+(defun foo (x) (1+ x))
+```
+
+`@` can be used with the standard operators.
+
+```common-lisp
+@(with-output-to-string (*standard-output*))
+(format t "Hello, World!")
+```
+
+This example is expanded to below:
+
+```common-lisp
+(with-output-to-string (*standard-output*)
+  (format t "Hello, World!"))
+```
+
+So, this returns a string `"Hello, World!"`.
+
+(You see this behavior resembles to the famous [nest](https://github.com/ruricolist/serapeum/blob/master/REFERENCE.md#nest-rest-things) macro.)
+
 ## @symbol syntax
 
-`cl-annot-revisit-at-syntax:find-at-syntax-arity`
+When a symbol appears after the `@` reader macro, it reads some following forms and construct a form enclosing `()`.
 
 ``` common-lisp
-;; Enables @ syntax
-(named-readtables:in-readtable cl-annot-revisit:at-syntax-readtable)
-
-;; This is same as the nested example above.
-@cl-annot-revisit:documentation "docstring"
-@cl-annot-revisit:export
+@cl-annot-revisit:doc "docstring"       ; 'doc' takes 2 forms.
+@cl-annot-revisit:export                ; 'export' takes 1 form.
 (defun foo () t)
 ```
 
+This example is expanded to below:
+
+``` common-lisp
+(cl-annot-revisit:doc "docstring"
+  (cl-annot-revisit:export
+    (defun foo () t)))
+```
+
+How many forms read is determined by the symbol, default is 1. You can change it by overriding `cl-annot-revisit-at-syntax:find-at-syntax-arity`.
+
+(This syntax is derived from the original cl-annot. I personally prefer `@(list)` to this syntax.)
+
 ## #n@(list) and #n@symbol syntax
 
-## *infinite* annotation ##
+`#n@` syntax works like `@` except overriding the number of form to be read with `n`.
 
-#@(list) and #@symbol
+`#n@symbol` exmaple is here.
+
+```common-lisp
+#5@list 1 2 3 4 5
+```
+
+This means `(list 1 2 3 4 5)`, so evaluated to `(1 2 3 4 5)`.
+
+
+`#n@(list)` exmaple is here.
+
+```common-lisp
+#3@(with-output-to-string (*standard-output*))
+(format t "foo ")
+(format t "bar ")
+(format t "baz")
+```
+
+This example is expanded to below:
+
+```common-lisp
+(with-output-to-string (*standard-output*)
+  (format t "foo ")
+  (format t "bar ")
+  (format t "baz"))
+```
+
+and evaluated to `"foo bar baz"`.
+
+## *infinite* annotation
+
+If the infix parameter of `#@` is omitted, this macro tries to collect as many forms as possible until `)` appears or reached to EOF. Collected forms are expanded like `@` syntax.
+
+The following example is evaluated to `T`:
+
+```common-lisp
+(string= "abcABC123"
+         #@(concatenate 'string)
+         "abc"
+         "ABC"
+         "123")                       ; '#@' collects args until here.
+```
+
+Another example. By placing `#@cl-annot-revisit:export` at toplevel, it exports *everything* after that until the end of file.
+
+```common-lisp
+#@cl-annot-revisit:export
+
+(defun foo ())
+(defvar *bar*)
+(defconstant +baz+ 100)
+
+;; ...
+```
+
+The above example will export `foo`, `*bar*`, and `+baz+`.
+
+(This feature is just for fun... Don't use it seriously!)
 
 # License 
 
