@@ -87,3 +87,7 @@
            (starts-with 'cl:progn progn-form)
            (loop for form in (rest progn-form)
                    thereis (find-in-nested-progn obj form)))))
+
+(defun symbol-exported-p (name package)
+  (eq (nth-value 1 (find-symbol (string name) package))
+      :external))

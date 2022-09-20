@@ -19,6 +19,8 @@
                (:file "defstruct" :depends-on ("util"))
                (:file "slot" :depends-on ("util"))
                (:file "reader" :depends-on ("util"))
+               (:file "infinite-annot" :depends-on ("util"))
+               (:file "infinite-annot-check" :depends-on ("infinite-annot"))
                (:file "compat" :depends-on ("util" "reader"))
                (:file "examples" :depends-on ("util" "reader")))
   :perform (prepare-op :before (o c)

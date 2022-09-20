@@ -367,7 +367,7 @@
           "c")
        (list 'a 'b 'c))))
 
-(test test-at-syntax-shart-at-infinite
+(test test-at-syntax-sharp-at-infinite
   ;; #@symbol
   (is (equal
        '(list 1 2 3 4 5 6 7)
@@ -380,7 +380,7 @@
        "ABC"
        "123")))
 
-(test test-at-syntax-shart-at-integer
+(test test-at-syntax-sharp-at-integer
   ;; #n@symbol
   (is (equal
        '#5@list 1 2 3 4 5

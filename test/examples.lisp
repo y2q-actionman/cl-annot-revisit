@@ -57,17 +57,15 @@
 @cl-annot-revisit:export
 @(cl-annot-revisit:optimize ((speed 3) (safety 0)))
 (cl-annot-revisit:inline
-    (defun foo ()
+    (defun exported-symbol-1 ()
       "Hello, World!")
-  (defun bar (x)
+  (defun exported-symbol-2 (x)
     (1+ x)))
 
 (test test-readme-example-1-func
-  (is (equal (foo) "Hello, World!"))
-  (is (equal (bar 1) 2)))
+  (is (equal (exported-symbol-1) "Hello, World!"))
+  (is (equal (exported-symbol-2 1) 2)))
 
 (test test-readme-example-1-symbol
-  (is (eq (nth-value 1 (find-symbol (string 'foo) :cl-annot-revisit-test))
-          :external))
-  (is (eq (nth-value 1 (find-symbol (string 'bar) :cl-annot-revisit-test))
-          :external)))
+  (is (symbol-exported-p 'exported-symbol-1 :cl-annot-revisit-test))
+  (is (symbol-exported-p 'exported-symbol-2 :cl-annot-revisit-test)))

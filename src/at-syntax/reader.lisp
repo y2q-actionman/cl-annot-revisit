@@ -14,6 +14,11 @@
       (unread-char char stream))
     ret))
 
+#+allegro
+(defmethod excl:file-character-position ((stream cl:concatenated-stream))
+  (let ((streams (concatenated-stream-streams stream)))
+    (reduce #'+ streams :key #'excl:file-character-position)))
+
 (defun read-at-syntax (stream at-char arity)
   "The main reader of at-syntax. It reads the next symbol and collects arguments
  by ARITY or`find-at-syntax-arity', and creates a new form.
