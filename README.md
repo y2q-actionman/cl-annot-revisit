@@ -509,11 +509,11 @@ This library defines two reader macros, `@` and `#@`, into `cl-annot-revisit:at-
 
 Place `(named-readtables:in-readtable cl-annot-revisit:at-syntax-readtable)` to use them.
 
-## @(list) syntax
+## `@(list)` syntax
 
 When a list appears after the `@` reader macro, the next form is expanded to the end of the list.
 
-The following example means same as the `optimize` example above. (TODO: add a link).
+The following example means same as the [`optimize` example above](#macro-cl-annot-revisitoptimize-optional-qualities-body-body).
 
 ```common-lisp
 @(cl-annot-revisit:optimize (speed safety))
@@ -538,7 +538,7 @@ So, this returns a string `"Hello, World!"`.
 
 (You see this behavior resembles to the famous [nest](https://github.com/ruricolist/serapeum/blob/master/REFERENCE.md#nest-rest-things) macro.)
 
-## @symbol syntax
+## `@symbol` syntax
 
 When a symbol appears after the `@` reader macro, it reads some following forms and construct a form enclosing `()`.
 
@@ -560,7 +560,7 @@ How many forms read is determined by the symbol, default is 1. You can change it
 
 (This syntax is derived from the original cl-annot. I personally prefer `@(list)` to this syntax.)
 
-## #n@(list) and #n@symbol syntax
+## `#n@(list)` and `#n@symbol` syntax
 
 `#n@` syntax works like `@` except overriding the number of form to be read with `n`.
 
@@ -595,7 +595,7 @@ and evaluated to `"foo bar baz"`.
 
 ## *infinite* annotation
 
-If the infix parameter of `#@` is omitted, this macro tries to collect as many forms as possible until `)` appears or reached to EOF. Collected forms are expanded like `@` syntax.
+If the infix parameter of `#@` is omitted, this macro attempts to collect as many forms as possible until `)` appears or reached to EOF. Collected forms are expanded like `@` syntax.
 
 The following example is evaluated to `T`:
 
