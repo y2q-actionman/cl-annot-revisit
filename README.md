@@ -1,5 +1,3 @@
-(This README is under writing.)
-
 # Abstract
 
 cl-annot-revisit is a re-implementation of [cl-annot](https://github.com/m2ym/cl-annot), an annotation library for Common Lisp.
@@ -89,13 +87,6 @@ This library depends following libraries:
 - named-readtables
 
 # Macro usage
-
-(stub)
-
-TODO:
-
-- nesting
-- take multiple forms
 
 ## `eval-when` shorthands
 
