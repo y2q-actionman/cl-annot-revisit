@@ -80,10 +80,38 @@ At this time, clone this repository, locate it into
 (ql:quickload "cl-annot-revisit")
 ```
 
+or
+
+``` common-lisp
+(asdf:load-asd "cl-annot-revisit.asd")
+(asdf:load-system :cl-annot-revisit)
+```
+
+## Dependency
+
 This library depends following libraries:
 
 - alexandria
 - named-readtables
+
+## Running Tests
+
+Test codes are in `:cl-annot-revisit-test` defsystem. You can call them by below:
+
+```common-lisp
+(ql:quickload :cl-annot-revisit-test)
+(asdf:test-system :cl-annot-revisit)
+```
+
+or
+
+```common-lisp
+(asdf:load-asd "cl-annot-revisit.asd")
+(asdf:load-asd "cl-annot-revisit-compat.asd")
+(asdf:load-asd "cl-annot-revisit-test.asd")
+(asdf:load-system :cl-annot-revisit-test)
+(asdf:test-system :cl-annot-revisit)
+```
 
 # Macro usage
 
