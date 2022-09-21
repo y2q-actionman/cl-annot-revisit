@@ -641,6 +641,12 @@ The above example will export `foo`, `*bar*`, and `+baz+`.
 
 (This feature is just for fun... Don't use it seriously!)
 
+# Known issues
+
+- Macros about declaration (such as `cl-annot-revisit:inline`) does not affect local functions by `flet`, `labels`, `handler-case` and `restart-case`, or local macros by `macrolet`.
+- These macros does not affect `defgeneric`'s method definitions by `:method` option.
+- `cl-annot-revisit:documentation` and cl-annot-revisit:doc` does not affect local functions or local macros also. They does not affects slot's `:documentation` option.
+
 # License 
 
 ```
