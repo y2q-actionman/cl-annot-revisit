@@ -641,6 +641,11 @@ The above example will export `foo`, `*bar*`, and `+baz+`.
 
 (This feature is just for fun... Don't use it seriously!)
 
+# cl-annot compatibility
+
+`defannotation` is in `cl-annot-revisit-compat`.
+See [REAMDE_cl-annot-revisit-compat](https://github.com/y2q-actionman/cl-annot-revisit/blob/master/README_cl-annot-revisit-compat.md) about that.
+
 # Known issues
 
 - Macros about declaration (such as `cl-annot-revisit:inline`) does not affect local functions by `flet`, `labels`, `handler-case` and `restart-case`, or local macros by `macrolet`.
