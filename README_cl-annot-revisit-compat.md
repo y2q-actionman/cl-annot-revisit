@@ -14,8 +14,8 @@ cl-annot's `defannotation` has four effects.
 For cl-annot-revisit, the first three features are not required.
 
 - I encourage you to use the normal Lisp syntax, `()`. It clearly show its arity. `@(list)` syntax's arity is always 1, because it always fills the last form. `:arity` is needed only by `@symbol` syntax.
-- When a kind of expansion is required at read-time, I think it should be invoked with a visible way, like `#.`. `:inline` is a unique feature because it perform read-time expansion at read-time transparently. I personally think it is confusing.
-- In the cl-annot, `:alias` defined for the `CL` package symbols. I think it is used to define annotations with the same name as the `CL` symbols. My solution is simply defines another package and use a same name in it, like `cl-annot-revisit:optimize`.
+- When a kind of expansion is required at read-time, I think it should be invoked with a visible way, like `#.`. `:inline` is a unique feature because it performs `macroexpand` _at read-time_ transparently. I personally think it is confusing.
+- In the cl-annot, `:alias` is defined for the `CL` package symbols. I think it is used to define annotations with the same name as the `CL` symbols. My solution is simply defines another package and use a same name in it, like `cl-annot-revisit:optimize`.
 
 In addition, I split *annotation* between the `@` syntax and `defmacro`. Therefore, they do not need to be defined at the same time.
 
